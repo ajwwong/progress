@@ -6,18 +6,10 @@ import { Composition, Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
 import { useNavigate } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
-
-const ItemComponent = forwardRef<HTMLDivElement, { resource: Patient }>(({ resource, ...others }, ref) => (
-  <div ref={ref} {...others}>
-    <Group wrap="nowrap">
-      <ResourceAvatar value={resource} />
-      <div>
-        <Text>{getDisplayString(resource)}</Text>
-        <Text size="xs" c="dimmed">{resource.birthDate}</Text>
-      </div>
-    </Group>
-  </div>
-));
+import { PatientSelector } from '../components/audio/PatientSelector';
+import { AudioControls } from '../components/audio/AudioControls';
+import { TranscriptionView } from '../components/audio/TranscriptionView';
+import { CreatePatientModal } from '../components/modals/CreatePatientModal';
 
 interface AudioTranscribePageProps {
   onTranscriptionStart: (time: string) => void;
@@ -39,8 +31,6 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   const [selectedPatient, setSelectedPatient] = useState<Patient>();
   const navigate = useNavigate();
   const [createPatientModalOpen, setCreatePatientModalOpen] = useState(false);
-  const [newPatientForm, setNewPatientForm] = useState({ name: '' });
-  const [showCreateButton, setShowCreateButton] = useState(false);
 
   // Existing useEffect and function implementations remain exactly the same
   useEffect(() => {
@@ -305,9 +295,9 @@ ${transcript}`;
     }
   };
 
-  const handleCreateNewPatient = async () => {
+  const handleCreateNewPatient = async (fullName: string) => {
     try {
-      const nameParts = newPatientForm.name.trim().split(' ');
+      const nameParts = fullName.trim().split(' ');
       const lastName = nameParts.pop() || '';
       const firstName = nameParts.join(' ');
 
@@ -320,8 +310,6 @@ ${transcript}`;
       });
 
       setSelectedPatient(newPatient);
-      setCreatePatientModalOpen(false);
-      setNewPatientForm({ name: '' });
       
       showNotification({
         title: 'Success',
@@ -337,6 +325,7 @@ ${transcript}`;
         color: 'red',
         icon: <IconX size={16} />
       });
+      throw error; // Re-throw to be handled by the modal
     }
   };
 
@@ -346,186 +335,42 @@ ${transcript}`;
         <Title order={2} mb="xl">Audio Session Recorder</Title>
         
         <Stack spacing="lg">
-          <Box>
-            <Group align="flex-end" spacing="xs">
-              <Box style={{ flex: 1 }}>
-                <AsyncAutocomplete
-                  label="Select Patient"
-                  placeholder="Search by patient name..."
-                  loadOptions={async (input, signal) => {
-                    if (!input) return [];
-                    return await medplum.searchResources('Patient', `name:contains=${input}`, { signal });
-                  }}
-                  toOption={(patient) => ({
-                    value: patient.id as string,
-                    label: getDisplayString(patient),
-                    resource: patient,
-                  })}
-                  itemComponent={ItemComponent}
-                  onChange={(patients) => {
-                    if (patients?.[0]) {
-                      setSelectedPatient(patients[0]);
-                    }
-                  }}
-                  maxValues={1}
-                  required
-                />
-              </Box>
-              <ActionIcon
-                variant="light"
-                color="blue"
-                size="lg"
-                radius="md"
-                onClick={() => setCreatePatientModalOpen(true)}
-              >
-                <IconPlus size={18} />
-              </ActionIcon>
-            </Group>
-          </Box>
+          <PatientSelector
+            selectedPatient={selectedPatient}
+            onPatientSelect={setSelectedPatient}
+            onCreateClick={() => setCreatePatientModalOpen(true)}
+          />
+          
+          <AudioControls
+            isRecording={isRecording}
+            isPaused={isPaused}
+            isBlinking={isBlinking}
+            hasTranscript={!!transcript}
+            hasAudioBlob={!!audioBlob}
+            status={status}
+            disabled={!selectedPatient}
+            onStart={startRecording}
+            onStop={stopRecording}
+            onPause={pauseRecording}
+            onResume={resumeRecording}
+            onCancel={cancelRecording}
+            onPlay={playAudio}
+            onTranscribe={transcribeAudio}
+            onGenerateNote={generateNote}
+          />
 
-          <Paper p="md" radius="md" bg="gray.0">
-            <Group position="apart" mb="xs">
-              <Text size="sm" weight={500}>Status</Text>
-              <Text size="sm" color={status.includes('Error') ? 'red' : 'dimmed'}>{status}</Text>
-            </Group>
-
-            {isRecording && (
-              <Box mb="md">
-                <Group position="apart" align="center">
-                  {!isPaused && (
-                    <Box 
-                      sx={(theme) => ({
-                        width: 8,
-                        height: 8,
-                        borderRadius: '50%',
-                        backgroundColor: theme.colors.red[6],
-                        opacity: isBlinking ? 1 : 0.3,
-                        transition: 'opacity 0.3s ease'
-                      })}
-                    />
-                  )}
-                  <Text size="sm" color="dimmed" align="center" style={{ flex: 1 }}>
-                    {isPaused ? 'Recording Paused' : 'Recording in Progress'}
-                  </Text>
-                </Group>
-              </Box>
-            )}
-
-            <Stack spacing="md">
-              {!isRecording ? (
-                <Button
-                  fullWidth
-                  size="md"
-                  color="blue"
-                  leftIcon={<IconPlayerRecord size={20} />}
-                  onClick={startRecording}
-                  disabled={!selectedPatient}
-                >
-                  Start Recording
-                </Button>
-              ) : (
-                <Group grow>
-                  <Button
-                    color="red"
-                    leftIcon={<IconPlayerStop size={20} />}
-                    onClick={stopRecording}
-                  >
-                    End Session
-                  </Button>
-                  <Button
-                    color="yellow"
-                    onClick={isPaused ? resumeRecording : pauseRecording}
-                  >
-                    {isPaused ? 'Resume' : 'Pause'}
-                  </Button>
-                  <Button
-                    variant="subtle"
-                    color="gray"
-                    onClick={cancelRecording}
-                  >
-                    Cancel
-                  </Button>
-                </Group>
-              )}
-
-              {audioBlob && !isRecording && (
-                <Group grow>
-                  <Button
-                    color="green"
-                    leftIcon={<IconPlayerPlay size={20} />}
-                    onClick={playAudio}
-                  >
-                    Play Recording
-                  </Button>
-                  <Button
-                    color="teal"
-                    leftIcon={<IconFileText size={20} />}
-                    onClick={transcribeAudio}
-                  >
-                    Transcribe
-                  </Button>
-                </Group>
-              )}
-
-              {transcript && (
-                <Button
-                  color="pink"
-                  leftIcon={<IconNotes size={20} />}
-                  onClick={generateNote}
-                >
-                  Generate Note
-                </Button>
-              )}
-            </Stack>
-          </Paper>
-
-          {(transcript || psychNote) && (
-            <Stack spacing="lg" mt="md">
-              {transcript && (
-                <Paper p="md" radius="md" withBorder>
-                  <Title order={3} size="h5" mb="md">Transcript</Title>
-                  <Text style={{ whiteSpace: 'pre-wrap' }}>{transcript}</Text>
-                </Paper>
-              )}
-
-              {psychNote && (
-                <Paper p="md" radius="md" withBorder>
-                  <Title order={3} size="h5" mb="md">Psychotherapy Note</Title>
-                  <Text style={{ whiteSpace: 'pre-wrap' }}>{psychNote}</Text>
-                </Paper>
-              )}
-            </Stack>
-          )}
+          <TranscriptionView 
+            transcript={transcript}
+            psychNote={psychNote}
+          />
         </Stack>
       </Paper>
 
-      <Modal
+      <CreatePatientModal
         opened={createPatientModalOpen}
         onClose={() => setCreatePatientModalOpen(false)}
-        title="Create New Patient"
-        size="md"
-      >
-        <Stack spacing="md">
-          <TextInput
-            label="Full Name"
-            required
-            value={newPatientForm.name}
-            onChange={(e) => setNewPatientForm({ name: e.target.value })}
-            placeholder="Enter patient's full name"
-          />
-          <Group position="right" mt="md">
-            <Button variant="subtle" onClick={() => setCreatePatientModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleCreateNewPatient}
-              disabled={!newPatientForm.name.trim()}
-            >
-              Create Patient
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
+        onSubmit={handleCreateNewPatient}
+      />
     </Container>
   );
 }
