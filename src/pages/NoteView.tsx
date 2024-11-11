@@ -1,9 +1,9 @@
 import { Composition } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { Box, Container, Text, Title, Textarea, Button, Group, Modal } from '@mantine/core';
+import { Box, Container, Text, Title, Textarea, Button, Group, Modal, Paper, Stack, Divider } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconWand } from '@tabler/icons-react';
+import { IconWand, IconCopy, IconCheck } from '@tabler/icons-react';
 
 export function NoteView(): JSX.Element {
   const { id } = useParams();
@@ -125,63 +125,94 @@ Please provide the complete adjusted note while maintaining the same professiona
 
   if (error) {
     return (
-      <Container size="sm" mt="xl">
-        <Box p="xl">
-          <Title order={1} color="red">{error}</Title>
-        </Box>
+      <Container size="md" mt="xl">
+        <Paper p="xl" radius="md" withBorder sx={(theme) => ({
+          backgroundColor: theme.colors.red[0],
+          borderColor: theme.colors.red[3]
+        })}>
+          <Title order={2} color="red">{error}</Title>
+        </Paper>
       </Container>
     );
   }
 
   return (
-    <Container size="sm" mt="xl">
-      <Box p="xl">
-        <Title order={1} mb="xl">Session Notes - {new Date(composition?.date || '').toLocaleString()}</Title>
-        
-        {composition?.section?.map((section, index) => (
-          <Box key={index} mt="xl">
-            <Group position="apart" mb="md">
-              <Title order={2} size="h4">
-                {section.title}
-              </Title>
-              <Group spacing="xs">
-                {section.title === 'Psychotherapy Note' && (
+    <Container size="md" mt="xl">
+      <Stack spacing="lg">
+        <Paper p="xl" radius="md" withBorder>
+          <Title order={2} mb="lg">
+            Session Notes
+          </Title>
+          <Text size="sm" color="dimmed" mb="xl">
+            {new Date(composition?.date || '').toLocaleString('en-US', {
+              weekday: 'long',
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit'
+            })}
+          </Text>
+          
+          {composition?.section?.map((section, index) => (
+            <Paper key={index} withBorder p="md" radius="md" mb="lg">
+              <Group position="apart" mb="md">
+                <Title order={3} size="h4">
+                  {section.title}
+                </Title>
+                <Group spacing="xs">
+                  {section.title === 'Psychotherapy Note' && (
+                    <Button
+                      onClick={() => setShowMagicModal(true)}
+                      variant="light"
+                      color="violet"
+                      leftIcon={<IconWand size={16} />}
+                      size="sm"
+                    >
+                      Magic Edit
+                    </Button>
+                  )}
                   <Button
-                    onClick={() => setShowMagicModal(true)}
-                    color="violet"
-                    leftIcon={<IconWand size={16} />}
+                    onClick={() => 
+                      modifiedSections.has(section.title || '') 
+                        ? handleSaveSection(section.title || '')
+                        : handleCopySection(editedSections[section.title || ''])
+                    }
+                    variant={modifiedSections.has(section.title || '') ? "filled" : "light"}
+                    color={modifiedSections.has(section.title || '') ? "blue" : "gray"}
+                    size="sm"
+                    leftIcon={modifiedSections.has(section.title || '') ? <IconCheck size={16} /> : <IconCopy size={16} />}
                   >
-                    Magic Edit
+                    {modifiedSections.has(section.title || '') ? 'Save Changes' : 'Copy'}
                   </Button>
-                )}
-                <Button
-                  onClick={() => 
-                    modifiedSections.has(section.title || '') 
-                      ? handleSaveSection(section.title || '')
-                      : handleCopySection(editedSections[section.title || ''])
-                  }
-                  color={modifiedSections.has(section.title || '') ? "blue" : "gray"}
-                >
-                  {modifiedSections.has(section.title || '') ? 'Save' : 'Copy Section'}
-                </Button>
+                </Group>
               </Group>
-            </Group>
-            <Textarea
-              value={editedSections[section.title || '']}
-              onChange={(e) => handleTextChange(section.title || '', e.currentTarget.value)}
-              minRows={5}
-              autosize
-            />
-          </Box>
-        ))}
+              <Textarea
+                value={editedSections[section.title || '']}
+                onChange={(e) => handleTextChange(section.title || '', e.currentTarget.value)}
+                minRows={5}
+                autosize
+                styles={(theme) => ({
+                  input: {
+                    backgroundColor: theme.colors.gray[0],
+                    border: `1px solid ${theme.colors.gray[3]}`,
+                    '&:focus': {
+                      borderColor: theme.colors.blue[5]
+                    }
+                  }
+                })}
+              />
+            </Paper>
+          ))}
+        </Paper>
 
         <Modal
           opened={showMagicModal}
           onClose={() => setShowMagicModal(false)}
-          title="Magic Edit - Psychotherapy Note"
+          title={<Title order={3}>Magic Edit - Psychotherapy Note</Title>}
           size="lg"
         >
-          <Box>
+          <Stack spacing="md">
             <Textarea
               label="Edit Instructions"
               description="Describe how you want to modify the note"
@@ -189,7 +220,12 @@ Please provide the complete adjusted note while maintaining the same professiona
               value={magicInstructions}
               onChange={(e) => setMagicInstructions(e.currentTarget.value)}
               minRows={3}
-              mb="md"
+              autosize
+              styles={(theme) => ({
+                input: {
+                  backgroundColor: theme.colors.gray[0]
+                }
+              })}
             />
             <Group position="right">
               <Button 
@@ -207,9 +243,9 @@ Please provide the complete adjusted note while maintaining the same professiona
                 Apply Magic Edit
               </Button>
             </Group>
-          </Box>
+          </Stack>
         </Modal>
-      </Box>
+      </Stack>
     </Container>
   );
 }

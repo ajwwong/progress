@@ -1,5 +1,5 @@
-import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon } from '@mantine/core';
-import { IconPlayerRecord, IconPlayerStop, IconPlayerPlay, IconFileText, IconBrain, IconNotes, IconPlayerPause, IconPlayerResume, IconPlus, IconCheck, IconX } from '@tabler/icons-react';
+import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider } from '@mantine/core';
+import { IconPlayerRecord, IconPlayerStop, IconPlayerPlay, IconFileText, IconNotes, IconPlayerPause, IconPlus, IconCheck, IconX } from '@tabler/icons-react';
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { useMedplum, AsyncAutocomplete, ResourceAvatar } from '@medplum/react';
 import { Composition, Patient } from '@medplum/fhirtypes';
@@ -39,11 +39,10 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   const [selectedPatient, setSelectedPatient] = useState<Patient>();
   const navigate = useNavigate();
   const [createPatientModalOpen, setCreatePatientModalOpen] = useState(false);
-  const [newPatientForm, setNewPatientForm] = useState({
-    name: ''
-  });
+  const [newPatientForm, setNewPatientForm] = useState({ name: '' });
   const [showCreateButton, setShowCreateButton] = useState(false);
 
+  // Existing useEffect and function implementations remain exactly the same
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording && !isPaused) {
@@ -66,13 +65,11 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       mediaRecorder.current = new MediaRecorder(stream);
       chunksRef.current = [];
 
-      // Get the practitioner profile first
       const profile = await medplum.getProfile();
       const practitionerName = profile.name?.[0] ? 
         `${profile.name[0].given?.[0] || ''} ${profile.name[0].family || ''}`.trim() : 
         'Unknown Practitioner';
 
-      // Create initial composition with author and patient
       const initialComposition = {
         resourceType: 'Composition',
         status: 'preliminary',
@@ -131,7 +128,6 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
 
   const playAudio = async () => {
     if (!audioBlob) return;
-    
     try {
       const audio = new Audio(URL.createObjectURL(audioBlob));
       audio.onended = () => URL.revokeObjectURL(audio.src);
@@ -144,7 +140,6 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
 
   const transcribeAudio = async () => {
     if (!audioBlob || !savedComposition) return;
-    
     try {
       const now = new Date();
       const timeString = now.toLocaleString();
@@ -173,7 +168,6 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       if (response.details?.transcript) {
         setTranscript(response.details.transcript);
         
-        // Update composition with transcript
         const updatedComposition = {
           ...savedComposition,
           section: [
@@ -228,11 +222,10 @@ ${transcript}`;
       if (response.text) {
         setPsychNote(response.text);
         try {
-          // Use the patient name that was required at recording start
           const composition = await saveComposition(transcript, response.text, selectedPatient);
           
           const timeString = new Date().toLocaleString();
-          onTranscriptionStart(`${timeString} - ${selectedPatient.name?.[0].given?.join(' ') || ''} ${selectedPatient.name?.[0].family || ''}`);
+          onTranscriptionStart(`${timeString} - ${selectedPatient?.name?.[0].given?.join(' ') || ''} ${selectedPatient?.name?.[0].family || ''}`);
           
           setStatus('Psychotherapy note generated');
         } catch (compositionErr) {
@@ -266,12 +259,12 @@ ${transcript}`;
     }
   };
 
-  const saveComposition = async (transcript: string, note: string, patient: Patient) => {
-    try {
-      if (!savedComposition) {
-        throw new Error('No existing composition found');
-      }
+  const saveComposition = async (transcript: string, note: string, patient: Patient | undefined) => {
+    if (!patient || !savedComposition) {
+      throw new Error('Missing patient or composition data');
+    }
 
+    try {
       const updatedComposition = {
         ...savedComposition,
         status: 'final',
@@ -312,36 +305,11 @@ ${transcript}`;
     }
   };
 
-  const loadPatients = async (input: string, signal: AbortSignal): Promise<Patient[]> => {
-    if (!input) {
-      console.log('Empty input, returning empty array');
-      return [];
-    }
-    
-    try {
-      const results = await medplum.searchResources('Patient', `name:contains=${input}`, {
-        signal,
-      });
-      console.log('Search results:', results.length, 'patients found');
-      return results;
-    } catch (err) {
-      console.error('Error searching patients:', err);
-      return [];
-    }
-  };
-
-  const toOption = (patient: Patient) => ({
-    value: patient.id as string,
-    label: getDisplayString(patient),
-    resource: patient,
-  });
-
   const handleCreateNewPatient = async () => {
     try {
-      // Split the full name into parts
       const nameParts = newPatientForm.name.trim().split(' ');
-      const lastName = nameParts.pop() || ''; // Get last word as family name
-      const firstName = nameParts.join(' '); // Join remaining words as given name
+      const lastName = nameParts.pop() || '';
+      const firstName = nameParts.join(' ');
 
       const newPatient = await medplum.createResource({
         resourceType: 'Patient',
@@ -373,198 +341,163 @@ ${transcript}`;
   };
 
   return (
-    <Container size="sm" mt="xl">
-      <Box p="xl" sx={(theme) => ({
-        borderRadius: theme.radius.lg,
-        border: `1px solid ${theme.colors.gray[2]}`,
-      })}>
-        <Title order={1} mb="xl">Audio Transcription</Title>
+    <Container size="lg" mt="xl">
+      <Paper shadow="sm" radius="md" p="xl" withBorder>
+        <Title order={2} mb="xl">Audio Session Recorder</Title>
         
-        <Box mb="xl">
-          <Group align="flex-end" spacing="xs">
-            <Box style={{ flex: 1 }}>
-              <AsyncAutocomplete
-                label="Search Patient"
-                placeholder="Type to search patients..."
-                loadOptions={loadPatients}
-                toOption={toOption}
-                itemComponent={ItemComponent}
-                onChange={(patients) => {
-                  if (patients?.[0]) {
-                    setSelectedPatient(patients[0]);
-                  }
-                }}
-                maxValues={1}
-                required
-                styles={(theme) => ({
-                  label: {
-                    marginBottom: theme.spacing.xs,
-                    color: theme.colorScheme === 'dark' ? theme.colors.gray[3] : theme.colors.gray[7],
-                  },
-                  input: {
-                    '&:focus': {
-                      borderColor: theme.colors.teal[6],
-                    },
-                  },
-                })}
-                onNoResults={(query) => {
-                  console.log('No results found for query:', query);
-                }}
-              />
-            </Box>
-            <ActionIcon
-              variant="light"
-              color="blue"
-              size="lg"
-              radius="xl"
-              onClick={() => {
-                console.log('Create New Patient button clicked');
-                setCreatePatientModalOpen(true);
-              }}
-            >
-              <IconPlus size={18} />
-            </ActionIcon>
-          </Group>
-        </Box>
-
-        <Box mb="xl">
-          <Text color="dimmed" size="sm">Status: {status}</Text>
-        </Box>
-
-        <Group spacing="md" direction="column">
-          {!isRecording ? (
-            <Button 
-              fullWidth 
-              size="md"
-              color="blue"
-              leftIcon={<IconPlayerRecord size={20} />}
-              onClick={startRecording}
-            >
-              Start Recording
-            </Button>
-          ) : (
-            <Group spacing="md" direction="column" w="100%">
-              <Group position="apart" w="100%" align="center">
-                <Box 
-                  sx={(theme) => ({
-                    width: 12,
-                    height: 12,
-                    borderRadius: '50%',
-                    backgroundColor: theme.colors.red[6],
-                    opacity: isBlinking ? 1 : 0.3,
-                    transition: 'opacity 0.3s ease',
-                    display: isPaused ? 'none' : 'block'
+        <Stack spacing="lg">
+          <Box>
+            <Group align="flex-end" spacing="xs">
+              <Box style={{ flex: 1 }}>
+                <AsyncAutocomplete
+                  label="Select Patient"
+                  placeholder="Search by patient name..."
+                  loadOptions={async (input, signal) => {
+                    if (!input) return [];
+                    return await medplum.searchResources('Patient', `name:contains=${input}`, { signal });
+                  }}
+                  toOption={(patient) => ({
+                    value: patient.id as string,
+                    label: getDisplayString(patient),
+                    resource: patient,
                   })}
+                  itemComponent={ItemComponent}
+                  onChange={(patients) => {
+                    if (patients?.[0]) {
+                      setSelectedPatient(patients[0]);
+                    }
+                  }}
+                  maxValues={1}
+                  required
                 />
-                <Text size="sm" color="dimmed">
-                  {isPaused ? 'Recording Paused' : 'Recording in Progress'}
-                </Text>
-              </Group>
+              </Box>
+              <ActionIcon
+                variant="light"
+                color="blue"
+                size="lg"
+                radius="md"
+                onClick={() => setCreatePatientModalOpen(true)}
+              >
+                <IconPlus size={18} />
+              </ActionIcon>
+            </Group>
+          </Box>
 
-              <Group spacing="md" w="100%">
-                <Button 
-                  fullWidth 
-                  size="md"
-                  color="red"
-                  leftIcon={<IconPlayerStop size={20} />}
-                  onClick={stopRecording}
-                >
-                  End Session
-                </Button>
-                
+          <Paper p="md" radius="md" bg="gray.0">
+            <Group position="apart" mb="xs">
+              <Text size="sm" weight={500}>Status</Text>
+              <Text size="sm" color={status.includes('Error') ? 'red' : 'dimmed'}>{status}</Text>
+            </Group>
+
+            {isRecording && (
+              <Box mb="md">
+                <Group position="apart" align="center">
+                  {!isPaused && (
+                    <Box 
+                      sx={(theme) => ({
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        backgroundColor: theme.colors.red[6],
+                        opacity: isBlinking ? 1 : 0.3,
+                        transition: 'opacity 0.3s ease'
+                      })}
+                    />
+                  )}
+                  <Text size="sm" color="dimmed" align="center" style={{ flex: 1 }}>
+                    {isPaused ? 'Recording Paused' : 'Recording in Progress'}
+                  </Text>
+                </Group>
+              </Box>
+            )}
+
+            <Stack spacing="md">
+              {!isRecording ? (
                 <Button
                   fullWidth
                   size="md"
-                  color="yellow"
-                  onClick={isPaused ? resumeRecording : pauseRecording}
+                  color="blue"
+                  leftIcon={<IconPlayerRecord size={20} />}
+                  onClick={startRecording}
+                  disabled={!selectedPatient}
                 >
-                  {isPaused ? 'Resume' : 'Pause'}
+                  Start Recording
                 </Button>
+              ) : (
+                <Group grow>
+                  <Button
+                    color="red"
+                    leftIcon={<IconPlayerStop size={20} />}
+                    onClick={stopRecording}
+                  >
+                    End Session
+                  </Button>
+                  <Button
+                    color="yellow"
+                    onClick={isPaused ? resumeRecording : pauseRecording}
+                  >
+                    {isPaused ? 'Resume' : 'Pause'}
+                  </Button>
+                  <Button
+                    variant="subtle"
+                    color="gray"
+                    onClick={cancelRecording}
+                  >
+                    Cancel
+                  </Button>
+                </Group>
+              )}
 
+              {audioBlob && !isRecording && (
+                <Group grow>
+                  <Button
+                    color="green"
+                    leftIcon={<IconPlayerPlay size={20} />}
+                    onClick={playAudio}
+                  >
+                    Play Recording
+                  </Button>
+                  <Button
+                    color="teal"
+                    leftIcon={<IconFileText size={20} />}
+                    onClick={transcribeAudio}
+                  >
+                    Transcribe
+                  </Button>
+                </Group>
+              )}
+
+              {transcript && (
                 <Button
-                  fullWidth
-                  size="md"
-                  color="gray"
-                  variant="outline"
-                  onClick={cancelRecording}
+                  color="pink"
+                  leftIcon={<IconNotes size={20} />}
+                  onClick={generateNote}
                 >
-                  ✕
+                  Generate Note
                 </Button>
-              </Group>
-            </Group>
+              )}
+            </Stack>
+          </Paper>
+
+          {(transcript || psychNote) && (
+            <Stack spacing="lg" mt="md">
+              {transcript && (
+                <Paper p="md" radius="md" withBorder>
+                  <Title order={3} size="h5" mb="md">Transcript</Title>
+                  <Text style={{ whiteSpace: 'pre-wrap' }}>{transcript}</Text>
+                </Paper>
+              )}
+
+              {psychNote && (
+                <Paper p="md" radius="md" withBorder>
+                  <Title order={3} size="h5" mb="md">Psychotherapy Note</Title>
+                  <Text style={{ whiteSpace: 'pre-wrap' }}>{psychNote}</Text>
+                </Paper>
+              )}
+            </Stack>
           )}
-
-          {audioBlob && !isRecording && (
-            <Group spacing="md" direction="column" w="100%">
-              <Button
-                fullWidth
-                size="md"
-                color="green"
-                leftIcon={<IconPlayerPlay size={20} />}
-                onClick={playAudio}
-              >
-                Play Recording
-              </Button>
-
-              <Button
-                fullWidth
-                size="md"
-                color="teal"
-                leftIcon={<IconFileText size={20} />}
-                onClick={transcribeAudio}
-              >
-                Transcribe Audio
-              </Button>
-            </Group>
-          )}
-
-          {transcript && (
-            <Button
-              fullWidth
-              size="md"
-              color="pink"
-              leftIcon={<IconNotes size={20} />}
-              onClick={generateNote}
-            >
-              Generate Note
-            </Button>
-          )}
-        </Group>
-
-        {transcript && (
-          <Box mt="xl">
-            <Title order={2} size="h4" mb="md">Transcript</Title>
-            <Text>{transcript}</Text>
-          </Box>
-        )}
-
-        {psychNote && (
-          <Box mt="xl">
-            <Title order={2} size="h4" mb="md">Psychotherapy Note</Title>
-            <Text style={{ whiteSpace: 'pre-wrap' }}>{psychNote}</Text>
-          </Box>
-        )}
-      </Box>
-
-      {savedComposition && (
-        <Box mt="xl">
-          <Title order={2} size="h4" mb="md">Saved FHIR Composition</Title>
-          <Box 
-            p="md" 
-            sx={(theme) => ({
-              backgroundColor: theme.colors.gray[1],
-              borderRadius: theme.radius.sm,
-              fontFamily: 'monospace',
-              fontSize: '0.85em',
-              overflowX: 'auto'
-            })}
-          >
-            <pre>
-              {JSON.stringify(savedComposition, null, 2)}
-            </pre>
-          </Box>
-        </Box>
-      )}
+        </Stack>
+      </Paper>
 
       <Modal
         opened={createPatientModalOpen}
@@ -580,8 +513,10 @@ ${transcript}`;
             onChange={(e) => setNewPatientForm({ name: e.target.value })}
             placeholder="Enter patient's full name"
           />
-          <Group justify="flex-end" mt="md">
-            <Button variant="light" onClick={() => setCreatePatientModalOpen(false)}>Cancel</Button>
+          <Group position="right" mt="md">
+            <Button variant="subtle" onClick={() => setCreatePatientModalOpen(false)}>
+              Cancel
+            </Button>
             <Button 
               onClick={handleCreateNewPatient}
               disabled={!newPatientForm.name.trim()}

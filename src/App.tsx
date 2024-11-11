@@ -29,6 +29,29 @@ export function App(): JSX.Element | null {
     return null;
   }
 
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    // Check if it's today
+    if (date.toDateString() === today.toDateString()) {
+      return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+    }
+    // Check if it's yesterday
+    if (date.toDateString() === yesterday.toDateString()) {
+      return `Yesterday at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+    }
+    // For other dates
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit'
+    });
+  };
+
   return (
     <AppShell
       logo={<Logo size={24} />}
@@ -43,16 +66,23 @@ export function App(): JSX.Element | null {
         {
           title: 'Recent Compositions',
           links: isLoading ? [] : compositions.map((comp) => {
-            const date = new Date(comp.date);
-            const formattedDate = date.toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              hour: 'numeric',
-              minute: '2-digit'
-            });
+            const formattedDate = formatDate(comp.date);
+            const patientName = comp.subject?.display || 'Unknown Patient';
             return {
               icon: <IconFileText size={16} />,
-              label: `${comp.subject?.display || 'Unknown'} - ${formattedDate}`,
+              label: (
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column',
+                  gap: '2px'
+                }}>
+                  <span style={{ fontWeight: 500 }}>{patientName}</span>
+                  <span style={{ 
+                    fontSize: '0.75rem',
+                    color: 'var(--mantine-color-gray-6)'
+                  }}>{formattedDate}</span>
+                </div>
+              ),
               href: `/composition/${comp.id}`,
             };
           }),
