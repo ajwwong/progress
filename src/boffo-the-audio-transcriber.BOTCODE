@@ -1,0 +1,57 @@
+// this what the Boffo bot is using to transcribe audio -- use this as a reference for the new bot
+import { BotEvent, MedplumClient } from '@medplum/core';
+import { writeFileSync } from 'fs';
+import { Buffer } from 'node:buffer';
+import { createClient } from '@deepgram/sdk';
+
+// Initialize Deepgram with your API key
+const deepgram = createClient('ace243ebf531f33f88da4b39946b9a795f7e794e');
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  try {
+    const input = event.input;
+    
+    if (input.type === 'audio' && input.binaryId) {
+      console.log('Getting audio from Binary storage...');
+      
+      // Get the audio content
+      const response = await medplum.download(`Binary/${input.binaryId}`);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = Buffer.from(arrayBuffer);
+      
+      console.log('Transcribing audio...');
+      // Using the correct V3 syntax
+      const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
+        audioBuffer,
+        {
+          model: 'nova-2',
+          smart_format: true,
+          punctuate: true
+        }
+      );
+
+      if (error) throw error;
+
+      return {
+        message: 'Audio transcribed successfully',
+        details: {
+          transcript: result.results?.channels[0]?.alternatives[0]?.transcript || 'No transcript available',
+          confidence: result.results?.channels[0]?.alternatives[0]?.confidence,
+          audioSize: audioBuffer.length,
+          duration: result.metadata?.duration
+        }
+      };
+    }
+    
+    return {
+      message: 'Unexpected input type',
+      received: input
+    };
+  } catch (error) {
+    return {
+      error: 'Failed to process',
+      details: error.message,
+      stack: error.stack
+    };
+  }
+}

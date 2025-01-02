@@ -147,7 +147,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       
       setStatus('Transcribing...');
       const response = await medplum.executeBot(
-        '1255675e-266d-4ab9-bc69-a850c6ca4875',
+        '1255675e-266d-4ab9-bc69-a850c6ca4875',  // Old transcription bot ID
+       // 'deaa415b-66ba-468e-9faa-01f698376327',  // New transcription bot ID  
         {
           type: 'audio',
           binaryId: binary.id

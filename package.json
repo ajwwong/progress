@@ -7,7 +7,9 @@
     "build": "tsc && vite build",
     "dev": "vite --host",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:watch": "vitest watch"
   },
   "prettier": {
     "printWidth": 120,
@@ -20,15 +22,15 @@
     ]
   },
   "devDependencies": {
-    "@mantine/core": "7.13.4",
-    "@mantine/hooks": "7.13.4",
-    "@mantine/notifications": "7.13.4",
-    "@medplum/core": "3.2.18",
+    "@mantine/core": "^7.13.4",
+    "@mantine/hooks": "^7.13.4",
+    "@mantine/notifications": "^7.13.4",
+    "@medplum/core": "3.2.26",
     "@medplum/eslint-config": "3.2.18",
-    "@medplum/fhirtypes": "3.2.18",
-    "@medplum/react": "3.2.18",
+    "@medplum/fhirtypes": "3.2.26",
+    "@medplum/react": "3.2.26",
     "@tabler/icons-react": "3.17.0",
-    "@types/node": "22.8.1",
+    "@types/node": "^20.0.0",
     "@types/react": "18.3.12",
     "@types/react-dom": "18.3.1",
     "@vitejs/plugin-react": "4.3.3",
@@ -37,10 +39,18 @@
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-router-dom": "6.27.0",
-    "typescript": "5.6.3",
-    "vite": "5.4.10"
+    "typescript": "^5.0.0",
+    "vite": "5.4.10",
+    "vitest": "^1.0.0"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1"
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@medplum/core": "3.2.26",
+    "@medplum/fhirtypes": "3.2.26",
+    "@medplum/mock": "3.2.26",
+    "@medplum/react": "3.2.26",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.469.0",
+    "stripe": "^17.4.0"
   }
 }

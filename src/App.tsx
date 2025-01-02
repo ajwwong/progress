@@ -14,6 +14,8 @@ import { AudioTranscribePage } from './pages/AudioTranscribePage';
 import { useCompositions } from './hooks/useCompositions';
 import { NoteView } from './pages/NoteView';
 import { PatientAutocompletePage } from './pages/PatientAutocomplete';
+import { RegisterPage } from './pages/RegisterPage';
+import CalendarPage from './pages/CalendarPage';
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -94,6 +96,7 @@ export function App(): JSX.Element | null {
           <Routes>
             <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
             <Route path="/signin" element={<SignInPage />} />
+            <Route path="/register" element={<RegisterPage />} />
             <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
             <Route path="/transcribe" element={<AudioTranscribePage onTranscriptionStart={addTranscriptionTime} onCompositionSaved={triggerUpdate} />} />
             <Route path="/Patient/:id" element={<PatientPage />}>
@@ -105,6 +108,7 @@ export function App(): JSX.Element | null {
             <Route path="/:resourceType/:id" element={<ResourcePage />} />
             <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
             <Route path="/composition/:id" element={<NoteView />} />
+            <Route path="/calendar" element={<CalendarPage />} />
           </Routes>
         </Suspense>
       </ErrorBoundary>

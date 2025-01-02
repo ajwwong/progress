@@ -1,4 +1,4 @@
-import { Anchor, Button, Stack, Text, Title } from '@mantine/core';
+import { Anchor, Button, Stack, Text, Title, Group } from '@mantine/core';
 import { Document } from '@medplum/react';
 import { Link } from 'react-router-dom';
 
@@ -8,13 +8,17 @@ export function LandingPage(): JSX.Element {
       <Stack align="center">
         <Title order={2}>Welcome!</Title>
         <Text>
-          This "Hello World" example demonstrates how to build a simple React application that fetches Patient data from
-          Medplum. If you haven't already done so, <Anchor href="https://app.medplum.com/register">register</Anchor> for
-          Medplum Project. After that you can sign into your project by clicking the link below.
+          This application demonstrates provider registration and management using Medplum. 
+          If you're a new provider, please register below. Existing providers can sign in.
         </Text>
-        <Button component={Link} to="/signin">
-          Sign in
-        </Button>
+        <Group>
+          <Button component={Link} to="/register" variant="filled" color="blue">
+            Register as Provider
+          </Button>
+          <Button component={Link} to="/signin" variant="light">
+            Sign in
+          </Button>
+        </Group>
       </Stack>
     </Document>
   );
