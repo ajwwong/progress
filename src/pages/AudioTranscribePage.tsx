@@ -256,6 +256,34 @@ ${transcript}`;
     } catch (err) {
       console.error('Error generating note:', err);
       setStatus(`Error: Could not generate note - ${err.message}`);
+
+      // Update the composition with a dummy note
+      if (savedComposition) {
+        const dummyNote = "This is where the psychotherapy note would go";
+        const updatedComposition = {
+          ...savedComposition,
+          section: [
+            {
+              title: 'Psychotherapy Note',
+              text: {
+                status: 'generated',
+                div: `<div xmlns="http://www.w3.org/1999/xhtml">${dummyNote}</div>`
+              }
+            },
+            ...savedComposition.section // Retain existing sections like Transcript
+          ],
+          subject: savedComposition.subject
+        };
+
+        try {
+          const updated = await medplum.updateResource(updatedComposition);
+          setSavedComposition(updated);
+          setPsychNote(dummyNote);
+          setStatus('Dummy note added');
+        } catch (updateErr) {
+          console.error('Error updating composition with dummy note:', updateErr);
+        }
+      }
     }
   };
 
