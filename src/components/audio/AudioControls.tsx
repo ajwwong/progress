@@ -4,8 +4,7 @@ import {
   IconPlayerStop, 
   IconPlayerPlay, 
   IconFileText, 
-  IconNotes, 
-  IconPlayerPause 
+  IconNotes
 } from '@tabler/icons-react';
 
 interface AudioControlsProps {
@@ -78,7 +77,7 @@ export function AudioControls({
             fullWidth
             size="md"
             color="blue"
-            leftIcon={<IconPlayerRecord size={20} />}
+            leftSection={<IconPlayerRecord size={20} />}
             onClick={onStart}
             disabled={disabled}
           >
@@ -88,7 +87,7 @@ export function AudioControls({
           <Group grow>
             <Button
               color="red"
-              leftIcon={<IconPlayerStop size={20} />}
+              leftSection={<IconPlayerStop size={20} />}
               onClick={onStop}
             >
               End Session
@@ -113,14 +112,14 @@ export function AudioControls({
           <Group grow>
             <Button
               color="green"
-              leftIcon={<IconPlayerPlay size={20} />}
+              leftSection={<IconPlayerPlay size={20} />}
               onClick={onPlay}
             >
               Play Recording
             </Button>
             <Button
               color="teal"
-              leftIcon={<IconFileText size={20} />}
+              leftSection={<IconFileText size={20} />}
               onClick={onTranscribe}
             >
               Transcribe
@@ -131,7 +130,7 @@ export function AudioControls({
         {hasTranscript && (
           <Button
             color="pink"
-            leftIcon={<IconNotes size={20} />}
+            leftSection={<IconNotes size={20} />}
             onClick={onGenerateNote}
           >
             Generate Note
