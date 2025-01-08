@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Patient } from '@medplum/fhirtypes';
 import { addWeeks, addMonths, setDay } from 'date-fns';
 import type { Appointment } from '../../../types/calendar';
@@ -32,20 +32,35 @@ function getDefaultTimes(): { startTime: string; endTime: string } {
 
 const { startTime, endTime } = getDefaultTimes();
 
-const defaultState: AppointmentFormState = {
-  patient: undefined,
-  date: new Date(),
-  startTime,
-  endTime,
-  isRecurring: false,
-  type: 'followup therapy',
-  frequency: 'weekly',
-  occurrences: 4,
-  selectedDays: []
-};
+export function useAppointmentForm(initialDate?: Date) {
+  console.log('useAppointmentForm initialDate:', initialDate);
+  
+  // Create defaultState inside a useMemo to ensure it's stable
+  const defaultState = useMemo(() => ({
+    patient: undefined,
+    date: initialDate || new Date(),
+    startTime,
+    endTime,
+    isRecurring: false,
+    type: 'followup therapy',
+    frequency: 'weekly',
+    occurrences: 4,
+    selectedDays: []
+  }), [initialDate]); // Only recreate when initialDate changes
+  
+  console.log('useAppointmentForm defaultState.date:', defaultState.date);
+  const [state, setState] = useState(defaultState);
+  console.log('useAppointmentForm current state.date:', state.date);
 
-export function useAppointmentForm() {
-  const [state, setState] = useState<AppointmentFormState>(defaultState);
+  // Add an effect to update the date when initialDate changes
+  useEffect(() => {
+    if (initialDate) {
+      setState(prev => ({
+        ...prev,
+        date: initialDate
+      }));
+    }
+  }, [initialDate]);
 
   const isValid = () => {
     return !!(

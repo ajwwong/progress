@@ -199,8 +199,10 @@ export function Calendar() {
   const days = getDaysInMonth(selectedDate);
 
   const handleEmptyClick = (date: Date) => {
-    setSelectedDate(date);  // Update selected date
-    setIsAppointmentModalOpen(true);  // Open the modal
+    console.log('handleEmptyClick called with date:', date);
+    setSelectedDate(date);
+    console.log('selectedDate updated to:', date);
+    setIsAppointmentModalOpen(true);
   };
 
   return (
@@ -259,6 +261,7 @@ export function Calendar() {
         opened={isAppointmentModalOpen}
         onClose={() => setIsAppointmentModalOpen(false)}
         onSave={handleNewAppointment}
+        initialDate={selectedDate}
       />
 
       <PatientModal

@@ -11,10 +11,11 @@ interface AppointmentModalProps {
   opened: boolean;
   onClose: () => void;
   onSave: (appointments: Omit<Appointment, 'id'>[]) => void;
+  initialDate?: Date;
 }
-
-export function AppointmentModal({ opened, onClose, onSave }: AppointmentModalProps) {
-  const { state, setState, isValid, generateAppointments, reset } = useAppointmentForm();
+export function AppointmentModal({ opened, onClose, onSave, initialDate }: AppointmentModalProps) {
+  console.log('AppointmentModal rendered with initialDate:', initialDate);
+  const { state, setState, isValid, generateAppointments, reset } = useAppointmentForm(initialDate);
 
   const handleSave = () => {
     const appointments = generateAppointments();
