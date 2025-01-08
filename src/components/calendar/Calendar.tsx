@@ -142,7 +142,7 @@ export function Calendar() {
       for (const appointment of appointmentData) {
         await medplum.createResource({
           resourceType: 'Appointment',
-          status: 'booked',
+          status: 'show',
           appointmentType: {
             coding: [{
               system: 'http://terminology.hl7.org/CodeSystem/v2-0276',

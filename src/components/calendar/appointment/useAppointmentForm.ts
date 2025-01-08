@@ -159,7 +159,7 @@ export function useAppointmentForm(initialDate?: Date) {
       start,
       end,
       type: state.type,
-      status: 'booked',
+      status: 'show',
       patientName: `${state.patient.name?.[0]?.given?.join(' ')} ${state.patient.name?.[0]?.family}`,
       patientId: state.patient.id || '',
       participant: [{
