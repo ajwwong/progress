@@ -198,6 +198,11 @@ export function Calendar() {
 
   const days = getDaysInMonth(selectedDate);
 
+  const handleEmptyClick = (date: Date) => {
+    setSelectedDate(date);  // Update selected date
+    setIsAppointmentModalOpen(true);  // Open the modal
+  };
+
   return (
     <Paper p="md" radius="sm" withBorder style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Stack gap="md" style={{ height: '100%' }}>
@@ -220,6 +225,7 @@ export function Calendar() {
               selectedDate={selectedDate}
               appointments={appointments}
               onAppointmentClick={setSelectedAppointment}
+              onEmptyClick={handleEmptyClick}
             />
           ) : view === 'week' ? (
             <WeekCalendar

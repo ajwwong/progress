@@ -8,9 +8,15 @@ interface CalendarGridProps {
   selectedDate: Date;
   appointments: Appointment[];
   onAppointmentClick: (appointment: Appointment) => void;
+  onEmptyClick?: (date: Date) => void;
 }
-
-export function CalendarGrid({ days, selectedDate, appointments, onAppointmentClick }: CalendarGridProps) {
+export function CalendarGrid({ 
+  days, 
+  selectedDate, 
+  appointments, 
+  onAppointmentClick,
+  onEmptyClick 
+}: CalendarGridProps) {
   const weeks = days.reduce((acc, day, i) => {
     const weekIndex = Math.floor(i / 7);
     if (!acc[weekIndex]) acc[weekIndex] = [];
@@ -71,6 +77,7 @@ export function CalendarGrid({ days, selectedDate, appointments, onAppointmentCl
                       appointments={dayAppointments}
                       onAppointmentClick={onAppointmentClick}
                       height={rowHeight}
+                      onEmptyClick={onEmptyClick}
                     />
                   </Grid.Col>
                 );

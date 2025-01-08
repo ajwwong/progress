@@ -6,7 +6,7 @@ export interface Appointment {
   patientName: string;
   patientId: string;
   type: 'intake therapy' | 'followup therapy';
-  status: 'scheduled' | 'completed' | 'cancelled' | 'no show' | 'late cancelled' | 'show';
+  status: 'show' | 'cancelled' | 'late cancelled' | 'no show' | 'scheduled' | 'completed';
   seriesId?: string;
   sequenceNumber?: number;
 }

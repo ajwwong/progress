@@ -58,6 +58,7 @@ export function AppointmentItem({
 
   return (
     <Box
+      className="appointment-item"
       ref={setNodeRef}
       {...attributes}
       {...listeners}

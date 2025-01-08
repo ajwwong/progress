@@ -11,6 +11,7 @@ interface CalendarCellProps {
   appointments: Appointment[];
   onAppointmentClick: (appointment: Appointment) => void;
   height: number;
+  onEmptyClick?: (date: Date) => void;  // Add this prop
 }
 
 export function CalendarCell({ 
@@ -19,17 +20,33 @@ export function CalendarCell({
   isToday, 
   appointments, 
   onAppointmentClick,
-  height
+  height,
+  onEmptyClick
 }: CalendarCellProps) {
   const { setNodeRef } = useDroppable({
     id: `droppable-${format(day, 'yyyy-MM-dd')}`,
     data: { date: day },
   });
 
+  const handleClick = (e: React.MouseEvent) => {
+    // Don't trigger if clicking on or inside an AppointmentItem
+    if (e.target instanceof Element && 
+        (e.target.closest('.appointment-item') || // Check for appointment item class
+         e.target.closest('button'))) { // Check for any button elements
+      return;
+    }
+
+    // Only trigger if clicking the paper itself or the empty space div
+    if (e.target === e.currentTarget || (e.target as HTMLElement).closest('.empty-space')) {
+      onEmptyClick?.(day);
+    }
+  };
+
   return (
     <Paper
       ref={setNodeRef}
       p="4px 8px"
+      onClick={handleClick}
       style={{
         height: `${height}px`,
         backgroundColor: isOtherMonth ? 'var(--mantine-color-gray-0)' : 'white',
@@ -38,6 +55,7 @@ export function CalendarCell({
         flexDirection: 'column',
         position: 'relative',
         overflow: 'hidden',
+        cursor: 'pointer',
       }}
     >
       <div style={{ 
@@ -73,12 +91,15 @@ export function CalendarCell({
           </Text>
         </div>
       </div>
-      <div style={{ 
-        flex: 1, 
-        paddingTop: 2,
-        position: 'relative',
-        zIndex: 1
-      }}>
+      <div 
+        className="empty-space"
+        style={{ 
+          flex: 1, 
+          paddingTop: 2,
+          position: 'relative',
+          zIndex: 1
+        }}
+      >
         {appointments
           .sort((a, b) => a.start.getTime() - b.start.getTime())
           .map((appointment) => (

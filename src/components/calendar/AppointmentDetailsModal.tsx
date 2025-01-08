@@ -101,12 +101,10 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave }
                 value={editableAppointment.status}
                 onChange={(value) => setEditableAppointment({ ...editableAppointment, status: value })}
                 data={[
-                  { value: 'scheduled', label: 'Scheduled' },
-                  { value: 'completed', label: 'Completed' },
+                  { value: 'show', label: 'Show' },
                   { value: 'cancelled', label: 'Cancelled' },
-                  { value: 'no show', label: 'No Show' },
                   { value: 'late cancelled', label: 'Late Cancelled' },
-                  { value: 'show', label: 'Show' }
+                  { value: 'no show', label: 'No Show' }
                 ]}
                 styles={(theme) => ({
                   input: {

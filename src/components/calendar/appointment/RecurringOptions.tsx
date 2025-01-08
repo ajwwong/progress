@@ -71,25 +71,7 @@ export function RecurringOptions({
           />
         </Group>
 
-        {!frequency.includes('month') && (
-          <SegmentedControl
-            data={WEEKDAYS}
-            value={selectedDays[0] || ''}
-            onChange={(value) => onSelectedDaysChange([value])}
-            fullWidth
-            size="sm"
-            styles={(theme) => ({
-              root: {
-                backgroundColor: theme.colors.gray[0],
-              },
-              label: {
-                fontSize: theme.fontSizes.sm,
-                padding: '4px 12px',
-              }
-            })}
-          />
-        )}
-
+        
         <Group spacing="xs">
           <Text size="sm" w={80}>End after</Text>
           <Select
