@@ -274,6 +274,7 @@ export function Calendar() {
         onClose={() => setSelectedAppointment(null)}
         appointment={selectedAppointment}
         onSave={handleUpdateAppointment}
+        onDelete={loadAppointments}
       />
     </Paper>
   );

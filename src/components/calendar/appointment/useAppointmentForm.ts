@@ -68,7 +68,7 @@ export function useAppointmentForm(initialDate?: Date) {
       state.date &&
       state.startTime &&
       state.endTime &&
-      (!state.isRecurring || (state.selectedDays.length > 0 && state.occurrences > 0))
+      (!state.isRecurring || state.occurrences > 0)
     );
   };
 
@@ -94,29 +94,18 @@ export function useAppointmentForm(initialDate?: Date) {
     const endTime = parseTime(state.endTime);
     if (!startTime || !endTime) return [];
 
-    const seriesId = generateUniqueId();
-
     for (let i = 0; i < state.occurrences; i++) {
       if (state.frequency === 'weekly' || state.frequency === 'biweekly') {
-        state.selectedDays.forEach(dayStr => {
-          const day = parseInt(dayStr);
-          const date = setDay(startDate, day);
-          
-          if (date >= startDate) {
-            const start = new Date(date);
-            start.setHours(startTime.hours, startTime.minutes);
-            
-            const end = new Date(date);
-            end.setHours(endTime.hours, endTime.minutes);
+        const start = new Date(startDate);
+        start.setHours(startTime.hours, startTime.minutes);
+        
+        const end = new Date(startDate);
+        end.setHours(endTime.hours, endTime.minutes);
 
-            appointments.push({
-              ...baseAppointment,
-              start,
-              end,
-              seriesId,
-              sequenceNumber: i
-            });
-          }
+        appointments.push({
+          ...baseAppointment,
+          start,
+          end
         });
 
         // Move to next week/bi-week
@@ -132,9 +121,7 @@ export function useAppointmentForm(initialDate?: Date) {
         appointments.push({
           ...baseAppointment,
           start,
-          end,
-          seriesId,
-          sequenceNumber: i
+          end
         });
       }
     }
