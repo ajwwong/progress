@@ -46,7 +46,7 @@ export function Calendar() {
       const results = await medplum.searchResources('Appointment', {
         _sort: '-_lastUpdated',
         _count: '100',
-        status: 'scheduled,completed,cancelled,no show,late cancelled,show,booked,pending,arrived,fulfilled',
+        status: 'booked,cancelled,noshow',
         _include: 'Appointment:patient'
       });
   
@@ -142,7 +142,7 @@ export function Calendar() {
       for (const appointment of appointmentData) {
         await medplum.createResource({
           resourceType: 'Appointment',
-          status: 'show',
+          status: 'booked',
           appointmentType: {
             coding: [{
               system: 'http://terminology.hl7.org/CodeSystem/v2-0276',

@@ -1,6 +1,32 @@
 export const appointmentTypes = [
-  { value: 'intake therapy', label: 'Intake Therapy' },
-  { value: 'followup therapy', label: 'Follow-up Therapy' },
+  { 
+    value: 'ROUTINE', 
+    label: 'Intake Therapy',
+    coding: [{
+      system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+      code: 'ROUTINE',
+      display: 'Routine appointment'
+    }],
+    serviceType: {
+      system: 'http://snomed.info/sct',
+      code: '31205005',
+      display: 'Psychiatric therapy'
+    }
+  },
+  { 
+    value: 'FOLLOWUP', 
+    label: 'Follow-up Therapy',
+    coding: [{
+      system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+      code: 'FOLLOWUP',
+      display: 'A follow up visit from a previous appointment'
+    }],
+    serviceType: {
+      system: 'http://snomed.info/sct',
+      code: '31205005',
+      display: 'Psychiatric therapy'
+    }
+  }
 ] as const;
 
 export const locations = [

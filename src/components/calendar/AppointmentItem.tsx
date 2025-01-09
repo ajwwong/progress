@@ -1,7 +1,8 @@
-import { Box, Text } from '@mantine/core';
+import { Box, Text, Group } from '@mantine/core';
 import { format } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
 import type { Appointment } from '../types/calendar';
+import { appointmentTypes } from './constants';
 
 interface AppointmentItemProps {
   appointment: Appointment;
@@ -10,9 +11,11 @@ interface AppointmentItemProps {
   style?: React.CSSProperties;
 }
 
-const typeColors = {
-  'intake therapy': ['var(--mantine-color-cyan-0)', 'var(--mantine-color-cyan-9)'],
-  'followup therapy': ['var(--mantine-color-teal-0)', 'var(--mantine-color-teal-9)'],
+const statusColors = {
+  'booked-future': ['var(--mantine-color-blue-0)', 'var(--mantine-color-blue-9)'],
+  'booked-past': ['var(--mantine-color-green-0)', 'var(--mantine-color-green-9)'],
+  'cancelled': ['var(--mantine-color-yellow-0)', 'var(--mantine-color-yellow-9)'],
+  'noshow': ['var(--mantine-color-red-0)', 'var(--mantine-color-red-9)'],
 } as const;
 
 export function AppointmentItem({ 
@@ -26,7 +29,16 @@ export function AppointmentItem({
     data: appointment,
   });
 
-  const [bgColor, textColor] = typeColors[appointment.type] || typeColors['followup therapy'];
+  const appointmentTypeLabel = appointmentTypes.find(t => t.value === appointment.type)?.label || 'Follow-up Therapy';
+  
+  // Determine if appointment is in the past
+  const isBookedPastAppointment = appointment.status === 'booked' && appointment.start < new Date();
+  const effectiveStatus = appointment.status === 'booked' 
+    ? (isBookedPastAppointment ? 'booked-past' : 'booked-future')
+    : appointment.status;
+  
+  const [bgColor, textColor] = statusColors[effectiveStatus] || statusColors['booked-future'];
+  const isStrikethrough = appointment.status === 'cancelled' || appointment.status === 'noshow';
 
   const baseStyles: React.CSSProperties = {
     backgroundColor: bgColor,
@@ -50,10 +62,13 @@ export function AppointmentItem({
     gap: '2px'
   } : {
     padding: '2px 4px',
-    marginBottom: 2,
+    marginBottom: 1,
     height: '20px',
     display: 'flex',
     alignItems: 'center',
+    borderRadius: 6,
+    boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+    border: '1px solid rgba(0,0,0,0.05)'
   };
 
   return (
@@ -83,7 +98,8 @@ export function AppointmentItem({
             style={{ 
               lineHeight: 1.2,
               overflow: 'hidden',
-              textOverflow: 'ellipsis'
+              textOverflow: 'ellipsis',
+              textDecoration: isStrikethrough ? 'line-through' : 'none'
             }}
           >
             {appointment.patientName}
@@ -96,23 +112,38 @@ export function AppointmentItem({
               fontStyle: 'italic'
             }}
           >
-            {appointment.type}
+            {appointmentTypeLabel}
           </Text>
         </>
       ) : (
-        <Text 
-          size="xs"
-          fw={500} 
-          style={{ 
-            flex: 1, 
-            lineHeight: '16px',
-            overflow: 'hidden',
-            whiteSpace: 'nowrap',
-            textOverflow: 'clip'
-          }}
-        >
-          {format(appointment.start, 'h:mm a')} - {appointment.patientName}
-        </Text>
+        <Group gap={5} wrap="nowrap" style={{ flex: 1 }}>
+          <Text 
+            size="xs"
+            fw={500} 
+            component="span"
+            style={{ 
+              lineHeight: '16px',
+              width: '48px'
+            }}
+          >
+            {format(appointment.start, 'h:mm a')}
+          </Text>
+          <Text 
+            size="xs"
+            fw={500} 
+            component="span"
+            style={{ 
+              flex: 1,
+              lineHeight: '16px',
+              overflow: 'hidden',
+              whiteSpace: 'nowrap',
+              textOverflow: 'clip',
+              textDecoration: isStrikethrough ? 'line-through' : 'none'
+            }}
+          >
+            {appointment.patientName}
+          </Text>
+        </Group>
       )}
     </Box>
   );

@@ -2,9 +2,9 @@ import { Select, Checkbox } from '@mantine/core';
 import { appointmentTypes } from '../constants';
 
 interface AppointmentTypeSelectorProps {
-  type: string;
+  type: 'ROUTINE' | 'FOLLOWUP';
   isRecurring: boolean;
-  onTypeChange: (type: string) => void;
+  onTypeChange: (type: 'ROUTINE' | 'FOLLOWUP') => void;
   onRecurringChange: (isRecurring: boolean) => void;
 }
 
@@ -19,7 +19,7 @@ export function AppointmentTypeSelector({
       <Select
         label="Appointment Type"
         value={type}
-        onChange={(value) => onTypeChange(value || appointmentTypes[0].value)}
+        onChange={(value) => onTypeChange(value || appointmentTypes[1].value)}
         data={appointmentTypes}
         required
       />

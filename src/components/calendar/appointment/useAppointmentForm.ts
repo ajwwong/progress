@@ -9,8 +9,7 @@ interface AppointmentFormState {
   startTime: string | null;
   endTime: string | null;
   isRecurring: boolean;
-  type: 'intake therapy' | 'followup therapy';
-  // Add recurring options
+  type: 'ROUTINE' | 'FOLLOWUP';
   frequency: string;
   occurrences: number;
   selectedDays: string[];
@@ -36,17 +35,17 @@ export function useAppointmentForm(initialDate?: Date) {
   console.log('useAppointmentForm initialDate:', initialDate);
   
   // Create defaultState inside a useMemo to ensure it's stable
-  const defaultState = useMemo(() => ({
+  const defaultState: AppointmentFormState = {
     patient: undefined,
     date: initialDate || new Date(),
     startTime,
     endTime,
     isRecurring: false,
-    type: 'followup therapy',
+    type: 'FOLLOWUP',
     frequency: 'weekly',
     occurrences: 4,
     selectedDays: []
-  }), [initialDate]); // Only recreate when initialDate changes
+  };
   
   console.log('useAppointmentForm defaultState.date:', defaultState.date);
   const [state, setState] = useState(defaultState);
@@ -146,7 +145,7 @@ export function useAppointmentForm(initialDate?: Date) {
       start,
       end,
       type: state.type,
-      status: 'show',
+      status: 'booked',
       patientName: `${state.patient.name?.[0]?.given?.join(' ')} ${state.patient.name?.[0]?.family}`,
       patientId: state.patient.id || '',
       participant: [{

@@ -5,8 +5,8 @@ export interface Appointment {
   end: Date;
   patientName: string;
   patientId: string;
-  type: 'intake therapy' | 'followup therapy';
-  status: 'show' | 'cancelled' | 'late cancelled' | 'no show' | 'scheduled' | 'completed';
+  type: 'FOLLOWUP' | 'ROUTINE';
+  status: 'booked' | 'fulfilled' | 'cancelled' | 'noshow';
   seriesId?: string;
   sequenceNumber?: number;
 }

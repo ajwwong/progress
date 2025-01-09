@@ -55,7 +55,7 @@ export function AppointmentModal({ opened, onClose, onSave, initialDate }: Appoi
         <AppointmentTypeSelector
           type={state.type}
           isRecurring={state.isRecurring}
-          onTypeChange={(type) => setState(prev => ({ ...prev, type: type as 'intake therapy' | 'followup therapy' }))}
+          onTypeChange={(type) => setState(prev => ({ ...prev, type: type as 'ROUTINE' | 'FOLLOWUP' }))}
           onRecurringChange={(isRecurring) => setState(prev => ({ ...prev, isRecurring }))}
         />
 

@@ -139,10 +139,9 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
                   value={editableAppointment.status}
                   onChange={(value) => handleFieldChange({ status: value })}
                   data={[
-                    { value: 'show', label: 'Show' },
+                    { value: 'booked', label: 'Show' },
                     { value: 'cancelled', label: 'Cancelled' },
-                    { value: 'late cancelled', label: 'Late Cancelled' },
-                    { value: 'no show', label: 'No Show' }
+                    { value: 'noshow', label: 'No Show' }
                   ]}
                   styles={(theme) => ({
                     input: {
@@ -157,9 +156,12 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
               
               <Select
                 label="Type"
-                data={['intake therapy', 'followup therapy']}
+                data={[
+                  { value: 'ROUTINE', label: 'Intake Therapy' },
+                  { value: 'FOLLOWUP', label: 'Follow-up Therapy' }
+                ]}
                 value={editableAppointment.type}
-                onChange={(value) => handleFieldChange({ type: value })}
+                onChange={(value) => handleFieldChange({ type: value as 'ROUTINE' | 'FOLLOWUP' })}
               />
 
               <DatePickerInput
