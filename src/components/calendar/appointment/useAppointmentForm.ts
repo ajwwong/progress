@@ -12,7 +12,6 @@ interface AppointmentFormState {
   type: 'ROUTINE' | 'FOLLOWUP';
   frequency: string;
   occurrences: number;
-  selectedDays: string[];
 }
 
 function getDefaultTimes(): { startTime: string; endTime: string } {
@@ -43,8 +42,7 @@ export function useAppointmentForm(initialDate?: Date) {
     isRecurring: false,
     type: 'FOLLOWUP',
     frequency: 'weekly',
-    occurrences: 4,
-    selectedDays: []
+    occurrences: 4
   };
   
   console.log('useAppointmentForm defaultState.date:', defaultState.date);
@@ -93,51 +91,26 @@ export function useAppointmentForm(initialDate?: Date) {
     const endTime = parseTime(state.endTime);
     if (!startTime || !endTime) return [];
 
-    // Parse frequency string (e.g., "every-2-weeks" -> interval: 2, period: "weeks")
+    // Parse frequency string
     const [, interval, period] = state.frequency.split('-');
     const intervalNum = parseInt(interval, 10);
 
     for (let i = 0; i < state.occurrences; i++) {
       if (period === 'weeks') {
-        if (state.selectedDays.length === 0) {
-          // If no days selected, use the initial date's day
-          const start = new Date(startDate);
-          start.setHours(startTime.hours, startTime.minutes);
-          
-          const end = new Date(startDate);
-          end.setHours(endTime.hours, endTime.minutes);
+        const start = new Date(startDate);
+        start.setHours(startTime.hours, startTime.minutes);
+        
+        const end = new Date(startDate);
+        end.setHours(endTime.hours, endTime.minutes);
 
-          appointments.push({
-            ...baseAppointment,
-            start,
-            end
-          });
+        appointments.push({
+          ...baseAppointment,
+          start,
+          end
+        });
 
-          // Add weeks based on interval
-          startDate.setDate(startDate.getDate() + (7 * intervalNum));
-        } else {
-          state.selectedDays.forEach(dayStr => {
-            const day = parseInt(dayStr);
-            const date = setDay(startDate, day);
-            
-            if (date >= startDate) {
-              const start = new Date(date);
-              start.setHours(startTime.hours, startTime.minutes);
-              
-              const end = new Date(date);
-              end.setHours(endTime.hours, endTime.minutes);
-
-              appointments.push({
-                ...baseAppointment,
-                start,
-                end
-              });
-            }
-          });
-
-          // Add weeks based on interval
-          startDate.setDate(startDate.getDate() + (7 * intervalNum));
-        }
+        // Add weeks based on interval
+        startDate.setDate(startDate.getDate() + (7 * intervalNum));
       } else if (period === 'months') {
         const start = addMonths(startDate, i * intervalNum);
         start.setHours(startTime.hours, startTime.minutes);
