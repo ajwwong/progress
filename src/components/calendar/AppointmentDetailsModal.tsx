@@ -8,6 +8,8 @@ import { IconTrash } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCheck, IconX } from '@tabler/icons-react';
+import { DateTimeSelector } from './appointment/DateTimeSelector';
+import { addMinutesToTime, getTimeDifferenceInMinutes } from './appointment/timeUtils';
 
 interface AppointmentDetailsModalProps {
   opened: boolean;
@@ -28,6 +30,12 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
   const [deleteModalOpened, setDeleteModalOpened] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false);
+  const [defaultInterval, setDefaultInterval] = useState<number>(() => 
+    getTimeDifferenceInMinutes(
+      format(appointment.start, 'HH:mm'),
+      format(appointment.end, 'HH:mm')
+    )
+  );
 
   const medplum = useMedplum();
 
@@ -164,46 +172,60 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
                 onChange={(value) => handleFieldChange({ type: value as 'ROUTINE' | 'FOLLOWUP' })}
               />
 
-              <DatePickerInput
-                label="Date"
-                value={date}
-                onChange={(newDate) => {
+              <DateTimeSelector
+                date={date}
+                startTime={startTime}
+                endTime={endTime}
+                defaultInterval={defaultInterval}
+                onDateChange={(newDate) => {
                   if (newDate) {
                     setDate(newDate);
                     handleFieldChange({ start: newDate });
                   }
                 }}
+                onStartTimeChange={(newTime) => {
+                  setStartTime(newTime);
+                  const newEndTime = addMinutesToTime(newTime, defaultInterval);
+                  setEndTime(newEndTime);
+                  
+                  const [startHours, startMinutes] = newTime.split(':').map(Number);
+                  const startDate = new Date(date);
+                  startDate.setHours(startHours, startMinutes);
+                  
+                  const [endHours, endMinutes] = newEndTime.split(':').map(Number);
+                  const endDate = new Date(date);
+                  endDate.setHours(endHours, endMinutes);
+                  
+                  handleFieldChange({ 
+                    start: startDate,
+                    end: endDate 
+                  });
+                }}
+                onEndTimeChange={(newTime) => {
+                  setEndTime(newTime);
+                  if (startTime) {
+                    const newInterval = getTimeDifferenceInMinutes(startTime, newTime);
+                    setDefaultInterval(newInterval);
+                    
+                    const [hours, minutes] = newTime.split(':').map(Number);
+                    const endDate = new Date(date);
+                    endDate.setHours(hours, minutes);
+                    handleFieldChange({ end: endDate });
+                  }
+                }}
+                onIntervalChange={(minutes) => {
+                  setDefaultInterval(minutes);
+                  if (startTime) {
+                    const newEndTime = addMinutesToTime(startTime, minutes);
+                    setEndTime(newEndTime);
+                    
+                    const [hours, mins] = newEndTime.split(':').map(Number);
+                    const endDate = new Date(date);
+                    endDate.setHours(hours, mins);
+                    handleFieldChange({ end: endDate });
+                  }
+                }}
               />
-
-              <Group grow>
-                <TimeInput
-                  label="Start Time"
-                  value={startTime}
-                  onChange={(e) => {
-                    const newTime = e.currentTarget.value;
-                    setStartTime(newTime);
-                    const [hours, minutes] = newTime.split(':').map(Number);
-                    const newDate = new Date(date);
-                    newDate.setHours(hours, minutes);
-                    handleFieldChange({ start: newDate });
-                  }}
-                  required
-                />
-                <Text size="sm" mt={28}>to</Text>
-                <TimeInput
-                  label="End Time"
-                  value={endTime}
-                  onChange={(e) => {
-                    const newTime = e.currentTarget.value;
-                    setEndTime(newTime);
-                    const [hours, minutes] = newTime.split(':').map(Number);
-                    const newDate = new Date(date);
-                    newDate.setHours(hours, minutes);
-                    handleFieldChange({ end: newDate });
-                  }}
-                  required
-                />
-              </Group>
             </Stack>
           </Paper>
 

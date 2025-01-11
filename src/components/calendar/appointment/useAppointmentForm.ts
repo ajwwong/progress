@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { Patient } from '@medplum/fhirtypes';
 import { addWeeks, addMonths, setDay } from 'date-fns';
 import type { Appointment } from '../../../types/calendar';
+import { addMinutesToTime, getTimeDifferenceInMinutes } from './timeUtils';
 
 interface AppointmentFormState {
   patient: Patient | undefined;
@@ -30,20 +31,6 @@ function getDefaultTimes(): { startTime: string; endTime: string } {
 }
 
 const { startTime, endTime } = getDefaultTimes();
-
-function addMinutesToTime(time: string, minutes: number): string {
-  const [hours, mins] = time.split(':').map(Number);
-  const totalMinutes = hours * 60 + mins + minutes;
-  const newHours = Math.floor(totalMinutes / 60);
-  const newMinutes = totalMinutes % 60;
-  return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
-}
-
-function getTimeDifferenceInMinutes(startTime: string, endTime: string): number {
-  const [startHours, startMins] = startTime.split(':').map(Number);
-  const [endHours, endMins] = endTime.split(':').map(Number);
-  return (endHours * 60 + endMins) - (startHours * 60 + startMins);
-}
 
 export function useAppointmentForm(initialDate?: Date) {
   console.log('useAppointmentForm initialDate:', initialDate);
