@@ -46,12 +46,14 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@dnd-kit/core": "^6.3.1",
-    "@mantine/dates": "^7.15.3",
+    "@mantine/dates": "^7.13.4",
     "@medplum/core": "3.2.26",
     "@medplum/fhirtypes": "3.2.26",
     "@medplum/mock": "3.2.26",
     "@medplum/react": "3.2.26",
+    "@medplum/react-hooks": "^3.2.26",
     "date-fns": "^4.1.0",
+    "dayjs": "^1.11.13",
     "stripe": "^17.4.0"
   }
 }

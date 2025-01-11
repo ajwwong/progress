@@ -26,9 +26,10 @@ export function CalendarGrid({
 
   const calculateRowHeight = (weekDays: Date[]) => {
     const APPOINTMENT_HEIGHT = 20;
-    const APPOINTMENT_MARGIN = 0;
-    const HEADER_HEIGHT = 20;
-    const PADDING = 0;
+    const APPOINTMENT_MARGIN = 2;
+    const HEADER_HEIGHT = 24;
+    const PADDING_TOP = 8;
+    const PADDING_BOTTOM = 0;
     const MIN_APPOINTMENTS = 7;
 
     const maxAppointments = Math.max(...weekDays.map(day => 
@@ -39,7 +40,7 @@ export function CalendarGrid({
 
     const appointmentsToFit = Math.max(MIN_APPOINTMENTS, maxAppointments);
 
-    return HEADER_HEIGHT + PADDING + 
+    return HEADER_HEIGHT + PADDING_TOP + PADDING_BOTTOM + 
            (appointmentsToFit * APPOINTMENT_HEIGHT) + 
            ((appointmentsToFit - 1) * APPOINTMENT_MARGIN);
   };

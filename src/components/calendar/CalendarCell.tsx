@@ -54,7 +54,6 @@ export function CalendarCell({
         display: 'flex',
         flexDirection: 'column',
         position: 'relative',
-        overflow: 'hidden',
         cursor: 'pointer',
       }}
     >
@@ -94,12 +93,15 @@ export function CalendarCell({
       <div 
         className="empty-space"
         style={{ 
-          flex: 1, 
+          flex: 1,
           paddingTop: 2,
+          paddingBottom: 0,
           position: 'relative',
           zIndex: 1,
-          padding: 0,
-          margin: 0
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px'
         }}
       >
         {appointments
