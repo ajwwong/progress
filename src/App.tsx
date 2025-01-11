@@ -17,6 +17,7 @@ import { PatientAutocompletePage } from './pages/PatientAutocomplete';
 import { RegisterPage } from './pages/RegisterPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
+import { PatientDirectoryPage } from './pages/PatientDirectoryPage';
 
 export const CalendarContext = createContext<{
   showNewAppointmentModal: boolean;
@@ -73,7 +74,7 @@ export function App(): JSX.Element | null {
             title: 'My Links',
             links: [
               { icon: <IconCalendar />, label: 'Calendar', href: '/calendar' },
-              { icon: <IconUser />, label: 'Patients', href: '/' },
+              { icon: <IconUser />, label: 'Patients', href: '/patients/directory' },
               { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
             ],
           },
@@ -110,6 +111,7 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
+              <Route path="/patients/directory" element={<PatientDirectoryPage />} />
               <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
               <Route path="/transcribe" element={<AudioTranscribePage onTranscriptionStart={addTranscriptionTime} onCompositionSaved={triggerUpdate} />} />
               <Route path="/Patient/:id" element={<PatientPage />}>
