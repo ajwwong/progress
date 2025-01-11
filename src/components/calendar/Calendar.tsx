@@ -25,6 +25,7 @@ export function Calendar() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [recurringModalOpened, setRecurringModalOpened] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<Appointment | null>(null);
+  const [originalAppointment, setOriginalAppointment] = useState<Appointment | null>(null);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -193,6 +194,9 @@ export function Calendar() {
       const duration = appointment.end.getTime() - appointment.start.getTime();
       const newEnd = new Date(newStart.getTime() + duration);
 
+      // Store original appointment state before update
+      const originalAppointment = { ...appointment };
+
       // Create a temporary updated appointment object
       const updatedAppointment = {
         ...appointment,
@@ -212,6 +216,7 @@ export function Calendar() {
       if (appointment.seriesId && appointment.remainingSessions !== 0) {
         // If it's a recurring appointment, show the modal
         setPendingUpdate(updatedAppointment);
+        setOriginalAppointment(originalAppointment);
         setRecurringModalOpened(true);
       } else {
         // If it's a single appointment or last in series, update it directly
@@ -220,7 +225,6 @@ export function Calendar() {
           start: newStart.toISOString(),
           end: newEnd.toISOString(),
         });
-        await loadAppointments();
       }
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -402,6 +406,22 @@ export function Calendar() {
     setIsAppointmentModalOpen(true);
   };
 
+  const handleRecurringModalClose = () => {
+    // Revert the optimistic UI update if modal is closed without saving
+    if (originalAppointment) {
+      setAppointments(currentAppointments =>
+        currentAppointments.map(apt =>
+          apt.id === originalAppointment.id
+            ? originalAppointment
+            : apt
+        )
+      );
+    }
+    setRecurringModalOpened(false);
+    setPendingUpdate(null);
+    setOriginalAppointment(null);
+  };
+
   return (
     <Paper p="md" radius="sm" withBorder style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
       <Stack gap="md" style={{ height: '100%' }}>
@@ -476,18 +496,9 @@ export function Calendar() {
 
       <RecurringUpdateModal
         opened={recurringModalOpened}
-        onClose={() => {
-          setRecurringModalOpened(false);
-          setPendingUpdate(null);
-        }}
-        onConfirm={async () => {
-          await handleRecurringUpdate(true);
-          setRecurringModalOpened(false);
-        }}
-        onCancel={async () => {
-          await handleRecurringUpdate(false);
-          setRecurringModalOpened(false);
-        }}
+        onClose={handleRecurringModalClose}
+        onConfirm={() => handleRecurringUpdate(true)}
+        onCancel={() => handleRecurringUpdate(false)}
       />
     </Paper>
   );
