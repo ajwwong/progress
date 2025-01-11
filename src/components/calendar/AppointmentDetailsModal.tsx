@@ -36,6 +36,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
       format(appointment.end, 'HH:mm')
     )
   );
+  const [showDeleteOptions, setShowDeleteOptions] = useState(false);
 
   const medplum = useMedplum();
 
@@ -91,9 +92,42 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
     }
   };
 
-  const handleDelete = async () => {
+  const handleDelete = async (deleteOption?: 'single' | 'future' | 'all') => {
     try {
-      await medplum.deleteResource('Appointment', editableAppointment.id);
+      if (editableAppointment.seriesId) {
+        if (!deleteOption) {
+          setShowDeleteOptions(true);
+          setDeleteModalOpened(false);
+          return;
+        }
+
+        if (deleteOption === 'single') {
+          // Just delete this single appointment
+          await medplum.deleteResource('Appointment', editableAppointment.id);
+        } else {
+          // Get all appointments in series
+          const searchResponse = await medplum.search('Appointment', {
+            identifier: `http://terminology.hl7.org/CodeSystem/appointment-series|${editableAppointment.seriesId}`
+          });
+
+          const allAppointments = searchResponse.entry
+            ?.map(e => e.resource as any)
+            ?.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+          if (allAppointments) {
+            for (const apt of allAppointments) {
+              if (deleteOption === 'all' || 
+                 (deleteOption === 'future' && new Date(apt.start) >= editableAppointment.start)) {
+                await medplum.deleteResource('Appointment', apt.id);
+              }
+            }
+          }
+        }
+      } else {
+        // Handle single appointment delete
+        await medplum.deleteResource('Appointment', editableAppointment.id);
+      }
+
       showNotification({
         title: 'Success',
         message: 'Appointment deleted successfully',
@@ -114,6 +148,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
       });
     }
     setDeleteModalOpened(false);
+    setShowDeleteOptions(false);
   };
 
   return (
@@ -234,7 +269,13 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
               color="red" 
               size="lg" 
               variant="light"
-              onClick={() => setDeleteModalOpened(true)}
+              onClick={() => {
+                if (editableAppointment.seriesId) {
+                  handleDelete();  // This will show the options modal
+                } else {
+                  setDeleteModalOpened(true);  // Show regular delete confirmation for single appointments
+                }
+              }}
             >
               <IconTrash size={20} />
             </ActionIcon>
@@ -281,6 +322,41 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
                 Save Changes
               </Button>
             </Group>
+          </Stack>
+        </Modal>
+
+        <Modal
+          opened={showDeleteOptions}
+          onClose={() => setShowDeleteOptions(false)}
+          title="Delete Recurring Appointment"
+          size="sm"
+        >
+          <Stack>
+            <Text>How would you like to delete this recurring appointment?</Text>
+            <Button 
+              variant="light" 
+              onClick={() => handleDelete('single')}
+            >
+              Delete Only This Appointment
+            </Button>
+            <Button 
+              variant="light" 
+              onClick={() => handleDelete('future')}
+            >
+              Delete This and Future Appointments
+            </Button>
+            <Button 
+              color="red" 
+              onClick={() => handleDelete('all')}
+            >
+              Delete All Appointments in Series
+            </Button>
+            <Button 
+              variant="subtle" 
+              onClick={() => setShowDeleteOptions(false)}
+            >
+              Cancel
+            </Button>
           </Stack>
         </Modal>
       </Modal>

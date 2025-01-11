@@ -97,7 +97,9 @@ export function CalendarCell({
           flex: 1, 
           paddingTop: 2,
           position: 'relative',
-          zIndex: 1
+          zIndex: 1,
+          padding: 0,
+          margin: 0
         }}
       >
         {appointments

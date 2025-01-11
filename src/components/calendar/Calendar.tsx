@@ -213,18 +213,30 @@ export function Calendar() {
         )
       );
 
-      if (appointment.seriesId && appointment.remainingSessions !== 0) {
-        // If it's a recurring appointment, show the modal
-        setPendingUpdate(updatedAppointment);
-        setOriginalAppointment(originalAppointment);
-        setRecurringModalOpened(true);
-      } else {
-        // If it's a single appointment or last in series, update it directly
+      if (appointment.seriesId && appointment.remainingSessions === 0) {
+        // If it's the last appointment in series, remove series identifiers
+        await medplum.updateResource({
+          ...existingAppointment,
+          start: newStart.toISOString(),
+          end: newEnd.toISOString(),
+          // Remove series identifiers
+          identifier: (existingAppointment.identifier || []).filter(
+            id => id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-series' &&
+                 id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+          )
+        });
+      } else if (!appointment.seriesId) {
+        // If it's a single appointment, update normally
         await medplum.updateResource({
           ...existingAppointment,
           start: newStart.toISOString(),
           end: newEnd.toISOString(),
         });
+      } else {
+        // If it's a recurring appointment (not last), show the modal
+        setPendingUpdate(updatedAppointment);
+        setOriginalAppointment(originalAppointment);
+        setRecurringModalOpened(true);
       }
     } catch (error) {
       console.error('Error updating appointment:', error);
@@ -289,13 +301,34 @@ export function Calendar() {
   };
 
   const handleUpdateAppointment = async (updatedAppointment: Appointment) => {
-    if (!updatedAppointment.seriesId || updatedAppointment.remainingSessions === 0) {
-      // Handle non-recurring appointment update
-      try {
-        const existingAppointment = await medplum.readResource('Appointment', updatedAppointment.id);
+    try {
+      const existingAppointment = await medplum.readResource('Appointment', updatedAppointment.id);
+
+      if (updatedAppointment.seriesId && updatedAppointment.remainingSessions === 0) {
+        // If it's the last appointment in series, remove series identifiers
         await medplum.updateResource({
           ...existingAppointment,
-          resourceType: 'Appointment',
+          start: updatedAppointment.start.toISOString(),
+          end: updatedAppointment.end.toISOString(),
+          status: updatedAppointment.status,
+          appointmentType: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+              code: updatedAppointment.type,
+              display: updatedAppointment.type.charAt(0).toUpperCase() + updatedAppointment.type.slice(1)
+            }]
+          },
+          description: updatedAppointment.title,
+          // Remove series identifiers
+          identifier: (existingAppointment.identifier || []).filter(
+            id => id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-series' &&
+                 id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+          )
+        });
+      } else if (!updatedAppointment.seriesId) {
+        // Handle non-recurring appointment update
+        await medplum.updateResource({
+          ...existingAppointment,
           start: updatedAppointment.start.toISOString(),
           end: updatedAppointment.end.toISOString(),
           status: updatedAppointment.status,
@@ -308,14 +341,18 @@ export function Calendar() {
           },
           description: updatedAppointment.title
         });
-        await loadAppointments();
-      } catch (error) {
-        console.error('Error updating appointment:', error);
+      } else {
+        // If it's a recurring appointment (not last), show the modal
+        setPendingUpdate(updatedAppointment);
+        setOriginalAppointment(existingAppointment);
+        setRecurringModalOpened(true);
+        return;
       }
-    } else {
-      // Show modal for recurring appointment update
-      setPendingUpdate(updatedAppointment);
-      setRecurringModalOpened(true);
+
+      await loadAppointments();
+    } catch (error) {
+      console.error('Error updating appointment:', error);
+      await loadAppointments();
     }
   };
 
@@ -325,7 +362,28 @@ export function Calendar() {
     try {
       const existingAppointment = await medplum.readResource('Appointment', pendingUpdate.id);
       
-      if (updateSeries) {
+      if (!updateSeries) {
+        // Update only this appointment and remove it from the series
+        await medplum.updateResource({
+          ...existingAppointment,
+          start: pendingUpdate.start.toISOString(),
+          end: pendingUpdate.end.toISOString(),
+          status: pendingUpdate.status,
+          appointmentType: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+              code: pendingUpdate.type,
+              display: pendingUpdate.type.charAt(0).toUpperCase() + pendingUpdate.type.slice(1)
+            }]
+          },
+          description: pendingUpdate.title,
+          // Remove series identifiers
+          identifier: (existingAppointment.identifier || []).filter(
+            id => id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-series' &&
+                 id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+          )
+        });
+      } else {
         // Calculate time difference
         const originalStart = new Date(existingAppointment.start);
         const newStart = new Date(pendingUpdate.start);
@@ -383,11 +441,11 @@ export function Calendar() {
         }
       }
 
-      await loadAppointments();
       setRecurringModalOpened(false);
-      setPendingUpdate(null);
+      await loadAppointments();
     } catch (error) {
-      console.error('Error in handleRecurringUpdate:', error);
+      console.error('Error updating appointment:', error);
+      await loadAppointments();
     }
   };
 

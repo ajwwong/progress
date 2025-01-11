@@ -66,6 +66,8 @@ export function AppointmentItem({
     height: '20px',
     display: 'flex',
     alignItems: 'center',
+    width: '100%',
+    margin: '0',
     borderRadius: 6,
     boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
     border: '1px solid rgba(0,0,0,0.05)'
