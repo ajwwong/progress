@@ -1,4 +1,4 @@
-import { Group, Stack } from '@mantine/core';
+import { Group, Stack, TextInput } from '@mantine/core';
 import { TimeInput } from '@mantine/dates';
 import { DatePickerInput } from '@mantine/dates';
 
@@ -6,18 +6,22 @@ interface DateTimeSelectorProps {
   date: Date | null;
   startTime: string | null;
   endTime: string | null;
+  defaultInterval: number;
   onDateChange: (date: Date | null) => void;
-  onStartTimeChange: (time: string | null) => void;
-  onEndTimeChange: (time: string | null) => void;
+  onStartTimeChange: (time: string) => void;
+  onEndTimeChange: (time: string) => void;
+  onIntervalChange: (minutes: number) => void;
 }
 
 export function DateTimeSelector({
   date,
   startTime,
   endTime,
+  defaultInterval,
   onDateChange,
   onStartTimeChange,
   onEndTimeChange,
+  onIntervalChange,
 }: DateTimeSelectorProps) {
   return (
     <Stack gap="md">
@@ -27,8 +31,7 @@ export function DateTimeSelector({
         onChange={onDateChange}
         required
       />
-
-      <Group grow>
+      <Group grow align="flex-end">
         <TimeInput
           label="Start Time"
           value={startTime || ''}
@@ -40,6 +43,17 @@ export function DateTimeSelector({
           value={endTime || ''}
           onChange={(e) => onEndTimeChange(e.currentTarget.value)}
           required
+        />
+        <TextInput
+          label="Duration (min)"
+          value={defaultInterval}
+          onChange={(e) => {
+            const value = parseInt(e.currentTarget.value);
+            if (!isNaN(value) && value > 0 && value <= 480) {
+              onIntervalChange(value);
+            }
+          }}
+          w={100}
         />
       </Group>
     </Stack>

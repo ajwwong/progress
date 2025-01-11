@@ -15,7 +15,16 @@ interface AppointmentModalProps {
 }
 export function AppointmentModal({ opened, onClose, onSave, initialDate }: AppointmentModalProps) {
   console.log('AppointmentModal rendered with initialDate:', initialDate);
-  const { state, setState, isValid, generateAppointments, reset } = useAppointmentForm(initialDate);
+  const { 
+    state, 
+    setState, 
+    setStartTime,
+    setEndTime,
+    setDefaultInterval,
+    isValid, 
+    generateAppointments, 
+    reset 
+  } = useAppointmentForm(initialDate);
 
   const handleSave = () => {
     const appointments = generateAppointments();
@@ -47,9 +56,11 @@ export function AppointmentModal({ opened, onClose, onSave, initialDate }: Appoi
           date={state.date}
           startTime={state.startTime}
           endTime={state.endTime}
+          defaultInterval={state.defaultInterval}
           onDateChange={(date) => setState(prev => ({ ...prev, date }))}
-          onStartTimeChange={(time) => setState(prev => ({ ...prev, startTime: time }))}
-          onEndTimeChange={(time) => setState(prev => ({ ...prev, endTime: time }))}
+          onStartTimeChange={setStartTime}
+          onEndTimeChange={setEndTime}
+          onIntervalChange={setDefaultInterval}
         />
 
         <AppointmentTypeSelector

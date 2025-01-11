@@ -8,6 +8,7 @@ interface AppointmentFormState {
   date: Date | null;
   startTime: string | null;
   endTime: string | null;
+  defaultInterval: number;  // in minutes
   isRecurring: boolean;
   type: 'ROUTINE' | 'FOLLOWUP';
   frequency: string;
@@ -30,6 +31,20 @@ function getDefaultTimes(): { startTime: string; endTime: string } {
 
 const { startTime, endTime } = getDefaultTimes();
 
+function addMinutesToTime(time: string, minutes: number): string {
+  const [hours, mins] = time.split(':').map(Number);
+  const totalMinutes = hours * 60 + mins + minutes;
+  const newHours = Math.floor(totalMinutes / 60);
+  const newMinutes = totalMinutes % 60;
+  return `${newHours.toString().padStart(2, '0')}:${newMinutes.toString().padStart(2, '0')}`;
+}
+
+function getTimeDifferenceInMinutes(startTime: string, endTime: string): number {
+  const [startHours, startMins] = startTime.split(':').map(Number);
+  const [endHours, endMins] = endTime.split(':').map(Number);
+  return (endHours * 60 + endMins) - (startHours * 60 + startMins);
+}
+
 export function useAppointmentForm(initialDate?: Date) {
   console.log('useAppointmentForm initialDate:', initialDate);
   
@@ -39,6 +54,7 @@ export function useAppointmentForm(initialDate?: Date) {
     date: initialDate || new Date(),
     startTime,
     endTime,
+    defaultInterval: 50,
     isRecurring: false,
     type: 'FOLLOWUP',
     frequency: 'weekly',
@@ -86,63 +102,68 @@ export function useAppointmentForm(initialDate?: Date) {
     }
 
     const appointments: Omit<Appointment, 'id'>[] = [];
-    const startDate = new Date(state.date);
     const startTime = parseTime(state.startTime);
     const endTime = parseTime(state.endTime);
     if (!startTime || !endTime) return [];
 
-    // Parse frequency string
-    const [, interval, period] = state.frequency.split('-');
-    const intervalNum = parseInt(interval, 10);
+    // Generate a series ID for this recurrence set
+    const seriesId = crypto.randomUUID();
 
     for (let i = 0; i < state.occurrences; i++) {
-      if (period === 'weeks') {
-        const start = new Date(startDate);
-        start.setHours(startTime.hours, startTime.minutes);
-        
-        const end = new Date(startDate);
-        end.setHours(endTime.hours, endTime.minutes);
+      // Create a new date for each appointment
+      const appointmentDate = new Date(state.date);
+      // Add weeks based on the iteration
+      appointmentDate.setDate(appointmentDate.getDate() + (i * 7));
 
-        appointments.push({
-          ...baseAppointment,
-          start,
-          end
-        });
+      const start = new Date(appointmentDate);
+      start.setHours(startTime.hours, startTime.minutes);
+      
+      const end = new Date(appointmentDate);
+      end.setHours(endTime.hours, endTime.minutes);
 
-        // Add weeks based on interval
-        startDate.setDate(startDate.getDate() + (7 * intervalNum));
-      } else if (period === 'months') {
-        const start = addMonths(startDate, i * intervalNum);
-        start.setHours(startTime.hours, startTime.minutes);
-        
-        const end = new Date(start);
-        end.setHours(endTime.hours, endTime.minutes);
-
-        appointments.push({
-          ...baseAppointment,
-          start,
-          end
-        });
-      }
+      appointments.push({
+        ...baseAppointment,
+        start,
+        end,
+        seriesId,
+        remainingSessions: state.occurrences - i - 1
+      });
     }
 
     return appointments;
   };
 
   const getBaseAppointment = (): Omit<Appointment, 'id'> | null => {
-    if (!state.date || !state.startTime || !state.endTime || !state.patient) return null;
+    console.log('getBaseAppointment state:', {
+      date: state.date,
+      patient: state.patient,
+      startTime: state.startTime,
+      endTime: state.endTime
+    });
 
-    const start = new Date(state.date);
+    if (!state.date || !state.patient || !state.startTime || !state.endTime) {
+      console.log('Missing required fields');
+      return null;
+    }
+
     const startTime = parseTime(state.startTime);
     const endTime = parseTime(state.endTime);
-    if (!startTime || !endTime) return null;
+    
+    console.log('Parsed times:', { startTime, endTime });
+    
+    if (!startTime || !endTime) {
+      console.log('Invalid time format');
+      return null;
+    }
 
+    const start = new Date(state.date);
     start.setHours(startTime.hours, startTime.minutes);
+    
     const end = new Date(state.date);
     end.setHours(endTime.hours, endTime.minutes);
 
     return {
-      title: `${state.type} - ${state.patient.name?.[0]?.given?.join(' ')} ${state.patient.name?.[0]?.family}`,
+      title: `${state.type.toUpperCase()} - ${state.patient.name?.[0]?.given?.join(' ')} ${state.patient.name?.[0]?.family}`,
       start,
       end,
       type: state.type,
@@ -171,9 +192,40 @@ export function useAppointmentForm(initialDate?: Date) {
     setState({ ...defaultState, startTime, endTime, date: new Date() });
   };
 
+  const setStartTime = (time: string) => {
+    setState(prev => ({
+      ...prev,
+      startTime: time,
+      endTime: addMinutesToTime(time, prev.defaultInterval)
+    }));
+  };
+
+  const setEndTime = (time: string) => {
+    if (state.startTime) {
+      setState(prev => ({
+        ...prev,
+        endTime: time,
+        defaultInterval: getTimeDifferenceInMinutes(state.startTime, time)
+      }));
+    }
+  };
+
+  const setDefaultInterval = (minutes: number) => {
+    if (state.startTime) {
+      setState(prev => ({
+        ...prev,
+        defaultInterval: minutes,
+        endTime: addMinutesToTime(state.startTime, minutes)
+      }));
+    }
+  };
+
   return {
     state,
     setState,
+    setStartTime,
+    setEndTime,
+    setDefaultInterval,
     isValid,
     generateAppointments,
     reset

@@ -1,5 +1,5 @@
 import { Paper, Stack } from '@mantine/core';
-import { startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, parseISO, setHours, setMinutes } from 'date-fns';
+import { startOfMonth, endOfMonth, eachDayOfInterval, startOfWeek, endOfWeek, parseISO, setHours, setMinutes, startOfDay, endOfDay } from 'date-fns';
 import { DndContext, DragEndEvent, MouseSensor, TouchSensor, useSensor, useSensors, DragOverlay, DragStartEvent } from '@dnd-kit/core';
 import { useState, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
@@ -12,6 +12,7 @@ import { AppointmentModal } from './AppointmentModal';
 import { AppointmentDetailsModal } from './AppointmentDetailsModal';
 import { PatientModal } from './PatientModal';
 import type { Appointment } from '../types/calendar';
+import { RecurringUpdateModal } from './RecurringUpdateModal';
 
 export function Calendar() {
   const medplum = useMedplum();
@@ -22,6 +23,8 @@ export function Calendar() {
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [recurringModalOpened, setRecurringModalOpened] = useState(false);
+  const [pendingUpdate, setPendingUpdate] = useState<Appointment | null>(null);
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -38,39 +41,113 @@ export function Calendar() {
   );
 
   useEffect(() => {
+    console.log('Loading appointments for view:', view, 'and date:', selectedDate);
     loadAppointments();
-  }, []);
+  }, [view, selectedDate]);
 
   const loadAppointments = async () => {
     try {
-      const results = await medplum.searchResources('Appointment', {
-        _sort: '-_lastUpdated',
-        _count: '100',
-        status: 'booked,cancelled,noshow',
-        _include: 'Appointment:patient'
-      });
-  
-      const calendarAppointments = results
-        .filter(appt => appt.id && appt.start && appt.end)
+      console.log('Fetching appointments...');
+      let allResults = [];
+      let count = 0;
+      
+      while (true) {
+        const results = await medplum.searchResources('Appointment', {
+          _sort: '-_lastUpdated',
+          _count: '100',
+          _offset: count.toString(),
+          status: 'booked,pending,arrived,fulfilled,cancelled,noshow',
+          _include: 'Appointment:patient'
+        });
+        
+        if (results.length === 0) break;
+        
+        allResults = [...allResults, ...results];
+        count += results.length;
+        
+        if (results.length < 100) break;
+      }
+
+      const calendarAppointments = allResults
+        .filter(appt => {
+          if (!appt.id || !appt.start || !appt.end) {
+            console.log('Filtered out appointment - missing required fields:', appt);
+            return false;
+          }
+          
+          const startDate = new Date(appt.start);
+          const endDate = new Date(appt.end);
+          
+          // Validate dates are valid
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.log('Filtered out appointment - invalid date format:', {
+              id: appt.id,
+              description: appt.description,
+              start: startDate.toLocaleString(),
+              end: endDate.toLocaleString(),
+              status: appt.status
+            });
+            return false;
+          }
+
+          // If end time is before start time, assume it's meant for the next day
+          if (endDate < startDate) {
+            // Add one day to the end date
+            endDate.setDate(endDate.getDate() + 1);
+            console.log('Adjusted end date to next day:', {
+              id: appt.id,
+              description: appt.description,
+              start: startDate.toLocaleString(),
+              end: endDate.toLocaleString(),
+              status: appt.status
+            });
+          }
+          
+          // Log valid appointment for debugging
+          console.log('Processing appointment:', {
+            id: appt.id,
+            description: appt.description,
+            start: startDate.toLocaleString(),
+            end: endDate.toLocaleString(),
+            status: appt.status
+          });
+          
+          return true;
+        })
         .map(fhirAppointment => {
           const patientParticipant = fhirAppointment.participant?.find(
             p => p.actor?.reference?.startsWith('Patient/')
           );
-  
+
           const patientId = patientParticipant?.actor?.reference?.split('Patient/')[1];
-  
+          
+          // Extract series ID and sequence number from identifiers
+          const seriesIdentifier = fhirAppointment.identifier?.find(
+            id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-series'
+          );
+          const sequenceIdentifier = fhirAppointment.identifier?.find(
+            id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+          );
+
+          // Ensure dates are properly converted from UTC to local time
+          const start = new Date(fhirAppointment.start as string);
+          const end = new Date(fhirAppointment.end as string);
+
           return {
             id: fhirAppointment.id as string,
             title: fhirAppointment.description || 'Untitled',
-            start: new Date(fhirAppointment.start as string),
-            end: new Date(fhirAppointment.end as string),
-            patientName: patientParticipant?.actor?.display || 'Unknown Patient',
+            start,
+            end,
+            patientName: patientParticipant?.actor?.display || fhirAppointment.participant?.[0]?.actor?.display || 'Unknown Patient',
             patientId: patientId || '',
-            type: (fhirAppointment.appointmentType?.coding?.[0]?.code as Appointment['type']) || 'followup therapy',
-            status: (fhirAppointment.status as Appointment['status']) || 'scheduled'
+            type: (fhirAppointment.appointmentType?.coding?.[0]?.code as Appointment['type']) || 'FOLLOWUP',
+            status: (fhirAppointment.status as Appointment['status']) || 'booked',
+            seriesId: seriesIdentifier?.value,
+            remainingSessions: sequenceIdentifier?.value ? parseInt(sequenceIdentifier.value) : undefined
           };
         });
-  
+
+      console.log('Final processed appointments:', calendarAppointments);
       setAppointments(calendarAppointments);
     } catch (error) {
       console.error('Error loading appointments:', error);
@@ -116,21 +193,35 @@ export function Calendar() {
       const duration = appointment.end.getTime() - appointment.start.getTime();
       const newEnd = new Date(newStart.getTime() + duration);
 
+      // Create a temporary updated appointment object
+      const updatedAppointment = {
+        ...appointment,
+        start: newStart,
+        end: newEnd
+      };
+
+      // Update UI immediately for better UX
       setAppointments(currentAppointments => 
         currentAppointments.map(apt => 
           apt.id === appointmentId 
-            ? { ...apt, start: newStart, end: newEnd }
+            ? updatedAppointment
             : apt
         )
       );
 
-      await medplum.updateResource({
-        ...existingAppointment,
-        start: newStart.toISOString(),
-        end: newEnd.toISOString(),
-      });
-
-      await loadAppointments();
+      if (appointment.seriesId && appointment.remainingSessions !== 0) {
+        // If it's a recurring appointment, show the modal
+        setPendingUpdate(updatedAppointment);
+        setRecurringModalOpened(true);
+      } else {
+        // If it's a single appointment or last in series, update it directly
+        await medplum.updateResource({
+          ...existingAppointment,
+          start: newStart.toISOString(),
+          end: newEnd.toISOString(),
+        });
+        await loadAppointments();
+      }
     } catch (error) {
       console.error('Error updating appointment:', error);
       await loadAppointments();
@@ -138,9 +229,10 @@ export function Calendar() {
   };
 
   const handleNewAppointment = async (appointmentData: Omit<Appointment, 'id'>[]) => {
+    console.log('Appointment data received:', appointmentData);
     try {
       for (const appointment of appointmentData) {
-        await medplum.createResource({
+        const resource = {
           resourceType: 'Appointment',
           status: 'booked',
           appointmentType: {
@@ -153,10 +245,39 @@ export function Calendar() {
           description: appointment.title,
           start: appointment.start.toISOString(),
           end: appointment.end.toISOString(),
-          participant: appointment.participant // Use the properly structured participant data
-        });
+          participant: [{
+            actor: {
+              display: appointment.patientName,
+              reference: `Patient/${appointment.patientId}`
+            },
+            status: 'accepted',
+            type: [{
+              coding: [{
+                system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
+                code: 'ATND'
+              }]
+            }]
+          }],
+          identifier: []
+        };
+
+        if (appointment.seriesId) {
+          resource.identifier = [
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/appointment-series',
+              value: appointment.seriesId
+            },
+            {
+              system: 'http://terminology.hl7.org/CodeSystem/appointment-sequence',
+              value: appointment.remainingSessions?.toString()
+            }
+          ];
+        }
+
+        console.log('Creating appointment with resource:', resource);
+        await medplum.createResource(resource);
       }
-  
+
       await loadAppointments();
     } catch (error) {
       console.error('Error creating appointments:', error);
@@ -164,29 +285,105 @@ export function Calendar() {
   };
 
   const handleUpdateAppointment = async (updatedAppointment: Appointment) => {
+    if (!updatedAppointment.seriesId || updatedAppointment.remainingSessions === 0) {
+      // Handle non-recurring appointment update
+      try {
+        const existingAppointment = await medplum.readResource('Appointment', updatedAppointment.id);
+        await medplum.updateResource({
+          ...existingAppointment,
+          resourceType: 'Appointment',
+          start: updatedAppointment.start.toISOString(),
+          end: updatedAppointment.end.toISOString(),
+          status: updatedAppointment.status,
+          appointmentType: {
+            coding: [{
+              system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+              code: updatedAppointment.type,
+              display: updatedAppointment.type.charAt(0).toUpperCase() + updatedAppointment.type.slice(1)
+            }]
+          },
+          description: updatedAppointment.title
+        });
+        await loadAppointments();
+      } catch (error) {
+        console.error('Error updating appointment:', error);
+      }
+    } else {
+      // Show modal for recurring appointment update
+      setPendingUpdate(updatedAppointment);
+      setRecurringModalOpened(true);
+    }
+  };
+
+  const handleRecurringUpdate = async (updateSeries: boolean) => {
+    if (!pendingUpdate) return;
+
     try {
-      const existingAppointment = await medplum.readResource('Appointment', updatedAppointment.id);
+      const existingAppointment = await medplum.readResource('Appointment', pendingUpdate.id);
       
-      await medplum.updateResource({
-        ...existingAppointment,
-        resourceType: 'Appointment',
-        start: updatedAppointment.start.toISOString(),
-        end: updatedAppointment.end.toISOString(),
-        status: updatedAppointment.status,
-        appointmentType: {
-          coding: [{
-            system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
-            code: updatedAppointment.type,
-            display: updatedAppointment.type.charAt(0).toUpperCase() + updatedAppointment.type.slice(1)
-          }]
-        },
-        description: updatedAppointment.title
-      });
+      if (updateSeries) {
+        // Calculate time difference
+        const originalStart = new Date(existingAppointment.start);
+        const newStart = new Date(pendingUpdate.start);
+        const timeGap = newStart.getTime() - originalStart.getTime();
+        
+        const newSeriesId = crypto.randomUUID();
+
+        // Search without the _sort parameter
+        const searchResponse = await medplum.search('Appointment', {
+          identifier: `http://terminology.hl7.org/CodeSystem/appointment-series|${pendingUpdate.seriesId}`
+        });
+
+        // Sort the appointments in memory
+        const allAppointments = searchResponse.entry
+          ?.map(e => e.resource as any)
+          ?.sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime());
+
+        if (allAppointments && allAppointments.length > 0) {
+          for (const appointment of allAppointments) {
+            const sequenceNumber = appointment.identifier?.find(
+              id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+            )?.value;
+
+            if (sequenceNumber && parseInt(sequenceNumber) <= parseInt(pendingUpdate.remainingSessions!.toString())) {
+              const appointmentStart = new Date(appointment.start);
+              const appointmentEnd = new Date(appointment.end);
+              const newAppointmentStart = new Date(appointmentStart.getTime() + timeGap);
+              const newAppointmentEnd = new Date(appointmentEnd.getTime() + timeGap);
+
+              await medplum.updateResource({
+                ...appointment,
+                start: newAppointmentStart.toISOString(),
+                end: newAppointmentEnd.toISOString(),
+                status: pendingUpdate.status,
+                appointmentType: {
+                  coding: [{
+                    system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
+                    code: pendingUpdate.type,
+                    display: pendingUpdate.type.charAt(0).toUpperCase() + pendingUpdate.type.slice(1)
+                  }]
+                },
+                description: pendingUpdate.title,
+                identifier: [
+                  ...(appointment.identifier || []).filter(
+                    id => id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-series'
+                  ),
+                  {
+                    system: 'http://terminology.hl7.org/CodeSystem/appointment-series',
+                    value: newSeriesId
+                  }
+                ]
+              });
+            }
+          }
+        }
+      }
 
       await loadAppointments();
+      setRecurringModalOpened(false);
+      setPendingUpdate(null);
     } catch (error) {
-      console.error('Error updating appointment:', error);
-      await loadAppointments();
+      console.error('Error in handleRecurringUpdate:', error);
     }
   };
 
@@ -275,6 +472,22 @@ export function Calendar() {
         appointment={selectedAppointment}
         onSave={handleUpdateAppointment}
         onDelete={loadAppointments}
+      />
+
+      <RecurringUpdateModal
+        opened={recurringModalOpened}
+        onClose={() => {
+          setRecurringModalOpened(false);
+          setPendingUpdate(null);
+        }}
+        onConfirm={async () => {
+          await handleRecurringUpdate(true);
+          setRecurringModalOpened(false);
+        }}
+        onCancel={async () => {
+          await handleRecurringUpdate(false);
+          setRecurringModalOpened(false);
+        }}
       />
     </Paper>
   );

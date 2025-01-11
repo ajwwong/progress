@@ -8,5 +8,5 @@ export interface Appointment {
   type: 'FOLLOWUP' | 'ROUTINE';
   status: 'booked' | 'fulfilled' | 'cancelled' | 'noshow';
   seriesId?: string;
-  sequenceNumber?: number;
+  remainingSessions?: number;
 }
