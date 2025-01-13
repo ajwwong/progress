@@ -6,9 +6,7 @@ import { ClientProfile } from '../pages/client/ClientProfile';
 import { ClientSignIn } from '../pages/client/ClientSignIn';
 import { ClientForms } from '../pages/client/forms/ClientForms';
 import { FormRenderer } from '../pages/client/forms/FormRenderer';
-import { CreditCardForm } from '../pages/client/forms/CreditCardForm';
-import { ClientInvoices } from '../pages/client/ClientInvoices';
-import { InsuranceSuperbills } from '../pages/client/InsuranceSuperbills';
+import { ClientBilling } from '../pages/client/ClientBilling';
 import { useMedplumProfile } from '@medplum/react';
 
 export function ClientRoutes() {
@@ -32,9 +30,7 @@ export function ClientRoutes() {
         <Route path="profile" element={<ClientProfile />} />
         <Route path="forms" element={<ClientForms />} />
         <Route path="forms/:formId" element={<FormRenderer />} />
-        <Route path="payment" element={<CreditCardForm />} />
-        <Route path="invoices" element={<ClientInvoices />} />
-        <Route path="superbills" element={<InsuranceSuperbills />} />
+        <Route path="billing" element={<ClientBilling />} />
       </Route>
     </Routes>
   );

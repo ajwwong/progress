@@ -53,21 +53,12 @@ export function ClientLayout() {
           </Button>
           <Button
             component={Link}
-            to="/portal/invoices"
+            to="/portal/billing"
             variant="subtle"
             fullWidth
             leftSection={<IconReceipt size={16} />}
           >
-            Invoices & Receipts
-          </Button>
-          <Button
-            component={Link}
-            to="/portal/superbills"
-            variant="subtle"
-            fullWidth
-            leftSection={<IconFileInvoice size={16} />}
-          >
-            Insurance Superbills
+            Billing & Payments
           </Button>
           <Button
             component={Link}

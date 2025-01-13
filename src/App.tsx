@@ -22,6 +22,8 @@ import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
 import { PatientDirectoryPage } from './pages/PatientDirectoryPage';
 import { ClientRoutes } from './routes/ClientRoutes';
+import { StripeConnect } from './pages/billing/StripeConnect';
+
 
 export const CalendarContext = createContext<{
   showNewAppointmentModal: boolean;
@@ -131,6 +133,7 @@ export function App(): JSX.Element | null {
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/composition/:id" element={<NoteView />} />
               <Route path="/templates" element={<NoteTemplatesPage />} />
+              <Route path="settings/billing" element={<StripeConnect />} />
               <Route path="/portal/*" element={<ClientRoutes />} />
             </Routes>
           </Suspense>
