@@ -1,10 +1,13 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser, IconMicrophone, IconCalendar, IconFileText } from '@tabler/icons-react';
+import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate } from '@tabler/icons-react';
 import { Suspense, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
 import { PatientOverview } from './components/PatientOverview';
 import { Timeline } from './components/Timeline';
+import { SessionNotes } from './components/SessionNotes';
+import { TreatmentPlan } from './components/TreatmentPlan';
+import { NoteTemplatesPage } from './components/templates/NoteTemplatesPage';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
 import { PatientPage } from './pages/PatientPage';
@@ -18,6 +21,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
 import { PatientDirectoryPage } from './pages/PatientDirectoryPage';
+import { ClientRoutes } from './routes/ClientRoutes';
 
 export const CalendarContext = createContext<{
   showNewAppointmentModal: boolean;
@@ -76,6 +80,7 @@ export function App(): JSX.Element | null {
               { icon: <IconCalendar />, label: 'Calendar', href: '/calendar' },
               { icon: <IconUser />, label: 'Patients', href: '/patients/directory' },
               { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
+              { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
             ],
           },
           {
@@ -119,10 +124,14 @@ export function App(): JSX.Element | null {
                 <Route path="overview" element={<PatientOverview />} />
                 <Route path="timeline" element={<Timeline />} />
                 <Route path="history" element={<PatientHistory />} />
+                <Route path="notes" element={<SessionNotes />} />
+                <Route path="treatment" element={<TreatmentPlan />} />
               </Route>
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/composition/:id" element={<NoteView />} />
+              <Route path="/templates" element={<NoteTemplatesPage />} />
+              <Route path="/portal/*" element={<ClientRoutes />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
