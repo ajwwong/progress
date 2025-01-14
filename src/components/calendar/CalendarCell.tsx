@@ -42,6 +42,18 @@ export function CalendarCell({
     }
   };
 
+  // Add type guard
+  function isDateObject(date: Date | string): date is Date {
+    return date instanceof Date;
+  }
+
+  // Simplified sorting with type assertion
+  const sortedAppointments = [...appointments].sort((a, b) => {
+    const startA = isDateObject(a.start) ? a.start : new Date(a.start);
+    const startB = isDateObject(b.start) ? b.start : new Date(b.start);
+    return startA.getTime() - startB.getTime();
+  });
+
   return (
     <Paper
       ref={setNodeRef}
@@ -104,8 +116,7 @@ export function CalendarCell({
           gap: '2px'
         }}
       >
-        {appointments
-          .sort((a, b) => a.start.getTime() - b.start.getTime())
+        {sortedAppointments
           .map((appointment) => (
             <AppointmentItem
               key={appointment.id}

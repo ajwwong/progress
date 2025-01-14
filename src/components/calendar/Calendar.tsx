@@ -15,6 +15,8 @@ import type { Appointment } from '../types/calendar';
 import { RecurringUpdateModal } from './RecurringUpdateModal';
 
 export function Calendar() {
+  const DEBUG_MODE = false;
+
   const medplum = useMedplum();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<string>('month');
@@ -48,7 +50,7 @@ export function Calendar() {
 
   const loadAppointments = async () => {
     try {
-      console.log('Fetching appointments...');
+      if (DEBUG_MODE) console.log('Fetching appointments...');
       let allResults = [];
       let count = 0;
       
@@ -72,16 +74,15 @@ export function Calendar() {
       const calendarAppointments = allResults
         .filter(appt => {
           if (!appt.id || !appt.start || !appt.end) {
-            console.log('Filtered out appointment - missing required fields:', appt);
+            if (DEBUG_MODE) console.log('Filtered out appointment - missing required fields:', appt);
             return false;
           }
           
           const startDate = new Date(appt.start);
           const endDate = new Date(appt.end);
           
-          // Validate dates are valid
           if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            console.log('Filtered out appointment - invalid date format:', {
+            if (DEBUG_MODE) console.log('Filtered out appointment - invalid date format:', {
               id: appt.id,
               description: appt.description,
               start: startDate.toLocaleString(),
@@ -91,11 +92,9 @@ export function Calendar() {
             return false;
           }
 
-          // If end time is before start time, assume it's meant for the next day
           if (endDate < startDate) {
-            // Add one day to the end date
             endDate.setDate(endDate.getDate() + 1);
-            console.log('Adjusted end date to next day:', {
+            if (DEBUG_MODE) console.log('Adjusted end date to next day:', {
               id: appt.id,
               description: appt.description,
               start: startDate.toLocaleString(),
@@ -104,15 +103,14 @@ export function Calendar() {
             });
           }
           
-          // Log valid appointment for debugging
-          console.log('Processing appointment:', {
+          if (DEBUG_MODE) console.log('Processing appointment:', {
             id: appt.id,
             description: appt.description,
             start: startDate.toLocaleString(),
             end: endDate.toLocaleString(),
             status: appt.status
           });
-          
+
           return true;
         })
         .map(fhirAppointment => {
@@ -148,10 +146,11 @@ export function Calendar() {
           };
         });
 
-      console.log('Final processed appointments:', calendarAppointments);
+      if (DEBUG_MODE) console.log('Final processed appointments:', calendarAppointments);
       setAppointments(calendarAppointments);
     } catch (error) {
       console.error('Error loading appointments:', error);
+      setAppointments([]);
     }
   };
   const handleDragStart = (event: DragStartEvent) => {

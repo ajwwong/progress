@@ -5,6 +5,7 @@ import { IconPlus, IconTrash, IconSearch, IconPhone, IconMail } from '@tabler/ic
 import { useState, useCallback, useEffect } from 'react';
 import { notifications } from '@mantine/notifications';
 import { calculateAgeString, getDisplayString } from '@medplum/core';
+import { PatientFilters } from '../components/PatientFilters';
 
 interface PatientStatus {
   lastSession: string;
@@ -31,6 +32,9 @@ export function PatientDirectoryPage(): JSX.Element {
   const medplum = useMedplum();
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
+  const [patientStatus, setPatientStatus] = useState('all');
+  const [insuranceStatus, setInsuranceStatus] = useState('all');
+  const [sortBy, setSortBy] = useState('last-updated');
 
   const getLastSession = async (patientId: string): Promise<string> => {
     try {
@@ -60,9 +64,29 @@ export function PatientDirectoryPage(): JSX.Element {
   const loadPatients = async (query: string) => {
     setIsLoading(true);
     try {
-      const results = !query.trim() 
-        ? await medplum.searchResources('Patient', '_sort=-_lastUpdated')
-        : await medplum.searchResources('Patient', `name:contains=${query}`);
+      let searchParams = [];
+      
+      // Add name search
+      if (query.trim()) {
+        searchParams.push(`name:contains=${query}`);
+      }
+      
+      // Add status filter
+      if (patientStatus !== 'all') {
+        searchParams.push(`active=${patientStatus === 'active'}`);
+      }
+      
+      // Add insurance status filter
+      if (insuranceStatus !== 'all') {
+        searchParams.push(`insurance-status=${insuranceStatus}`);
+      }
+      
+      // Add sorting
+      const sortParam = sortBy === 'name' ? '_sort=family' : '_sort=-_lastUpdated';
+      searchParams.push(sortParam);
+      
+      const searchString = searchParams.join('&');
+      const results = await medplum.searchResources('Patient', searchString);
       
       setPatients(results);
 
@@ -95,7 +119,7 @@ export function PatientDirectoryPage(): JSX.Element {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery]);
+  }, [searchQuery, patientStatus, insuranceStatus, sortBy]);
 
   // Initial load
   useEffect(() => {
@@ -251,14 +275,15 @@ export function PatientDirectoryPage(): JSX.Element {
             </Group>
           </Group>
 
-          <TextInput
-            placeholder="Search patients by name..."
-            size="md"
-            radius="md"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            leftSection={<IconSearch size={16} style={{ color: 'var(--mantine-color-gray-5)' }} />}
-            disabled={isLoading}
+          <PatientFilters
+            searchTerm={searchQuery}
+            onSearchChange={setSearchQuery}
+            patientStatus={patientStatus}
+            onPatientStatusChange={setPatientStatus}
+            insuranceStatus={insuranceStatus}
+            onInsuranceStatusChange={setInsuranceStatus}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
           />
 
           <Box>

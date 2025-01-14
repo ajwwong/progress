@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate } from '@tabler/icons-react';
+import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconCreditCard } from '@tabler/icons-react';
 import { Suspense, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
@@ -20,9 +20,10 @@ import { PatientAutocompletePage } from './pages/PatientAutocomplete';
 import { RegisterPage } from './pages/RegisterPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
-import { PatientDirectoryPage } from './pages/PatientDirectoryPage';
+import { PatientDirectoryPage } from './features/patients/pages/PatientDirectoryPage';
 import { ClientRoutes } from './routes/ClientRoutes';
-import { StripeConnect } from './pages/billing/StripeConnect';
+import { StripeConnect } from './pages/provider/StripeConnect';
+import { BillingDashboard } from './pages/provider/BillingDashboard';
 
 
 export const CalendarContext = createContext<{
@@ -83,6 +84,7 @@ export function App(): JSX.Element | null {
               { icon: <IconUser />, label: 'Patients', href: '/patients/directory' },
               { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
               { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
+              { icon: <IconCreditCard />, label: 'Billing & Payments', href: '/billing' }
             ],
           },
           {
@@ -133,8 +135,9 @@ export function App(): JSX.Element | null {
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/composition/:id" element={<NoteView />} />
               <Route path="/templates" element={<NoteTemplatesPage />} />
-              <Route path="settings/billing" element={<StripeConnect />} />
+              <Route path="/settings/billing" element={<StripeConnect />} />
               <Route path="/portal/*" element={<ClientRoutes />} />
+              <Route path="/billing" element={<BillingDashboard />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

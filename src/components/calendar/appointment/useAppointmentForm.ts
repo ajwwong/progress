@@ -32,6 +32,8 @@ function getDefaultTimes(): { startTime: string; endTime: string } {
 
 const { startTime, endTime } = getDefaultTimes();
 
+const DEBUG_MODE = false;
+
 export function useAppointmentForm(initialDate?: Date) {
   console.log('useAppointmentForm initialDate:', initialDate);
   
@@ -80,6 +82,7 @@ export function useAppointmentForm(initialDate?: Date) {
 
   const generateAppointments = (): Omit<Appointment, 'id'>[] => {
     if (!state.date || !state.patient) return [];
+    if (DEBUG_MODE) console.log('Current frequency:', state.frequency);
 
     const baseAppointment = getBaseAppointment();
     if (!baseAppointment) return [];
@@ -93,27 +96,40 @@ export function useAppointmentForm(initialDate?: Date) {
     const endTime = parseTime(state.endTime);
     if (!startTime || !endTime) return [];
 
-    // Generate a series ID for this recurrence set
     const seriesId = crypto.randomUUID();
 
+    // Parse the frequency string (e.g., "every-2-weeks" or "every-1-month")
+    let interval = 1;
+    let period = 'week';
+
+    if (state.frequency.includes('-')) {
+      const [, intervalStr, periodStr] = state.frequency.split('-');
+      interval = parseInt(intervalStr, 10);
+      period = periodStr.replace('s', ''); // Remove 's' if present
+    }
+
     for (let i = 0; i < state.occurrences; i++) {
-      // Create a new date for each appointment
       const appointmentDate = new Date(state.date);
-      // Add weeks based on the iteration
-      appointmentDate.setDate(appointmentDate.getDate() + (i * 7));
+      
+      // Calculate the offset in days or months
+      if (period === 'week') {
+        appointmentDate.setDate(appointmentDate.getDate() + (i * 7 * interval));
+      } else if (period === 'month') {
+        appointmentDate.setMonth(appointmentDate.getMonth() + (i * interval));
+      }
 
       const start = new Date(appointmentDate);
-      start.setHours(startTime.hours, startTime.minutes);
+      start.setHours(startTime.hours, startTime.minutes, 0, 0);
       
       const end = new Date(appointmentDate);
-      end.setHours(endTime.hours, endTime.minutes);
+      end.setHours(endTime.hours, endTime.minutes, 0, 0);
 
       appointments.push({
         ...baseAppointment,
         start,
         end,
         seriesId,
-        remainingSessions: state.occurrences - i - 1
+        remainingSessions: state.occurrences - i
       });
     }
 
