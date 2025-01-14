@@ -1,7 +1,7 @@
-import { Group, Title, Text, Button, Stack, Box, Checkbox, ActionIcon, TextInput, Modal } from '@mantine/core';
+import { Group, Title, Text, Button, Stack, Box, Checkbox, ActionIcon, TextInput, Modal, Paper } from '@mantine/core';
 import { Patient, Appointment } from '@medplum/fhirtypes';
 import { Document, ResourceName, ResourceAvatar, useMedplum, useMedplumNavigate } from '@medplum/react';
-import { IconPlus, IconTrash, IconSearch, IconPhone, IconMail } from '@tabler/icons-react';
+import { IconPlus, IconTrash, IconSearch, IconPhone, IconMail, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
 import { useState, useCallback, useEffect } from 'react';
 import { notifications } from '@mantine/notifications';
 import { calculateAgeString, getDisplayString } from '@medplum/core';
@@ -34,7 +34,10 @@ export function PatientDirectoryPage(): JSX.Element {
   const [deleteConfirmName, setDeleteConfirmName] = useState('');
   const [patientStatus, setPatientStatus] = useState('all');
   const [insuranceStatus, setInsuranceStatus] = useState('all');
-  const [sortBy, setSortBy] = useState('last-updated');
+  const [sortBy, setSortBy] = useState('name');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const patientsPerPage = 40;
 
   const getLastSession = async (patientId: string): Promise<string> => {
     try {
@@ -66,9 +69,9 @@ export function PatientDirectoryPage(): JSX.Element {
     try {
       let searchParams = [];
       
-      // Add name search
       if (query.trim()) {
-        searchParams.push(`name:contains=${query}`);
+        // Search by name OR telecom (email/phone)
+        searchParams.push(`_filter=(name:contains=${query} or telecom:contains=${query})`);
       }
       
       // Add status filter
@@ -82,14 +85,23 @@ export function PatientDirectoryPage(): JSX.Element {
       }
       
       // Add sorting
-      const sortParam = sortBy === 'name' ? '_sort=family' : '_sort=-_lastUpdated';
+      const sortParam = sortBy === 'name' ? '_sort=family' : sortBy === 'last-session' ? '_sort=-date' : '_sort=-_lastUpdated';
       searchParams.push(sortParam);
+      
+      // Add pagination
+      searchParams.push(`_count=${patientsPerPage}`);
+      searchParams.push(`_offset=${(currentPage - 1) * patientsPerPage}`);
       
       const searchString = searchParams.join('&');
       const results = await medplum.searchResources('Patient', searchString);
       
+      // Update total pages calculation
+      const total = results.length > 0 ? (results as any).total || results.length : 0;
+      const calculatedTotalPages = Math.max(1, Math.ceil(total / patientsPerPage));
+      setTotalPages(calculatedTotalPages);
+      
       setPatients(results);
-
+      
       // Fetch last sessions for all patients
       const sessions: Record<string, string> = {};
       await Promise.all(
@@ -119,7 +131,7 @@ export function PatientDirectoryPage(): JSX.Element {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, patientStatus, insuranceStatus, sortBy]);
+  }, [searchQuery, patientStatus, insuranceStatus, sortBy, currentPage]);
 
   // Initial load
   useEffect(() => {
@@ -248,12 +260,24 @@ export function PatientDirectoryPage(): JSX.Element {
     }
   };
 
+  const toggleSelectAll = () => {
+    if (selectedPatients.length === patients.length) {
+      setSelectedPatients([]);
+    } else {
+      setSelectedPatients(patients.map(p => p.id as string));
+    }
+  };
+
   return (
     <Document>
-      <Box style={{ maxWidth: '95vw', margin: '0 auto' }}>
+      <Box style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
         <Stack spacing="xl">
-          <Group justify="space-between" align="center">
-            <Title order={1} style={{ color: 'var(--mantine-color-blue-9)' }}>Patients</Title>
+          {/* Header Section */}
+          <Group position="apart" align="flex-end">
+            <Stack spacing={4}>
+              <Title order={1} style={{ color: 'var(--mantine-color-blue-9)' }}>Patients and Contacts</Title>
+              <Text size="sm" c="dimmed">Manage your patients and sessions</Text>
+            </Stack>
             <Group>
               <ActionIcon 
                 color="red"
@@ -267,7 +291,7 @@ export function PatientDirectoryPage(): JSX.Element {
               <Button 
                 variant="filled"
                 leftSection={<IconPlus size={14} />}
-                onClick={() => navigate('/patients/new')}
+                onClick={() => navigate('/patient/new')}
                 disabled={isLoading}
               >
                 Add patient
@@ -275,90 +299,155 @@ export function PatientDirectoryPage(): JSX.Element {
             </Group>
           </Group>
 
-          <PatientFilters
-            searchTerm={searchQuery}
-            onSearchChange={setSearchQuery}
-            patientStatus={patientStatus}
-            onPatientStatusChange={setPatientStatus}
-            insuranceStatus={insuranceStatus}
-            onInsuranceStatusChange={setInsuranceStatus}
-            sortBy={sortBy}
-            onSortByChange={setSortBy}
-          />
+          {/* Search and Filters */}
+          <Paper p="md" radius="md" withBorder>
+            <PatientFilters
+              searchTerm={searchQuery}
+              onSearchChange={setSearchQuery}
+              patientStatus={patientStatus}
+              onPatientStatusChange={setPatientStatus}
+              insuranceStatus={insuranceStatus}
+              onInsuranceStatusChange={setInsuranceStatus}
+              sortBy={sortBy}
+              onSortByChange={setSortBy}
+            />
+          </Paper>
 
-          <Box>
+          {/* Patient List */}
+          <Paper radius="md" withBorder>
+            {/* Header */}
             <Group 
-              px="md" 
-              py="xs" 
+              px="xl" 
+              py="md" 
               style={{ 
                 borderBottom: '1px solid var(--mantine-color-gray-3)',
                 backgroundColor: 'var(--mantine-color-gray-0)'
               }}
             >
-              <Checkbox style={{ width: '40px' }} />
-              <Text fw={500} style={{ width: '200px' }}>Name</Text>
+              <Checkbox 
+                style={{ width: '40px', marginLeft: '12px' }}
+                checked={selectedPatients.length === patients.length && patients.length > 0}
+                indeterminate={selectedPatients.length > 0 && selectedPatients.length < patients.length}
+                onChange={toggleSelectAll}
+              />
+              <Text fw={500} style={{ width: '250px' }}>Patient</Text>
               <Text fw={500} style={{ width: '200px' }}>Contact</Text>
               <Text fw={500} style={{ flex: 1 }}>Last Session</Text>
-              <Box style={{ width: '120px' }} /> {/* Space for action button */}
+              <Box style={{ width: '140px' }} />
             </Group>
 
+            {/* Patient Rows */}
             {patients.map((patient) => (
-              <Group 
-                key={patient.id} 
-                px="md" 
-                py="sm"
-                style={{ 
-                  borderBottom: '1px solid var(--mantine-color-gray-2)',
+              <Paper 
+                key={patient.id}
+            
+                p="md"
+                withBorder
+                sx={(theme) => ({
+                  backgroundColor: 'white',
+                  borderColor: theme.fn.lighten(theme.colors.gray[0], 0.1),
+                  marginBottom: theme.spacing.xs,
+                  padding: theme.spacing.md,
+                  transition: 'background-color 200ms ease',
                   '&:hover': {
-                    backgroundColor: 'var(--mantine-color-gray-0)'
+                    backgroundColor: 'var(--mantine-color-gray-1)',
                   }
-                }}
-                onClick={() => navigate(`/patients/${patient.id}`)}
+                })}
               >
-                <Checkbox
-                  style={{ width: '40px' }}
-                  checked={selectedPatients.includes(patient.id as string)}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    togglePatientSelection(patient.id as string);
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <Group style={{ width: '200px' }} noWrap>
-                  <ResourceAvatar value={patient} size="md" radius="xl" />
-                  <div>
-                    <Text fw={500}><ResourceName value={patient} /></Text>
-                    {patient.birthDate && (
-                      <Text size="xs" c="dimmed">
-                        {patient.birthDate} ({calculateAgeString(patient.birthDate)})
+                <Group align="center" position="apart" spacing="xl">
+                  <Group align="center" spacing="xl" style={{ flex: 1 }}>
+                    <Checkbox
+                      style={{ width: '40px', marginLeft: '16px' }}
+                      checked={selectedPatients.includes(patient.id as string)}
+                      onChange={(e) => togglePatientSelection(patient.id as string)}
+                    />
+                    <Stack spacing={8} style={{ width: '250px' }}>
+                      <Text 
+                        component="a" 
+                        href={`/patient/${patient.id}`}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/patient/${patient.id}`);
+                        }}
+                        fw={900}
+                        size="lg"
+                        c="blue.8"
+                        sx={{
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                          '&:hover': { 
+                            color: 'var(--mantine-color-blue-9)',
+                            textDecoration: 'underline',
+                            transform: 'translateX(2px)'  // Slight shift on hover
+                          }
+                        }}
+                      >
+                        <ResourceName value={patient} />
                       </Text>
-                    )}
-                  </div>
-                </Group>
-                <Box style={{ width: '200px' }}>
-                  {patient.telecom?.map((t, index) => (
-                    <Text key={index} size="sm" c="dimmed">
-                      {t.value}
+                      {patient.birthDate && (
+                        <Text size="sm" c="dimmed">
+                          {calculateAgeString(patient.birthDate)} old
+                        </Text>
+                      )}
+                    </Stack>
+
+                    <Stack spacing={10} style={{ width: '220px' }}>
+                      {patient.telecom?.map((t, index) => (
+                        <Group key={index} spacing={12} noWrap>
+                          {t.system === 'phone' && <IconPhone size={18} color="var(--mantine-color-blue-6)" />}
+                          {t.system === 'email' && <IconMail size={18} color="var(--mantine-color-blue-6)" />}
+                          <Text size="sm" c="dimmed" truncate>
+                            {t.value}
+                          </Text>
+                        </Group>
+                      ))}
+                    </Stack>
+
+                    <Text style={{ flex: 1 }} c="dimmed" size="sm">
+                      {formatLastSession(lastSessions[patient.id as string])}
                     </Text>
-                  ))}
-                </Box>
-                <Text style={{ flex: 1 }} c="dimmed">
-                  {formatLastSession(lastSessions[patient.id as string])}
-                </Text>
-                <Button
-                  variant="light"
-                  size="xs"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/calendar/new?patient=${patient.id}`);
-                  }}
-                  style={{ width: '120px' }}
-                >
-                  New Session
-                </Button>
-              </Group>
+                  </Group>
+
+                  <Button
+                    variant="light"
+                    size="sm"
+                    color="blue"
+                    onClick={() => navigate(`/calendar/new?patient=${patient.id}`)}
+                    style={{ minWidth: '120px', marginRight: '16px' }}
+                    sx={{
+                      '&:hover': {
+                        backgroundColor: 'var(--mantine-color-blue-1)'
+                      }
+                    }}
+                  >
+                    New Session
+                  </Button>
+                </Group>
+              </Paper>
             ))}
-          </Box>
+          </Paper>
+
+          <Group position="center" mt="md">
+            <ActionIcon 
+              variant="light"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            >
+              <IconChevronLeft size={16} />
+            </ActionIcon>
+            
+            <Text size="sm">
+              Page {currentPage} of {totalPages}
+            </Text>
+            
+            <ActionIcon 
+              variant="light"
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            >
+              <IconChevronRight size={16} />
+            </ActionIcon>
+          </Group>
 
           <Modal
             opened={deleteModalOpen}

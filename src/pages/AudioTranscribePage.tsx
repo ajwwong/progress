@@ -330,7 +330,10 @@ ${transcript}`;
             }
           }
         ],
-        subject: { display: getDisplayString(patient) }
+        subject: {
+          reference: `Patient/${patient.id}`,
+          display: getDisplayString(patient)
+        }
       };
 
       const updated = await medplum.updateResource(updatedComposition);

@@ -81,7 +81,7 @@ export function App(): JSX.Element | null {
             title: 'My Links',
             links: [
               { icon: <IconCalendar />, label: 'Calendar', href: '/calendar' },
-              { icon: <IconUser />, label: 'Patients', href: '/patients/directory' },
+              { icon: <IconUser />, label: 'Patients', href: '/patient' },
               { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
               { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
               { icon: <IconCreditCard />, label: 'Billing & Payments', href: '/billing' }
@@ -120,7 +120,7 @@ export function App(): JSX.Element | null {
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/calendar" element={<CalendarPage />} />
-              <Route path="/patients/directory" element={<PatientDirectoryPage />} />
+              <Route path="/patient" element={<PatientDirectoryPage />} />
               <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
               <Route path="/transcribe" element={<AudioTranscribePage onTranscriptionStart={addTranscriptionTime} onCompositionSaved={triggerUpdate} />} />
               <Route path="/Patient/:id" element={<PatientPage />}>
