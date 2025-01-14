@@ -62,12 +62,10 @@ export function AppointmentItem({
     gap: '2px'
   } : {
     padding: '2px 4px',
-    marginBottom: 1,
     height: '20px',
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    margin: '0',
     borderRadius: 6,
     boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
     border: '1px solid rgba(0,0,0,0.05)'

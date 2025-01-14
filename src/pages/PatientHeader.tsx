@@ -1,6 +1,6 @@
 import { calculateAgeString } from '@medplum/core';
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { HumanNameDisplay, MedplumLink, ResourceAvatar, useResource } from '@medplum/react';
+import { HumanNameDisplay, MedplumLink, useResource } from '@medplum/react';
 import classes from './PatientHeader.module.css';
 
 export interface PatientHeaderProps {
@@ -14,7 +14,6 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
   }
   return (
     <div className={classes.root}>
-      <ResourceAvatar value={patient} size="lg" radius="xl" mr="lg" />
       <dl>
         <dt>Name</dt>
         <dd>

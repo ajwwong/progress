@@ -377,8 +377,7 @@ export function PatientDirectoryPage(): JSX.Element {
                           transition: 'all 0.2s',
                           '&:hover': { 
                             color: 'var(--mantine-color-blue-9)',
-                            textDecoration: 'underline',
-                            transform: 'translateX(2px)'  // Slight shift on hover
+                            textDecoration: 'none'
                           }
                         }}
                       >

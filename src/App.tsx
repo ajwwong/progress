@@ -116,7 +116,7 @@ export function App(): JSX.Element | null {
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>
             <Routes>
-              <Route path="/" element={profile ? <HomePage /> : <LandingPage />} />
+              <Route path="/" element={profile ? <CalendarPage /> : <LandingPage />} />
               <Route path="/signin" element={<SignInPage />} />
               <Route path="/register" element={<RegisterPage />} />
               <Route path="/calendar" element={<CalendarPage />} />

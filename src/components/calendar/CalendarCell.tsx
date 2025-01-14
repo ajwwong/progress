@@ -57,7 +57,7 @@ export function CalendarCell({
   return (
     <Paper
       ref={setNodeRef}
-      p="4px 8px"
+      p="3px 3px"
       onClick={handleClick}
       style={{
         height: `${height}px`,
@@ -106,14 +106,13 @@ export function CalendarCell({
         className="empty-space"
         style={{ 
           flex: 1,
-          paddingTop: 2,
+          paddingTop: 0,
           paddingBottom: 0,
           position: 'relative',
           zIndex: 1,
           overflow: 'hidden',
           display: 'flex',
-          flexDirection: 'column',
-          gap: '2px'
+          flexDirection: 'column'
         }}
       >
         {sortedAppointments

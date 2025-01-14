@@ -1,16 +1,15 @@
-import { Box, Title, Paper, Group, Stack, Text, Button, Badge, ActionIcon } from '@mantine/core';
+import { Box, Title, Paper, Group, Stack, Text } from '@mantine/core';
 import { Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useParams } from 'react-router-dom';
-import { Patient, Appointment } from '@medplum/fhirtypes';
+import { Patient, Composition } from '@medplum/fhirtypes';
 import { calculateAgeString } from '@medplum/core';
-import { IconPlus, IconNotes } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 
 export function PatientOverview(): JSX.Element {
   const { id } = useParams();
   const medplum = useMedplum();
   const [patient, setPatient] = useState<Patient>();
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [latestNote, setLatestNote] = useState<Composition>();
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -20,13 +19,14 @@ export function PatientOverview(): JSX.Element {
         .then(setPatient)
         .catch(console.error);
 
-      // Fetch appointments
-      medplum.searchResources('Appointment', {
+      // Fetch latest progress note
+      medplum.searchResources('Composition', {
         patient: `Patient/${id}`,
+        type: 'progress-note',
         _sort: '-date',
-        _count: '10'
+        _count: '1'
       })
-        .then(setAppointments)
+        .then(results => setLatestNote(results[0]))
         .catch(console.error)
         .finally(() => setLoading(false));
     }
@@ -36,18 +36,38 @@ export function PatientOverview(): JSX.Element {
     return <Text>Loading...</Text>;
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'fulfilled': return 'green';
-      case 'cancelled': return 'red';
-      case 'booked': return 'blue';
-      default: return 'gray';
-    }
-  };
-
   return (
     <Document>
       <Stack spacing="xl">
+        {/* Latest Progress Note */}
+        <Paper p="md" radius="md" withBorder>
+          <Title order={3} mb="md">Latest Progress Note</Title>
+          {latestNote ? (
+            <Stack spacing="xs">
+              <Group position="apart">
+                <Text fw={500}>
+                  {new Date(latestNote.date || '').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </Text>
+                <Text size="sm" c="dimmed">Status: {latestNote.status}</Text>
+              </Group>
+              <Text>{latestNote.title}</Text>
+              {latestNote.section?.map((section, index) => (
+                <Box key={index}>
+                  {section.title && <Text fw={500}>{section.title}</Text>}
+                  <Text>{section.text}</Text>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Text c="dimmed">No progress notes available</Text>
+          )}
+        </Paper>
+
         {/* Client Information Panel */}
         <Paper p="md" radius="md" withBorder>
           <Title order={3} mb="md">Client Information</Title>
@@ -80,63 +100,6 @@ export function PatientOverview(): JSX.Element {
               ))}
             </Stack>
           </Group>
-        </Paper>
-
-        {/* Appointment History */}
-        <Paper p="md" radius="md" withBorder>
-          <Group position="apart" mb="md">
-            <Title order={3}>Recent Sessions</Title>
-            <Button 
-              leftIcon={<IconPlus size={16} />}
-              variant="light"
-              size="sm"
-              component="a"
-              href="/calendar"
-            >
-              Schedule Session
-            </Button>
-          </Group>
-
-          <Stack spacing="md">
-            {appointments.map((appointment) => (
-              <Paper key={appointment.id} p="sm" withBorder>
-                <Group position="apart">
-                  <Stack spacing={4}>
-                    <Text fw={500}>
-                      {new Date(appointment.start || '').toLocaleDateString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </Text>
-                    <Text size="sm" c="dimmed">
-                      {new Date(appointment.start || '').toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })} - {new Date(appointment.end || '').toLocaleTimeString('en-US', {
-                        hour: 'numeric',
-                        minute: '2-digit',
-                      })}
-                    </Text>
-                  </Stack>
-                  <Group>
-                    <Badge color={getStatusColor(appointment.status || '')}>
-                      {appointment.status}
-                    </Badge>
-                    <ActionIcon 
-                      variant="light" 
-                      color="blue"
-                      component="a"
-                      href={`/composition/${appointment.id}`}
-                    >
-                      <IconNotes size={16} />
-                    </ActionIcon>
-                  </Group>
-                </Group>
-              </Paper>
-            ))}
-          </Stack>
         </Paper>
       </Stack>
     </Document>
