@@ -1,4 +1,4 @@
-import { Box, Title, Paper, Group, Stack, Text } from '@mantine/core';
+import { Box, Title, Paper, Group, Stack, Text, Button, Grid, Select, TextInput } from '@mantine/core';
 import { Document, ResourceTable, useMedplum } from '@medplum/react';
 import { useParams } from 'react-router-dom';
 import { Patient, Composition } from '@medplum/fhirtypes';
@@ -11,12 +11,27 @@ export function PatientOverview(): JSX.Element {
   const [patient, setPatient] = useState<Patient>();
   const [latestNote, setLatestNote] = useState<Composition>();
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    birthDate: '',
+    gender: '',
+    phone: '',
+    email: '',
+  });
 
   useEffect(() => {
     if (id) {
       // Fetch patient data
       medplum.readResource('Patient', id)
-        .then(setPatient)
+        .then((p) => {
+          setPatient(p);
+          setFormData({
+            birthDate: p.birthDate || '',
+            gender: p.gender || '',
+            phone: p.telecom?.find(t => t.system === 'phone')?.value || '',
+            email: p.telecom?.find(t => t.system === 'email')?.value || '',
+          });
+        })
         .catch(console.error);
 
       // Fetch latest progress note
@@ -70,34 +85,67 @@ export function PatientOverview(): JSX.Element {
 
         {/* Client Information Panel */}
         <Paper p="md" radius="md" withBorder>
-          <Title order={3} mb="md">Client Information</Title>
+          <Group position="apart" mb="md">
+            <Title order={3}>Client Information</Title>
+            <Button 
+              variant="subtle" 
+              size="xs" 
+              onClick={() => setIsEditing(!isEditing)}
+            >
+              {isEditing ? 'Save' : 'Edit'}
+            </Button>
+          </Group>
+
           <Group grow>
             <Stack spacing="xs">
-              <Text size="sm" c="dimmed">Demographics</Text>
-              <Group spacing="lg">
-                <Box>
-                  <Text size="sm" c="dimmed">Age</Text>
-                  <Text>{patient.birthDate ? calculateAgeString(patient.birthDate) : 'N/A'}</Text>
-                </Box>
-                <Box>
-                  <Text size="sm" c="dimmed">Sex</Text>
-                  <Text>{patient.gender || 'N/A'}</Text>
-                </Box>
-                <Box>
-                  <Text size="sm" c="dimmed">Gender Identity</Text>
-                  <Text>{patient.gender || 'N/A'}</Text>
-                </Box>
-              </Group>
+              <Title order={4} size="h5">Demographics</Title>
+              <Grid>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Date of Birth"
+                    type="date"
+                    value={formData.birthDate}
+                    onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                    disabled={!isEditing}
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <Select
+                    label="Sex"
+                    value={formData.gender}
+                    onChange={(value) => setFormData(prev => ({ ...prev, gender: value || '' }))}
+                    data={[
+                      { value: 'male', label: 'Male' },
+                      { value: 'female', label: 'Female' },
+                      { value: 'other', label: 'Other' }
+                    ]}
+                    disabled={!isEditing}
+                  />
+                </Grid.Col>
+              </Grid>
             </Stack>
             
             <Stack spacing="xs">
-              <Text size="sm" c="dimmed">Contact Information</Text>
-              {patient.telecom?.map((contact, index) => (
-                <Group key={index}>
-                  <Text size="sm" c="dimmed">{contact.system}:</Text>
-                  <Text>{contact.value}</Text>
-                </Group>
-              ))}
+              <Title order={4} size="h5">Contact Information</Title>
+              <Grid>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Phone"
+                    value={formData.phone}
+                    onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    disabled={!isEditing}
+                  />
+                </Grid.Col>
+                <Grid.Col span={6}>
+                  <TextInput
+                    label="Email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    disabled={!isEditing}
+                  />
+                </Grid.Col>
+              </Grid>
             </Stack>
           </Group>
         </Paper>

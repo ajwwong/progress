@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
-import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconCreditCard } from '@tabler/icons-react';
+import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconCreditCard, IconSettings } from '@tabler/icons-react';
 import { Suspense, useState } from 'react';
 import { Route, Routes } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
@@ -24,6 +24,7 @@ import { PatientDirectoryPage } from './features/patients/pages/PatientDirectory
 import { ClientRoutes } from './routes/ClientRoutes';
 import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
+import { SettingsPage } from './pages/SettingsPage';
 
 
 export const CalendarContext = createContext<{
@@ -84,7 +85,8 @@ export function App(): JSX.Element | null {
               { icon: <IconUser />, label: 'Patients', href: '/patient' },
               { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
               { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
-              { icon: <IconCreditCard />, label: 'Billing & Payments', href: '/billing' }
+              { icon: <IconCreditCard />, label: 'Billing & Payments', href: '/billing' },
+              { icon: <IconSettings />, label: 'Settings', href: '/settings' }
             ],
           },
           {
@@ -135,9 +137,9 @@ export function App(): JSX.Element | null {
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/composition/:id" element={<NoteView />} />
               <Route path="/templates" element={<NoteTemplatesPage />} />
-              <Route path="/settings/billing" element={<StripeConnect />} />
               <Route path="/portal/*" element={<ClientRoutes />} />
               <Route path="/billing" element={<BillingDashboard />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

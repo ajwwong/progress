@@ -26,6 +26,7 @@ export function PatientModal({ opened, onClose }: PatientModalProps): JSX.Elemen
       setIsSubmitting(true);
       const newPatient = await medplum.createResource({
         resourceType: 'Patient',
+        active: true,
         name: [{
           given: [firstName],
           family: lastName,

@@ -28,7 +28,8 @@ export function PatientSelector({ onSelect }: PatientSelectorProps) {
         name: [{
           given: [firstName],
           family: lastName,
-        }]
+        }],
+        active: true
       });
 
       onSelect(newPatient);
