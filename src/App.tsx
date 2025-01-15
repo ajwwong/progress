@@ -7,6 +7,7 @@ import { PatientOverview } from './components/PatientOverview';
 import { Timeline } from './components/Timeline';
 import { SessionNotes } from './components/SessionNotes';
 import { TreatmentPlan } from './components/TreatmentPlan';
+import { PatientProfile } from './components/PatientProfile';
 import { NoteTemplatesPage } from './components/templates/NoteTemplatesPage';
 import { HomePage } from './pages/HomePage';
 import { LandingPage } from './pages/LandingPage';
@@ -132,6 +133,7 @@ export function App(): JSX.Element | null {
                 <Route path="history" element={<PatientHistory />} />
                 <Route path="notes" element={<SessionNotes />} />
                 <Route path="treatment" element={<TreatmentPlan />} />
+                <Route path="profile" element={<PatientProfile />} />
               </Route>
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />

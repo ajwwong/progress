@@ -1,57 +1,69 @@
-import { Group, Title, Text, Button, Stack, Box, Checkbox, ActionIcon, TextInput, Modal, Paper } from '@mantine/core';
-import { Patient, Appointment } from '@medplum/fhirtypes';
-import { Document, ResourceName, ResourceAvatar, useMedplum, useMedplumNavigate } from '@medplum/react';
-import { IconPlus, IconTrash, IconSearch, IconPhone, IconMail, IconChevronLeft, IconChevronRight } from '@tabler/icons-react';
-import { useState, useCallback, useEffect } from 'react';
+import { Group, Title, Text, Button, Stack, Box, Checkbox, ActionIcon, TextInput, Modal, Paper, Switch, Menu, Table, Select } from '@mantine/core';
+import { Patient } from '@medplum/fhirtypes';
+import { ResourceName, useMedplum, useMedplumNavigate } from '@medplum/react';
+import { IconSearch, IconPhone, IconMail, IconDotsVertical, IconTrash, IconPlus } from '@tabler/icons-react';
+import { useState, useEffect } from 'react';
 import { notifications } from '@mantine/notifications';
-import { calculateAgeString, getDisplayString } from '@medplum/core';
 import { PatientFilters } from '../components/PatientFilters';
+import { CreatePatientModal } from '../../../components/modals/CreatePatientModal';
+import { PatientModal } from '../../../components/calendar/PatientModal';
 
-interface PatientStatus {
-  lastSession: string;
-  nextAppointment: string;
-  sessionsRemaining: number;
-  progressNotesPending: boolean;
-  treatmentPlanDue: string | null;
-  insuranceStatus: 'verified' | 'pending' | 'expired';
-  outstandingBalance: number;
-  requiredForms: {
-    total: number;
-    completed: number;
-  };
-}
+const theme = {
+  components: {
+    Button: {
+      defaultProps: {
+        size: 'sm',
+      },
+    },
+    Paper: {
+      defaultProps: {
+        shadow: 'xs',
+        radius: 'md',
+      },
+    },
+  },
+};
 
 export function PatientDirectoryPage(): JSX.Element {
   const [patients, setPatients] = useState<Patient[]>([]);
-  const [selectedPatients, setSelectedPatients] = useState<string[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [clientStatus, setClientStatus] = useState('all');
+  const [insurancePayer, setInsurancePayer] = useState('all');
+  const [sortBy, setSortBy] = useState('lastName');
   const [isLoading, setIsLoading] = useState(false);
   const [lastSessions, setLastSessions] = useState<Record<string, string>>({});
-  const [patientStatuses, setPatientStatuses] = useState<Record<string, PatientStatus>>({});
-  const navigate = useMedplumNavigate();
-  const medplum = useMedplum();
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteConfirmName, setDeleteConfirmName] = useState('');
-  const [patientStatus, setPatientStatus] = useState('all');
-  const [insuranceStatus, setInsuranceStatus] = useState('all');
-  const [sortBy, setSortBy] = useState('name');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const patientsPerPage = 40;
+  const medplum = useMedplum();
+  const navigate = useMedplumNavigate();
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
+  const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState('');
 
+  const formatLastSession = (date: string) => {
+    if (!date) return 'No sessions yet';
+    const sessionDate = new Date(date);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - sessionDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Today';
+    if (diffDays === 1) return 'Yesterday';
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return sessionDate.toLocaleDateString();
+  };
+  
   const getLastSession = async (patientId: string): Promise<string> => {
     try {
-      const pastFilter = {
-        code: 'date',
-        operator: 'eb', // ends-before
-        value: new Date().toISOString(),
-      };
-
       const appointments = await medplum.searchResources('Appointment', {
         patient: `Patient/${patientId}`,
         _sort: '-date',
         _count: 1,
-        date: `lt${new Date().toISOString()}` // less than current date
+        date: `lt${new Date().toISOString()}`
       });
       
       if (appointments[0]?.start) {
@@ -70,39 +82,30 @@ export function PatientDirectoryPage(): JSX.Element {
       let searchParams = [];
       
       if (query.trim()) {
-        // Search by name OR telecom (email/phone)
-        searchParams.push(`_filter=(name:contains=${query} or telecom:contains=${query})`);
+        searchParams.push(`name:contains=${query}`);
       }
       
-      // Add status filter
-      if (patientStatus !== 'all') {
-        searchParams.push(`active=${patientStatus === 'active'}`);
+      if (clientStatus !== 'all') {
+        if (clientStatus === 'active') {
+          searchParams.push('active=true');
+        }
       }
       
-      // Add insurance status filter
-      if (insuranceStatus !== 'all') {
-        searchParams.push(`insurance-status=${insuranceStatus}`);
-      }
+      const sortParam = sortBy === 'name' ? 'family' : '-_lastUpdated';
+      searchParams.push(`_sort=${sortParam}`);
       
-      // Add sorting
-      const sortParam = sortBy === 'name' ? '_sort=family' : sortBy === 'last-session' ? '_sort=-date' : '_sort=-_lastUpdated';
-      searchParams.push(sortParam);
-      
-      // Add pagination
       searchParams.push(`_count=${patientsPerPage}`);
       searchParams.push(`_offset=${(currentPage - 1) * patientsPerPage}`);
       
       const searchString = searchParams.join('&');
-      const results = await medplum.searchResources('Patient', searchString);
       
-      // Update total pages calculation
-      const total = results.length > 0 ? (results as any).total || results.length : 0;
-      const calculatedTotalPages = Math.max(1, Math.ceil(total / patientsPerPage));
-      setTotalPages(calculatedTotalPages);
+      const results = await medplum.searchResources('Patient', searchString);
       
       setPatients(results);
       
-      // Fetch last sessions for all patients
+      const total = results.length > 0 ? (results as any).total || results.length : 0;
+      setTotalPages(Math.max(1, Math.ceil(total / patientsPerPage)));
+      
       const sessions: Record<string, string> = {};
       await Promise.all(
         results.map(async (patient) => {
@@ -124,376 +127,281 @@ export function PatientDirectoryPage(): JSX.Element {
     }
   };
 
-  // Use useEffect for search with delay
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       loadPatients(searchQuery);
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, patientStatus, insuranceStatus, sortBy, currentPage]);
+  }, [searchQuery, clientStatus, insurancePayer, sortBy, currentPage]);
 
-  // Initial load
   useEffect(() => {
     loadPatients('');
   }, []);
 
-  const getPatientToDeleteName = () => {
-    if (selectedPatients.length !== 1) return '';
-    const patient = patients.find(p => p.id === selectedPatients[0]);
-    return patient ? getDisplayString(patient) : '';
-  };
-
-  const handleDeletePatients = async () => {
-    const patientName = getPatientToDeleteName();
-    if (deleteConfirmName !== patientName) {
-      notifications.show({
-        title: 'Error',
-        message: 'Patient name does not match',
-        color: 'red',
-      });
-      return;
-    }
-
-    setIsLoading(true);
+  const handleCreatePatient = async (patientName: string) => {
     try {
-      await Promise.all(
-        selectedPatients.map(id => 
-          medplum.deleteResource('Patient', id)
-        )
-      );
-      
+      const [firstName, ...restName] = patientName.split(' ');
+      const lastName = restName.join(' ');
+
+      const newPatient = await medplum.createResource('Patient', {
+        resourceType: 'Patient',
+        name: [{
+          given: [firstName],
+          family: lastName
+        }],
+        active: true
+      });
+
       notifications.show({
         title: 'Success',
-        message: 'Selected patients deleted',
+        message: 'Patient created successfully',
         color: 'green',
       });
-      
-      setSelectedPatients([]);
-      setDeleteModalOpen(false);
-      setDeleteConfirmName('');
+
+      // Refresh the patient list
       loadPatients(searchQuery);
-    } catch (err) {
-      console.error('Error deleting patients:', err);
+      
+    } catch (error) {
+      console.error('Error creating patient:', error);
       notifications.show({
         title: 'Error',
-        message: 'Failed to delete patients',
+        message: 'Failed to create patient',
         color: 'red',
       });
     }
-    setIsLoading(false);
   };
 
-  const togglePatientSelection = (patientId: string) => {
-    setSelectedPatients(prev => 
-      prev.includes(patientId) 
-        ? prev.filter(id => id !== patientId)
-        : [...prev, patientId]
-    );
+  const handlePatientCreated = () => {
+    loadPatients(searchQuery);
+    setIsPatientModalOpen(false);
   };
 
-  const formatLastSession = (date: string) => {
-    if (!date) return 'No sessions yet';
-    const sessionDate = new Date(date);
-    const today = new Date();
-    const diffTime = Math.abs(today.getTime() - sessionDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  const handleDeletePatient = async () => {
+    if (!patientToDelete) return;
     
-    if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return sessionDate.toLocaleDateString();
-  };
-
-  const loadPatientStatus = async (patientId: string): Promise<PatientStatus> => {
+    setIsLoading(true);
     try {
-      // Get next appointment
-      const futureAppointments = await medplum.searchResources('Appointment', {
-        patient: `Patient/${patientId}`,
-        date: `gt${new Date().toISOString()}`,
-        _count: 1,
-        _sort: 'date'
+      await medplum.deleteResource('Patient', patientToDelete);
+      notifications.show({
+        title: 'Success',
+        message: 'Patient deleted successfully',
+        color: 'green',
       });
-
-      // Get progress notes status using Composition
-      const pendingNotes = await medplum.searchResources('Composition', {
-        patient: `Patient/${patientId}`,
-        status: 'preliminary',
-        type: 'progress-note',
-        _count: 1
-      });
-
-      // Get CarePlan status for treatment plan
-      const carePlan = await medplum.searchResources('CarePlan', {
-        patient: `Patient/${patientId}`,
-        status: 'active',
-        _count: 1,
-        _sort: '-date'
-      });
-
-      return {
-        lastSession: await getLastSession(patientId),
-        nextAppointment: futureAppointments[0]?.start || '',
-        sessionsRemaining: 12, // This would come from insurance auth tracking
-        progressNotesPending: pendingNotes.length > 0,
-        treatmentPlanDue: carePlan[0]?.period?.end || null,
-        insuranceStatus: 'verified',
-        outstandingBalance: 0,
-        requiredForms: {
-          total: 5,
-          completed: 3
-        }
-      };
+      loadPatients(searchQuery);
     } catch (err) {
-      console.error('Error loading patient status:', err);
-      return {
-        lastSession: '',
-        nextAppointment: '',
-        sessionsRemaining: 0,
-        progressNotesPending: false,
-        treatmentPlanDue: null,
-        insuranceStatus: 'pending',
-        outstandingBalance: 0,
-        requiredForms: { total: 0, completed: 0 }
-      };
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedPatients.length === patients.length) {
-      setSelectedPatients([]);
-    } else {
-      setSelectedPatients(patients.map(p => p.id as string));
+      console.error('Error deleting patient:', err);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to delete patient',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+      setDeleteModalOpen(false);
+      setPatientToDelete(null);
+      setDeleteConfirmName('');
     }
   };
 
   return (
-    <Document>
-      <Box style={{ maxWidth: '1200px', margin: '0 auto', padding: '20px' }}>
-        <Stack spacing="xl">
-          {/* Header Section */}
-          <Group position="apart" align="flex-end">
-            <Stack spacing={4}>
-              <Title order={1} style={{ color: 'var(--mantine-color-blue-9)' }}>Patients and Contacts</Title>
-              <Text size="sm" c="dimmed">Manage your patients and sessions</Text>
-            </Stack>
-            <Group>
-              <ActionIcon 
-                color="red"
-                variant="subtle"
-                disabled={selectedPatients.length === 0 || isLoading}
-                onClick={() => setDeleteModalOpen(true)}
-                loading={isLoading}
-              >
-                <IconTrash size={16} />
-              </ActionIcon>
-              <Button 
-                variant="filled"
-                leftSection={<IconPlus size={14} />}
-                onClick={() => navigate('/patient/new')}
-                disabled={isLoading}
-              >
-                Add patient
-              </Button>
-            </Group>
-          </Group>
+    <Box p="md">
+      <Stack spacing="xl">
+        <Group position="apart" mb="lg">
+          <Title order={2}>Patients</Title>
+          <Button
+            variant="filled"
+            color="blue"
+            size="md"
+            leftSection={<IconPlus size={16} />}
+            onClick={() => setIsPatientModalOpen(true)}
+          >
+            Add Patient
+          </Button>
+        </Group>
 
-          {/* Search and Filters */}
-          <Paper p="md" radius="md" withBorder>
-            <PatientFilters
-              searchTerm={searchQuery}
-              onSearchChange={setSearchQuery}
-              patientStatus={patientStatus}
-              onPatientStatusChange={setPatientStatus}
-              insuranceStatus={insuranceStatus}
-              onInsuranceStatusChange={setInsuranceStatus}
-              sortBy={sortBy}
-              onSortByChange={setSortBy}
-            />
-          </Paper>
+        <Group align="flex-end" spacing="md">
+          <TextInput
+            placeholder="Search patients by name..."
+            size="md"
+            radius="md"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.currentTarget.value)}
+            leftSection={<IconSearch size={16} style={{ color: 'var(--mantine-color-gray-5)' }} />}
+            disabled={isLoading}
+            style={{ flex: 1 }}
+          />
+          <Select
+            placeholder="Status"
+            data={[
+              { value: 'all', label: 'All Patients' },
+              { value: 'active', label: 'Active' }
+            ]}
+            value={clientStatus}
+            onChange={setClientStatus}
+            size="md"
+            radius="md"
+            style={{ width: 200 }}
+          />
+          <Select
+            placeholder="Sort by"
+            data={[
+              { value: 'name', label: 'Name' },
+              { value: 'recent', label: 'Most Recent' },
+              { value: 'oldest', label: 'Oldest' }
+            ]}
+            value={sortBy}
+            onChange={setSortBy}
+            size="md"
+            radius="md"
+            style={{ width: 200 }}
+          />
+        </Group>
 
-          {/* Patient List */}
-          <Paper radius="md" withBorder>
-            {/* Header */}
-            <Group 
-              px="xl" 
-              py="md" 
-              style={{ 
-                borderBottom: '1px solid var(--mantine-color-gray-3)',
-                backgroundColor: 'var(--mantine-color-gray-0)'
-              }}
-            >
-              <Checkbox 
-                style={{ width: '40px', marginLeft: '12px' }}
-                checked={selectedPatients.length === patients.length && patients.length > 0}
-                indeterminate={selectedPatients.length > 0 && selectedPatients.length < patients.length}
-                onChange={toggleSelectAll}
-              />
-              <Text fw={500} style={{ width: '250px' }}>Patient</Text>
-              <Text fw={500} style={{ width: '200px' }}>Contact</Text>
-              <Text fw={500} style={{ flex: 1 }}>Last Session</Text>
-              <Box style={{ width: '140px' }} />
-            </Group>
-
-            {/* Patient Rows */}
-            {patients.map((patient) => (
-              <Paper 
-                key={patient.id}
-            
-                p="md"
-                withBorder
-                sx={(theme) => ({
-                  backgroundColor: 'white',
-                  borderColor: theme.fn.lighten(theme.colors.gray[0], 0.1),
-                  marginBottom: theme.spacing.xs,
-                  padding: theme.spacing.md,
-                  transition: 'background-color 200ms ease',
-                  '&:hover': {
-                    backgroundColor: 'var(--mantine-color-gray-1)',
-                  }
-                })}
-              >
-                <Group align="center" position="apart" spacing="xl">
-                  <Group align="center" spacing="xl" style={{ flex: 1 }}>
-                    <Checkbox
-                      style={{ width: '40px', marginLeft: '16px' }}
-                      checked={selectedPatients.includes(patient.id as string)}
-                      onChange={(e) => togglePatientSelection(patient.id as string)}
-                    />
-                    <Stack spacing={8} style={{ width: '250px' }}>
-                      <Text 
-                        component="a" 
-                        href={`/patient/${patient.id}`}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          navigate(`/patient/${patient.id}`);
-                        }}
-                        fw={900}
-                        size="lg"
-                        c="blue.8"
-                        sx={{
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                          '&:hover': { 
-                            color: 'var(--mantine-color-blue-9)',
-                            textDecoration: 'none'
-                          }
-                        }}
-                      >
-                        <ResourceName value={patient} />
-                      </Text>
-                      {patient.birthDate && (
-                        <Text size="sm" c="dimmed">
-                          {calculateAgeString(patient.birthDate)} old
-                        </Text>
-                      )}
-                    </Stack>
-
-                    <Stack spacing={10} style={{ width: '220px' }}>
-                      {patient.telecom?.map((t, index) => (
-                        <Group key={index} spacing={12} noWrap>
-                          {t.system === 'phone' && <IconPhone size={18} color="var(--mantine-color-blue-6)" />}
-                          {t.system === 'email' && <IconMail size={18} color="var(--mantine-color-blue-6)" />}
-                          <Text size="sm" c="dimmed" truncate>
-                            {t.value}
-                          </Text>
+        {/* Patient List */}
+        <Paper withBorder>
+          <Table highlightOnHover>
+            <Table.Thead>
+              <Table.Tr>
+                <Table.Th style={{ width: '200px' }}>Name</Table.Th>
+                <Table.Th style={{ width: '100px' }}>Status</Table.Th>
+                <Table.Th style={{ width: '250px' }}>Contact info</Table.Th>
+                <Table.Th style={{ width: '150px' }}>Most Recent Appointment</Table.Th>
+                <Table.Th style={{ width: '80px' }}>Manage</Table.Th>
+              </Table.Tr>
+            </Table.Thead>
+            <Table.Tbody>
+              {patients.map((patient) => (
+                <Table.Tr key={patient.id}>
+                  <Table.Td>
+                    <Text 
+                      component="a" 
+                      href="#" 
+                      onClick={(e) => {
+                        e.preventDefault();
+                        navigate(`/patient/${patient.id}`);
+                      }}
+                      sx={(theme) => ({
+                        cursor: 'pointer',
+                        color: theme.colors.blue[6],
+                        fontWeight: 500,
+                        '&:hover': {
+                          textDecoration: 'underline',
+                          color: theme.colors.blue[8]
+                        }
+                      })}
+                    >
+                      <ResourceName value={patient} />
+                    </Text>
+                  </Table.Td>
+                  <Table.Td>
+                    <Button 
+                      size="xs" 
+                      variant="light" 
+                      color={patient.active ? "green" : "gray"}
+                    >
+                      {patient.active ? "Active" : "Inactive"}
+                    </Button>
+                  </Table.Td>
+                  <Table.Td>
+                    <Stack spacing={4}>
+                      {patient.telecom?.map((t, i) => (
+                        <Group key={i} spacing={6}>
+                          {t.system === 'phone' && <IconPhone size={14} />}
+                          {t.system === 'email' && <IconMail size={14} />}
+                          <Text size="sm">{t.value}</Text>
                         </Group>
                       ))}
                     </Stack>
+                  </Table.Td>
+                  <Table.Td>{formatLastSession(lastSessions[patient.id]) || 'N/A'}</Table.Td>
+                  <Table.Td>
+                    <Menu position="bottom-end">
+                      <Menu.Target>
+                        <ActionIcon 
+                          variant="subtle" 
+                          color="gray"
+                          size="sm"
+                          radius="xl"
+                        >
+                          <IconDotsVertical size={16} />
+                        </ActionIcon>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        <Menu.Item
+                          onClick={() => navigate(`/patient/${patient.id}`)}
+                        >
+                          View Profile
+                        </Menu.Item>
+                        <Menu.Item
+                          color="red"
+                          onClick={() => {
+                            setPatientToDelete(patient.id as string);
+                            setDeleteModalOpen(true);
+                          }}
+                        >
+                          Delete
+                        </Menu.Item>
+                      </Menu.Dropdown>
+                    </Menu>
+                  </Table.Td>
+                </Table.Tr>
+              ))}
+            </Table.Tbody>
+          </Table>
+        </Paper>
+      </Stack>
 
-                    <Text style={{ flex: 1 }} c="dimmed" size="sm">
-                      {formatLastSession(lastSessions[patient.id as string])}
-                    </Text>
-                  </Group>
+      <PatientModal
+        opened={isPatientModalOpen}
+        onClose={() => setIsPatientModalOpen(false)}
+        onSuccess={handlePatientCreated}
+      />
 
-                  <Button
-                    variant="light"
-                    size="sm"
-                    color="blue"
-                    onClick={() => navigate(`/calendar/new?patient=${patient.id}`)}
-                    style={{ minWidth: '120px', marginRight: '16px' }}
-                    sx={{
-                      '&:hover': {
-                        backgroundColor: 'var(--mantine-color-blue-1)'
-                      }
-                    }}
-                  >
-                    New Session
-                  </Button>
-                </Group>
-              </Paper>
-            ))}
-          </Paper>
-
-          <Group position="center" mt="md">
-            <ActionIcon 
+      <Modal
+        opened={deleteModalOpen}
+        onClose={() => {
+          setDeleteModalOpen(false);
+          setPatientToDelete(null);
+          setDeleteConfirmName('');
+        }}
+        title={<Text size="lg" fw={500} c="red">Delete Patient</Text>}
+        centered
+      >
+        <Stack spacing="md">
+          <Text>
+            Are you sure you want to delete this patient? This action cannot be undone.
+          </Text>
+          <Text size="sm">
+            Please type "DELETE" to confirm:
+          </Text>
+          <TextInput
+            value={deleteConfirmName}
+            onChange={(e) => setDeleteConfirmName(e.currentTarget.value)}
+            placeholder='Type "DELETE" here'
+          />
+          <Group justify="flex-end">
+            <Button
               variant="light"
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              onClick={() => {
+                setDeleteModalOpen(false);
+                setPatientToDelete(null);
+                setDeleteConfirmName('');
+              }}
             >
-              <IconChevronLeft size={16} />
-            </ActionIcon>
-            
-            <Text size="sm">
-              Page {currentPage} of {totalPages}
-            </Text>
-            
-            <ActionIcon 
-              variant="light"
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              Cancel
+            </Button>
+            <Button
+              color="red"
+              loading={isLoading}
+              onClick={handleDeletePatient}
+              disabled={deleteConfirmName !== 'DELETE'}
             >
-              <IconChevronRight size={16} />
-            </ActionIcon>
+              Delete Patient
+            </Button>
           </Group>
-
-          <Modal
-            opened={deleteModalOpen}
-            onClose={() => {
-              setDeleteModalOpen(false);
-              setDeleteConfirmName('');
-            }}
-            title={<Text size="lg" fw={500} c="red">Delete Patient</Text>}
-            centered
-          >
-            <Stack spacing="md">
-              <Text>
-                Are you sure you want to delete{' '}
-                <Text span fw={500}>{getPatientToDeleteName()}</Text>?
-                This action cannot be undone.
-              </Text>
-              <Text size="sm">
-                Please type the patient's full name to confirm:
-              </Text>
-              <TextInput
-                value={deleteConfirmName}
-                onChange={(e) => setDeleteConfirmName(e.currentTarget.value)}
-                placeholder="Type patient name here"
-              />
-              <Group justify="flex-end">
-                <Button
-                  variant="light"
-                  onClick={() => {
-                    setDeleteModalOpen(false);
-                    setDeleteConfirmName('');
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  color="red"
-                  loading={isLoading}
-                  onClick={handleDeletePatients}
-                  disabled={deleteConfirmName !== getPatientToDeleteName()}
-                >
-                  Delete Patient
-                </Button>
-              </Group>
-            </Stack>
-          </Modal>
         </Stack>
-      </Box>
-    </Document>
+      </Modal>
+    </Box>
   );
 }

@@ -1,9 +1,9 @@
-import { Title, Paper, Stack, Text, Group, Button, ActionIcon, Loader } from '@mantine/core';
+import { Accordion, Box, Button, Collapse, Group, Loader, Paper, Stack, Text, Title } from '@mantine/core';
 import { Document, useMedplum, useMedplumProfile } from '@medplum/react';
 import { useParams } from 'react-router-dom';
-import { useState, useEffect } from 'react';
 import { Composition } from '@medplum/fhirtypes';
-import { IconEdit, IconPlus } from '@tabler/icons-react';
+import { IconEdit, IconPlus, IconArrowRight, IconChevronDown, IconChevronRight } from '@tabler/icons-react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 export function SessionNotes(): JSX.Element {
@@ -12,6 +12,7 @@ export function SessionNotes(): JSX.Element {
   const [compositions, setCompositions] = useState<{ [key: string]: Composition[] }>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>();
+  const [openNotes, setOpenNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (id) {
@@ -83,17 +84,31 @@ export function SessionNotes(): JSX.Element {
     );
   }
 
+  const toggleNote = (noteId: string) => {
+    setOpenNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Document>
       <Stack spacing="xl">
         <Group position="apart">
           <Title order={2}>All Patient Notes</Title>
           <Button 
-            leftIcon={<IconPlus size={16} />}
             component="a"
             href="/transcribe"
           >
-            New Note
+            <Group spacing={8}>
+              <IconChevronRight size={16} />
+              <span>New Note</span>
+            </Group>
           </Button>
         </Group>
 
@@ -106,45 +121,44 @@ export function SessionNotes(): JSX.Element {
             })}>
               {type} ({notes.length})
             </Title>
-
-            {notes.map((note) => (
-              <Paper key={note.id} p="xl" radius="md" withBorder>
-                <Group position="apart" mb="lg">
-                  <Stack spacing={4}>
-                    <Title order={4}>{note.title || 'Untitled Note'}</Title>
+            
+            <Stack spacing="md">
+              {notes.map((note) => (
+                <Paper key={note.id} withBorder>
+                  <Group p="md" position="apart" onClick={() => toggleNote(note.id || '')} sx={{ cursor: 'pointer' }}>
+                    <Group>
+                      {openNotes.has(note.id || '') ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                      <Text weight={500}>{note.title}</Text>
+                    </Group>
                     <Text size="sm" color="dimmed">
-                      {new Date(note.date || '').toLocaleString('en-US', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                        hour: 'numeric',
-                        minute: '2-digit'
-                      })}
+                      {new Date(note.date || '').toLocaleString()}
                     </Text>
-                  </Stack>
-                  <Button
-                    component={Link}
-                    to={`/composition/${note.id}`}
-                    variant="light"
-                    leftIcon={<IconEdit size={16} />}
-                  >
-                    View/Edit
-                  </Button>
-                </Group>
-
-                {note.section?.map((section, index) => (
-                  <Paper key={index} withBorder p="md" radius="md" mb="md">
-                    <Title order={5} mb="md">
-                      {section.title}
-                    </Title>
-                    <Text style={{ whiteSpace: 'pre-wrap' }}>
-                      {section.text?.div?.replace(/<[^>]*>/g, '').trim() || ''}
-                    </Text>
-                  </Paper>
-                ))}
-              </Paper>
-            ))}
+                  </Group>
+                  
+                  <Collapse in={openNotes.has(note.id || '')}>
+                    <Box p="md">
+                      {note.section
+                        ?.filter(section => section.title !== 'Transcript')
+                        ?.map((section, index) => (
+                        <Box key={index} mb="md">
+                          <Text weight={500} mb="xs">{section.title}</Text>
+                          <Paper p="md" withBorder>
+                            <div 
+                              dangerouslySetInnerHTML={{ 
+                                __html: section.text?.div || '' 
+                              }}
+                              style={{
+                                whiteSpace: 'pre-wrap'
+                              }}
+                            />
+                          </Paper>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Collapse>
+                </Paper>
+              ))}
+            </Stack>
           </Stack>
         ))}
       </Stack>

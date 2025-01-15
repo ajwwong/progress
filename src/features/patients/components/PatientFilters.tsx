@@ -37,9 +37,7 @@ export function PatientFilters({
           placeholder="Status"
           data={[
             { value: 'all', label: 'All Patients' },
-            { value: 'active', label: 'Active' },
-            { value: 'inactive', label: 'Inactive' },
-            { value: 'pending', label: 'Pending Intake' }
+            { value: 'active', label: 'Active' }
           ]}
           value={patientStatus}
           onChange={(value) => onPatientStatusChange(value || 'all')}
@@ -62,9 +60,9 @@ export function PatientFilters({
           leftSection={<IconClock size={16} />}
           placeholder="Sort"
           data={[
-            { value: 'last-updated', label: 'Last Updated' },
-            { value: 'last-session', label: 'Last Session' },
-            { value: 'name', label: 'Patient Name' }
+            { value: 'most-recent', label: 'Most Recent' },
+            { value: 'name', label: 'Patient Name' },
+            { value: 'last-updated', label: 'Last Updated' }
           ]}
           value={sortBy}
           onChange={(value) => onSortByChange(value || 'last-updated')}

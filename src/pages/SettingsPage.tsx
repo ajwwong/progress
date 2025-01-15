@@ -1,6 +1,40 @@
-import { Container, Stack, Group, Title, Text, TextInput, Button, Select, Switch, SegmentedControl, MultiSelect, Tabs } from '@mantine/core';
+import { useState } from 'react';
+import { Container, Stack, Group, Title, Text, TextInput, Button, Select, Switch, SegmentedControl, MultiSelect, Tabs, PasswordInput } from '@mantine/core';
+import { useMedplum } from '@medplum/react';
+import { OperationOutcome } from '@medplum/fhirtypes';
 
 export function SettingsPage(): JSX.Element {
+  const medplum = useMedplum();
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+
+    try {
+      if (newPassword !== confirmPassword) {
+        setError('New passwords do not match');
+        return;
+      }
+
+       // Call Medplum's change password endpoint
+       const response = await medplum.post('auth/changepassword', {
+        oldPassword,
+        newPassword
+      });
+
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      alert('Password successfully changed');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <Container size="md" py="xl">
       <Tabs defaultValue="profile">
@@ -40,8 +74,31 @@ export function SettingsPage(): JSX.Element {
                 <Select
                   label="Specialty"
                   placeholder="Enter your specialty"
-                  data={['Specialty 1', 'Specialty 2', 'Specialty 3']}
-                />
+                  data={[
+                    'Psychotherapy',
+                    'Counseling',
+                    'Clinical Psychology',
+                    'Psychiatry',
+                    'Marriage and Family Therapy',
+                    'Social Work',
+                    'Substance Abuse Counseling',
+                    'Child and Adolescent Psychology',
+                    'Geriatric Psychology',
+                    'Health Psychology',
+                    'Neuropsychology',
+                    'Forensic Psychology',
+                    'Industrial-Organizational Psychology',
+                    'School Psychology',
+                    'Sports Psychology',
+                    'Rehabilitation Psychology',
+                    'Behavioral Psychology',
+                    'Developmental Psychology',
+                    'Educational Psychology',
+                    'Environmental Psychology',
+                    'Experimental Psychology',
+                    'Military Psychology',
+                    'Occupational Health Psychology'
+                  ]}                />
 
                 <Button color="blue">Save</Button>
               </Stack>
@@ -74,12 +131,61 @@ export function SettingsPage(): JSX.Element {
               <Text fw={500}>Interventions</Text>
               <MultiSelect
                 data={[
-                  'Cognitive Behavioral Therapy (CBT)',
-                  'Enhanced Cognitive Behavior Therapy (CBT-E)',
-                  'Dialectical Behavior Therapy (DBT)',
                   'Acceptance and Commitment Therapy (ACT)',
+                  'Cognitive Behavioral Therapy (CBT)',
+                  'Dialectical Behavior Therapy (DBT)',
+                  'Eye Movement Desensitization and Reprocessing (EMDR)',
+                  'Psychodynamic Therapy',
+                  'Interpersonal Therapy (IPT)',
+                  'Mindfulness-Based Cognitive Therapy (MBCT)',
+                  'Motivational Interviewing (MI)',
+                  'Schema Therapy',
+                  'Trauma-Focused Cognitive Behavioral Therapy (TF-CBT)',
+                  'Art Therapy',
+                  'Family Systems Therapy',
+                  'Humanistic Therapy',
+                  'Existential Therapy',
+                  'Gestalt Therapy',
+                  'Rational Emotive Behavior Therapy (REBT)',
+                  'Solution-Focused Brief Therapy (SFBT)',
+                  'Emotion-Focused Therapy (EFT)',
+                  'Narrative Therapy',
+                  'Play Therapy',
+                  'Compassion-Focused Therapy (CFT)',
+                  'Cognitive Processing Therapy (CPT)',
+                  'Behavioral Activation (BA)',
+                  'Attachment-Based Therapy',
+                  'Adlerian Therapy',
+                  'Client-Centered Therapy',
+                  'Coherence Therapy',
+                  'Dream Analysis',
+                  'Forensic Psychotherapy',
+                  'Functional Analytic Psychotherapy (FAP)',
+                  'Group Therapy',
+                  'Holistic Therapy',
+                  'Hypnotherapy',
+                  'Integrative Therapy',
+                  'Jungian Therapy',
+                  'Logotherapy',
+                  'Neuro-Linguistic Programming (NLP)',
+                  'Object Relations Therapy',
+                  'Pastoral Counseling',
+                  'Person-Centered Therapy',
+                  'Positive Psychology',
+                  'Prolonged Exposure Therapy',
+                  'Psychoanalysis',
+                  'Relational Therapy',
+                  'Sensorimotor Psychotherapy',
+                  'Somatic Experiencing',
+                  'Supportive Therapy',
+                  'Systemic Therapy',
+                  'Transactional Analysis',
+                  'Transpersonal Therapy'
                 ]}
-                placeholder="Search..."
+                placeholder="Search and select interventions"
+                searchable
+                maxSelectedValues={10}
+                onChange={(selected) => console.log('Selected interventions:', selected)}
               />
 
               <Button color="blue">Save</Button>
@@ -98,7 +204,33 @@ export function SettingsPage(): JSX.Element {
         </Tabs.Panel>
 
         <Tabs.Panel value="change-password" pt="xl">
-          {/* Change Password Content */}
+          <form onSubmit={handleSubmit}>
+            <Stack spacing="xl">
+              <Title order={2}>Change Password</Title>
+              <Text c="dimmed">Update your account password.</Text>
+
+              <PasswordInput
+                label="Current Password"
+                value={oldPassword}
+                onChange={(e) => setOldPassword(e.target.value)}
+                required
+              />
+              <PasswordInput
+                label="New Password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                required
+              />
+              <PasswordInput
+                label="Confirm New Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+              />
+              {error && <div style={{ color: 'red' }}>{error}</div>}
+              <Button type="submit">Change Password</Button>
+            </Stack>
+          </form>
         </Tabs.Panel>
       </Tabs>
     </Container>
