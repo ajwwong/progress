@@ -1,7 +1,7 @@
-import { Group, Title, Text, Button, Stack, Box, Checkbox, ActionIcon, TextInput, Modal, Paper, Switch, Menu, Table, Select } from '@mantine/core';
+import { Group, Title, Text, Button, Stack, Box, ActionIcon, TextInput, Modal, Paper, Menu, Table, Select } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { ResourceName, useMedplum, useMedplumNavigate } from '@medplum/react';
-import { IconSearch, IconPhone, IconMail, IconDotsVertical, IconTrash, IconPlus } from '@tabler/icons-react';
+import { IconSearch, IconPhone, IconMail, IconDotsVertical, IconPlus } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { notifications } from '@mantine/notifications';
 import { PatientFilters } from '../components/PatientFilters';
@@ -29,7 +29,6 @@ export function PatientDirectoryPage(): JSX.Element {
   const [searchQuery, setSearchQuery] = useState('');
   const [clientStatus, setClientStatus] = useState('all');
   const [insurancePayer, setInsurancePayer] = useState('all');
-  const [sortBy, setSortBy] = useState('lastName');
   const [isLoading, setIsLoading] = useState(false);
   const [lastSessions, setLastSessions] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState(1);
@@ -91,8 +90,7 @@ export function PatientDirectoryPage(): JSX.Element {
         }
       }
       
-      const sortParam = sortBy === 'name' ? 'family' : '-_lastUpdated';
-      searchParams.push(`_sort=${sortParam}`);
+      searchParams.push(`_sort=-_lastUpdated`);
       
       searchParams.push(`_count=${patientsPerPage}`);
       searchParams.push(`_offset=${(currentPage - 1) * patientsPerPage}`);
@@ -133,7 +131,7 @@ export function PatientDirectoryPage(): JSX.Element {
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, clientStatus, insurancePayer, sortBy, currentPage]);
+  }, [searchQuery, clientStatus, insurancePayer, currentPage]);
 
   useEffect(() => {
     loadPatients('');
@@ -204,6 +202,48 @@ export function PatientDirectoryPage(): JSX.Element {
     }
   };
 
+  const patientHasActiveField = (patientId: string): boolean => {
+    const patient = patients.find((p) => p.id === patientId);
+    return patient?.hasOwnProperty('active') ?? false;
+  };
+
+  const handleTogglePatientStatus = async (patientId: string, currentStatus: boolean) => {
+    setIsLoading(true);
+    try {
+      const patch: PatchOperation[] = [
+        {
+          op: patientHasActiveField(patientId) ? 'replace' : 'add',
+          path: '/active',
+          value: !currentStatus,
+        },
+      ];
+
+      await medplum.patchResource('Patient', patientId, patch);
+
+      notifications.show({
+        title: 'Success',
+        message: `Patient ${!currentStatus ? 'activated' : 'deactivated'} successfully`,
+        color: 'green',
+      });
+
+      // Update the local state without refetching all patients
+      setPatients((prevPatients) =>
+        prevPatients.map((patient) =>
+          patient.id === patientId ? { ...patient, active: !currentStatus } : patient
+        )
+      );
+    } catch (err) {
+      console.error('Error updating patient status:', err);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to update patient status',
+        color: 'red',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <Box p="md">
       <Stack spacing="xl">
@@ -243,19 +283,7 @@ export function PatientDirectoryPage(): JSX.Element {
             radius="md"
             style={{ width: 200 }}
           />
-          <Select
-            placeholder="Sort by"
-            data={[
-              { value: 'name', label: 'Name' },
-              { value: 'recent', label: 'Most Recent' },
-              { value: 'oldest', label: 'Oldest' }
-            ]}
-            value={sortBy}
-            onChange={setSortBy}
-            size="md"
-            radius="md"
-            style={{ width: 200 }}
-          />
+         
         </Group>
 
         {/* Patient List */}
@@ -263,11 +291,10 @@ export function PatientDirectoryPage(): JSX.Element {
           <Table highlightOnHover>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th style={{ width: '200px' }}>Name</Table.Th>
-                <Table.Th style={{ width: '100px' }}>Status</Table.Th>
-                <Table.Th style={{ width: '250px' }}>Contact info</Table.Th>
-                <Table.Th style={{ width: '150px' }}>Most Recent Appointment</Table.Th>
-                <Table.Th style={{ width: '80px' }}>Manage</Table.Th>
+                <Table.Th style={{ width: '25%' }}>Name</Table.Th>
+                <Table.Th style={{ width: '15%' }}>Status</Table.Th>
+                <Table.Th style={{ width: '30%' }}>Contact Info</Table.Th>
+                <Table.Th style={{ width: '10%' }}>Manage</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -314,7 +341,6 @@ export function PatientDirectoryPage(): JSX.Element {
                       ))}
                     </Stack>
                   </Table.Td>
-                  <Table.Td>{formatLastSession(lastSessions[patient.id]) || 'N/A'}</Table.Td>
                   <Table.Td>
                     <Menu position="bottom-end">
                       <Menu.Target>
@@ -332,6 +358,11 @@ export function PatientDirectoryPage(): JSX.Element {
                           onClick={() => navigate(`/patient/${patient.id}`)}
                         >
                           View Profile
+                        </Menu.Item>
+                        <Menu.Item
+                          onClick={() => handleTogglePatientStatus(patient.id as string, patient.active === true)}
+                        >
+                          {patient.active ? 'Make Inactive' : 'Make Active'}
                         </Menu.Item>
                         <Menu.Item
                           color="red"

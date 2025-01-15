@@ -1,5 +1,6 @@
 import { Modal, Stack, Text, Button, Group, Paper, Divider } from '@mantine/core';
 import { useMedplumProfile } from '@medplum/react';
+import { useState } from 'react';
 
 interface SignNoteModalProps {
   opened: boolean;

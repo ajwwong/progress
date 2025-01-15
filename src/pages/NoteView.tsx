@@ -3,7 +3,8 @@ import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { Box, Container, Text, Title, Textarea, Button, Group, Modal, Paper, Stack, Divider, Collapse, Tooltip, ActionIcon } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconSignature } from '@tabler/icons-react';
+import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconSignature, IconLock } from '@tabler/icons-react';
+import { SignNoteModal } from '../components/modals/SignNoteModal';
 
 export function NoteView(): JSX.Element {
   const { id } = useParams();
@@ -47,6 +48,30 @@ export function NoteView(): JSX.Element {
     }
   }, [medplum, id, profile]);
 
+  const handleSignNote = async () => {
+    if (!composition) return;
+  
+    const updatedComposition = {
+      ...composition,
+      status: 'final',
+      date: new Date().toISOString(),
+      attester: [{
+        mode: 'legal',
+        time: new Date().toISOString(),
+        party: {
+          reference: `Practitioner/${profile?.id}`
+        }
+      }]
+    };
+  
+    try {
+      await medplum.updateResource(updatedComposition);
+      setComposition(updatedComposition);
+    } catch (err) {
+      setError('Error signing note');
+    }
+  };
+  
   const handleSaveSection = async (sectionTitle: string) => {
     if (!composition) return;
 
@@ -130,6 +155,23 @@ Please provide the complete adjusted note while maintaining the same professiona
       setError('Error processing magic edit');
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleUnlock = async () => {
+    if (!composition) return;
+    
+    const updatedComposition = {
+      ...composition,
+      status: 'preliminary',
+      attester: undefined
+    };
+
+    try {
+      await medplum.updateResource(updatedComposition);
+      setComposition(updatedComposition);
+    } catch (err) {
+      setError('Error unlocking note');
     }
   };
 
@@ -256,23 +298,19 @@ Please provide the complete adjusted note while maintaining the same professiona
                     minRows={5}
                     autosize
                     styles={(theme) => ({
-                      root: {
-                        '&:hover': {
-                          '.mantine-Textarea-input': {
-                            backgroundColor: theme.colors.gray[0],
-                            borderColor: theme.colors.blue[4]
-                          }
-                        }
-                      },
                       input: {
                         backgroundColor: theme.white,
                         border: `1px solid ${theme.colors.gray[2]}`,
                         transition: 'all 200ms ease',
+                        '&:hover': {
+                          borderColor: theme.colors.blue[2],
+                          backgroundColor: theme.colors.gray[0],
+                        },
                         '&:focus': {
                           borderColor: theme.colors.blue[5],
-                          backgroundColor: theme.white
-                        }
-                      }
+                          backgroundColor: theme.white,
+                        },
+                      },
                     })}
                   />
                 </Paper>
@@ -302,7 +340,7 @@ Please provide the complete adjusted note while maintaining the same professiona
                     {section.title}
                   </Title>
                   <Group spacing="xs">
-                    {section.title === 'Psychotherapy Note' && (
+                    {section.title === 'Psychotherapy Note' && !composition?.attester?.[0] && (
                       <Tooltip label="Magic Edit">
                         <ActionIcon
                           onClick={() => setShowMagicModal(true)}
@@ -342,16 +380,28 @@ Please provide the complete adjusted note while maintaining the same professiona
                           ? 'Copied!' 
                           : 'Copy Text'}
                     </Button>
-                    {section.title === 'Psychotherapy Note' && !composition?.attester?.[0] && (
-                      <Button
-                        onClick={() => setShowSignModal(true)}
-                        variant="light"
-                        color="blue"
-                        size="sm"
-                        leftIcon={<IconSignature size={16} />}
-                      >
-                        Approve & Sign
-                      </Button>
+                    {section.title === 'Psychotherapy Note' && (
+                      composition?.attester?.[0] ? (
+                        <Button
+                          onClick={() => handleUnlock()}
+                          variant="light"
+                          color="red"
+                          size="sm"
+                          leftIcon={<IconLock size={16} />}
+                        >
+                          Unlock Note
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => setShowSignModal(true)}
+                          variant="light"
+                          color="blue"
+                          size="sm"
+                          leftIcon={<IconSignature size={16} />}
+                        >
+                          Approve & Sign
+                        </Button>
+                      )
                     )}
                   </Group>
                 </Group>
@@ -367,23 +417,19 @@ Please provide the complete adjusted note while maintaining the same professiona
                   minRows={5}
                   autosize
                   styles={(theme) => ({
-                    root: {
-                      '&:hover': {
-                        '.mantine-Textarea-input': {
-                          backgroundColor: theme.colors.gray[0],
-                          borderColor: theme.colors.blue[4]
-                        }
-                      }
-                    },
                     input: {
                       backgroundColor: theme.white,
                       border: `1px solid ${theme.colors.gray[2]}`,
                       transition: 'all 200ms ease',
+                      '&:hover': {
+                        borderColor: theme.colors.blue[2],
+                        backgroundColor: theme.colors.gray[0],
+                      },
                       '&:focus': {
                         borderColor: theme.colors.blue[5],
-                        backgroundColor: theme.white
-                      }
-                    }
+                        backgroundColor: theme.white,
+                      },
+                    },
                   })}
                 />
               </Paper>
@@ -430,6 +476,34 @@ Please provide the complete adjusted note while maintaining the same professiona
             </Group>
           </Stack>
         </Modal>
+
+        <SignNoteModal
+          opened={showSignModal}
+          onClose={() => setShowSignModal(false)}
+          onSign={async () => {
+            if (!composition) return;
+            
+            const updatedComposition = {
+              ...composition,
+              status: 'final',
+              date: new Date().toISOString(),
+              attester: [{
+                mode: 'legal',
+                time: new Date().toISOString(),
+                party: {
+                  reference: `Practitioner/${profile?.id}`
+                }
+              }]
+            };
+
+            try {
+              await medplum.updateResource(updatedComposition);
+              setComposition(updatedComposition);
+            } catch (err) {
+              setError('Error signing note');
+            }
+          }}
+        />
       </Stack>
     </Container>
   );
