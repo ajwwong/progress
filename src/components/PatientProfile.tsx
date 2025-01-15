@@ -6,10 +6,13 @@ import { useState, useEffect } from 'react';
 import { calculateAgeString } from '@medplum/core';
 import { useParams } from 'react-router-dom';
 import { useResource } from '@medplum/react';
+import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 export function PatientProfile(): JSX.Element {
   const { id } = useParams();
   const patient = useResource<Patient>({ reference: `Patient/${id}` });
+  const navigate = useNavigate();
 
   if (!patient) {
     return <Loader />;
@@ -33,6 +36,10 @@ export function PatientProfile(): JSX.Element {
   const pastAppointments = appointments.filter(
     apt => new Date(apt.start || '') <= new Date()
   );
+
+  const openAppointmentDetails = (appointment: Appointment) => {
+    // Implement this function to open appointment details
+  };
 
   return (
     <Container size="xl" py="xl">
@@ -115,25 +122,40 @@ export function PatientProfile(): JSX.Element {
                 <Title order={4}>Upcoming Appointments</Title>
                 
                 {upcomingAppointments.length > 0 ? (
-                  upcomingAppointments.slice(0, 3).map((apt) => (
-                    <Paper key={apt.id} p="md" withBorder>
-                      <Stack spacing={4}>
-                        <Text fw={500}>
-                          {new Date(apt.start || '').toLocaleDateString('en-US', {
-                            month: 'short',
-                            day: 'numeric'
-                          }).replace(/(\w{3})\s(\d+)/, '$1 $2')}
+                  <Stack gap="xs">
+                    {upcomingAppointments.slice(0, 5).map((apt) => (
+                      <Group 
+                        key={apt.id}
+                        style={{
+                          padding: '4px 0',
+                          borderBottom: '1px solid var(--mantine-color-gray-2)'
+                        }}
+                      >
+                        <Text<'a'> 
+                          component="a"
+                          href="#"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            // Navigate to calendar and open appointment details
+                            navigate(`/calendar?date=${format(new Date(apt.start), 'yyyy-MM-dd')}`);
+                            openAppointmentDetails(apt);
+                          }}
+                          style={{
+                            color: 'var(--mantine-color-blue-6)',
+                            textDecoration: 'none',
+                            '&:hover': {
+                              textDecoration: 'underline'
+                            }
+                          }}
+                        >
+                          {format(new Date(apt.start), 'MM/dd/yyyy')}
                         </Text>
                         <Text size="sm" c="dimmed">
-                          {new Date(apt.start || '').toLocaleTimeString('en-US', {
-                            hour: 'numeric',
-                            minute: '2-digit'
-                          })}
+                          {format(new Date(apt.start), 'h:mm a')}
                         </Text>
-                        <Text size="sm">{apt.serviceType?.[0]?.text || 'Therapy Session'}</Text>
-                      </Stack>
-                    </Paper>
-                  ))
+                      </Group>
+                    ))}
+                  </Stack>
                 ) : (
                   <Text c="dimmed" size="sm">No upcoming appointments</Text>
                 )}

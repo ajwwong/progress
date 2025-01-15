@@ -26,6 +26,7 @@ import { ClientRoutes } from './routes/ClientRoutes';
 import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
 import { SettingsPage } from './pages/SettingsPage';
+import { PractitionerPage } from './pages/PractitionerPage';
 
 
 export const CalendarContext = createContext<{
@@ -86,7 +87,6 @@ export function App(): JSX.Element | null {
               { icon: <IconUser />, label: 'Patients', href: '/patient' },
               { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
               { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
-              { icon: <IconCreditCard />, label: 'Billing & Payments', href: '/billing' },
               { icon: <IconSettings />, label: 'Settings', href: '/settings' }
             ],
           },
@@ -115,6 +115,7 @@ export function App(): JSX.Element | null {
             }),
           },
         ]}
+        
       >
         <ErrorBoundary>
           <Suspense fallback={<Loading />}>
@@ -141,7 +142,8 @@ export function App(): JSX.Element | null {
               <Route path="/templates" element={<NoteTemplatesPage />} />
               <Route path="/portal/*" element={<ClientRoutes />} />
               <Route path="/billing" element={<BillingDashboard />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/settings" element={<PractitionerPage />} />
+              <Route path="/Practitioner/:id" element={<PractitionerPage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
