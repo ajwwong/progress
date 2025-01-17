@@ -27,6 +27,7 @@ import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
 import { SettingsPage } from './pages/SettingsPage';
 import { PractitionerPage } from './pages/PractitionerPage';
+import { PatientRecentComposition } from './components/PatientRecentComposition';
 
 
 export const CalendarContext = createContext<{
@@ -133,6 +134,7 @@ export function App(): JSX.Element | null {
                 <Route path="timeline" element={<Timeline />} />
                 <Route path="history" element={<PatientHistory />} />
                 <Route path="notes" element={<SessionNotes />} />
+                <Route path="recent" element={<PatientRecentComposition />} />
                 <Route path="treatment" element={<TreatmentPlan />} />
                 <Route path="profile" element={<PatientProfile />} />
               </Route>

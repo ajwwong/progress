@@ -34,12 +34,17 @@ const { startTime, endTime } = getDefaultTimes();
 
 const DEBUG_MODE = false;
 
-export function useAppointmentForm(initialDate?: Date) {
+interface UseAppointmentFormProps {
+  initialDate?: Date;
+  initialPatient?: Patient;
+}
+
+export function useAppointmentForm({ initialDate, initialPatient }: UseAppointmentFormProps) {
   console.log('useAppointmentForm initialDate:', initialDate);
   
   // Create defaultState inside a useMemo to ensure it's stable
   const defaultState: AppointmentFormState = {
-    patient: undefined,
+    patient: initialPatient,
     date: initialDate || new Date(),
     startTime,
     endTime,
@@ -51,7 +56,17 @@ export function useAppointmentForm(initialDate?: Date) {
   };
   
   console.log('useAppointmentForm defaultState.date:', defaultState.date);
-  const [state, setState] = useState(defaultState);
+  const [state, setState] = useState<AppointmentFormState>({
+    patient: initialPatient,
+    date: initialDate || new Date(),
+    startTime,
+    endTime,
+    defaultInterval: 50,
+    isRecurring: false,
+    type: 'FOLLOWUP',
+    frequency: 'weekly',
+    occurrences: 4
+  });
   console.log('useAppointmentForm current state.date:', state.date);
 
   // Add an effect to update the date when initialDate changes

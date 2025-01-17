@@ -1,4 +1,4 @@
-import { Group, Title, Text, Button, Stack, Box, ActionIcon, TextInput, Modal, Paper, Menu, Table, Select } from '@mantine/core';
+import { Group, Title, Text, Anchor,Button, Stack, Box, ActionIcon, TextInput, Modal, Paper, Menu, Table, Select, Container } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { ResourceName, useMedplum, useMedplumNavigate } from '@medplum/react';
 import { IconSearch, IconPhone, IconMail, IconDotsVertical, IconPlus } from '@tabler/icons-react';
@@ -90,7 +90,7 @@ export function PatientDirectoryPage(): JSX.Element {
         }
       }
       
-      searchParams.push(`_sort=-_lastUpdated`);
+      searchParams.push(`_sort=family`);
       
       searchParams.push(`_count=${patientsPerPage}`);
       searchParams.push(`_offset=${(currentPage - 1) * patientsPerPage}`);
@@ -245,10 +245,11 @@ export function PatientDirectoryPage(): JSX.Element {
   };
 
   return (
-    <Box p="md">
-      <Stack spacing="xl">
-        <Group position="apart" mb="lg">
-          <Title order={2}>Patients</Title>
+    <Container size="xl">
+      <Box p="md">
+        <Stack spacing="xl">
+          <Group position="apart" mb="lg">
+            <Title order={2}>Patients</Title>
           <Button
             variant="filled"
             color="blue"
@@ -301,25 +302,18 @@ export function PatientDirectoryPage(): JSX.Element {
               {patients.map((patient) => (
                 <Table.Tr key={patient.id}>
                   <Table.Td>
-                    <Text 
-                      component="a" 
-                      href="#" 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        navigate(`/patient/${patient.id}`);
-                      }}
-                      sx={(theme) => ({
-                        cursor: 'pointer',
-                        color: theme.colors.blue[6],
-                        fontWeight: 500,
-                        '&:hover': {
-                          textDecoration: 'underline',
-                          color: theme.colors.blue[8]
-                        }
-                      })}
-                    >
-                      <ResourceName value={patient} />
-                    </Text>
+                  <Anchor
+    href="#"
+    onClick={(e) => {
+      e.preventDefault();
+      navigate(`/patient/${patient.id}`);
+    }}
+    sx={(theme) => ({
+      fontWeight: 500,
+    })}
+  >
+    <ResourceName value={patient} />
+  </Anchor>
                   </Table.Td>
                   <Table.Td>
                     <Button 
@@ -383,6 +377,7 @@ export function PatientDirectoryPage(): JSX.Element {
         </Paper>
       </Stack>
 
+
       <PatientModal
         opened={isPatientModalOpen}
         onClose={() => setIsPatientModalOpen(false)}
@@ -434,5 +429,6 @@ export function PatientDirectoryPage(): JSX.Element {
         </Stack>
       </Modal>
     </Box>
+    </Container>
   );
 }

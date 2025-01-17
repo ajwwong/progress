@@ -12,8 +12,16 @@ interface AppointmentModalProps {
   onClose: () => void;
   onSave: (appointments: Omit<Appointment, 'id'>[]) => void;
   initialDate?: Date;
+  initialPatient?: Patient;
 }
-export function AppointmentModal({ opened, onClose, onSave, initialDate }: AppointmentModalProps) {
+
+export function AppointmentModal({ 
+  opened, 
+  onClose, 
+  onSave, 
+  initialDate,
+  initialPatient 
+}: AppointmentModalProps) {
   console.log('AppointmentModal rendered with initialDate:', initialDate);
   const { 
     state, 
@@ -24,7 +32,7 @@ export function AppointmentModal({ opened, onClose, onSave, initialDate }: Appoi
     isValid, 
     generateAppointments, 
     reset 
-  } = useAppointmentForm(initialDate);
+  } = useAppointmentForm({ initialDate, initialPatient });
 
   const handleSave = () => {
     const appointments = generateAppointments();
@@ -50,6 +58,7 @@ export function AppointmentModal({ opened, onClose, onSave, initialDate }: Appoi
       <Stack gap="md">
         <PatientSelector 
           onSelect={(patient: Patient) => setState(prev => ({ ...prev, patient }))}
+          initialPatient={initialPatient}
         />
 
         <DateTimeSelector

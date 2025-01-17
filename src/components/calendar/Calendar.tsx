@@ -13,11 +13,21 @@ import { AppointmentDetailsModal } from './AppointmentDetailsModal';
 import { PatientModal } from './PatientModal';
 import type { Appointment } from '../types/calendar';
 import { RecurringUpdateModal } from './RecurringUpdateModal';
+import { useLocation } from 'react-router-dom';
+import { Patient } from '@medplum/fhirtypes';
 
 export function Calendar() {
   const DEBUG_MODE = false;
 
   const medplum = useMedplum();
+  const location = useLocation();
+  const locationState = location.state as {
+    selectedDate?: Date;
+    selectedAppointment?: Appointment;
+    openAppointmentDetails?: boolean;
+    openNewAppointment?: boolean;
+    selectedPatient?: Patient;
+  } | null;
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [view, setView] = useState<string>('month');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -28,6 +38,9 @@ export function Calendar() {
   const [recurringModalOpened, setRecurringModalOpened] = useState(false);
   const [pendingUpdate, setPendingUpdate] = useState<Appointment | null>(null);
   const [originalAppointment, setOriginalAppointment] = useState<Appointment | null>(null);
+  const [initialPatient, setInitialPatient] = useState<Patient | undefined>(
+    locationState?.selectedPatient
+  );
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -47,6 +60,24 @@ export function Calendar() {
     console.log('Loading appointments for view:', view, 'and date:', selectedDate);
     loadAppointments();
   }, [view, selectedDate]);
+
+  useEffect(() => {
+    if (locationState?.openNewAppointment) {
+      setIsAppointmentModalOpen(true);
+      window.history.replaceState({}, document.title);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (locationState?.selectedDate) {
+      setSelectedDate(locationState.selectedDate);
+    }
+    if (locationState?.selectedAppointment && locationState?.openAppointmentDetails) {
+      setSelectedAppointment(locationState.selectedAppointment);
+    }
+    // Clear the location state to prevent modal from reopening on refresh
+    window.history.replaceState({}, document.title);
+  }, [locationState]);
 
   const loadAppointments = async () => {
     try {
@@ -533,9 +564,13 @@ export function Calendar() {
 
       <AppointmentModal
         opened={isAppointmentModalOpen}
-        onClose={() => setIsAppointmentModalOpen(false)}
+        onClose={() => {
+          setIsAppointmentModalOpen(false);
+          setInitialPatient(undefined);
+        }}
         onSave={handleNewAppointment}
         initialDate={selectedDate}
+        initialPatient={initialPatient}
       />
 
       <PatientModal

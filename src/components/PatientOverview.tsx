@@ -84,45 +84,7 @@ export function PatientOverview(): JSX.Element {
   return (
     <Document>
       <Stack spacing="xl">
-        {/* Latest Progress Note */}
-        <Paper p="md" radius="md" withBorder>
-          <Title order={3} mb="md">Latest Progress Note</Title>
-          {latestNote ? (
-            <Stack spacing="xs">
-              <Group position="apart">
-                <Text fw={500}>
-                  {new Date(latestNote.date || '').toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </Text>
-                <Text size="sm" c="dimmed">Status: {latestNote.status}</Text>
-              </Group>
-              <Text>{latestNote.title}</Text>
-              {latestNote.section
-                ?.filter(section => section.title !== 'Transcript')
-                ?.map((section, index) => (
-                <Box key={index}>
-                  {section.title && <Text fw={500}>{section.title}</Text>}
-                  {section.text?.div && (
-                    <Text style={{ whiteSpace: 'pre-wrap' }}>
-                      {typeof section.text.div === 'string' 
-                        ? section.text.div
-                          .replace(/<div xmlns="http:\/\/www\.w3\.org\/1999\/xhtml">/g, '')
-                          .replace(/<\/div>/g, '')
-                          .trim()
-                        : ''}
-                    </Text>
-                  )}
-                </Box>
-              ))}
-            </Stack>
-          ) : (
-            <Text c="dimmed">No progress notes available</Text>
-          )}
-        </Paper>
+
 
         {/* Client Information Panel */}
         <Paper p="xl" radius="md" withBorder>

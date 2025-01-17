@@ -19,9 +19,9 @@ export function PatientPage(): JSX.Element {
       <PatientHeader patient={patient} />
       <Tabs onChange={(t) => navigate(`./${t}`)}>
         <Tabs.List bg="white">
+          <Tabs.Tab value="recent">Most Recent</Tabs.Tab>
           <Tabs.Tab value="overview">Overview</Tabs.Tab>
           <Tabs.Tab value="notes">Session Notes</Tabs.Tab>
-        
           <Tabs.Tab value="profile">Profile</Tabs.Tab>
         </Tabs.List>
       </Tabs>

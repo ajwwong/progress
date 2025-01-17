@@ -3,20 +3,29 @@ import { IconPlus, IconUserCheck } from '@tabler/icons-react';
 import { AsyncAutocomplete, ResourceAvatar, useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
 
 interface PatientSelectorProps {
   onSelect: (patient: Patient) => void;
+  initialPatient?: Patient;
 }
 
-export function PatientSelector({ onSelect }: PatientSelectorProps) {
+export function PatientSelector({ onSelect, initialPatient }: PatientSelectorProps) {
   const medplum = useMedplum();
   const [showNewForm, setShowNewForm] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [justCreated, setJustCreated] = useState(false);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(initialPatient);
+
+  useEffect(() => {
+    if (initialPatient) {
+      onSelect(initialPatient);
+      setSelectedPatient(initialPatient);
+    }
+  }, [initialPatient, onSelect]);
 
   const handleCreatePatient = async () => {
     if (!firstName.trim() || !lastName.trim()) return;
@@ -50,6 +59,20 @@ export function PatientSelector({ onSelect }: PatientSelectorProps) {
       setIsSubmitting(false);
     }
   };
+
+  if (selectedPatient && !justCreated) {
+    return (
+      <Paper p="sm" bg="blue.0">
+        <Group>
+          <ResourceAvatar value={selectedPatient} />
+          <Stack gap={0}>
+            <Text size="sm" fw={500}>Scheduling Appointment for</Text>
+            <Text size="sm">{getDisplayString(selectedPatient)}</Text>
+          </Stack>
+        </Group>
+      </Paper>
+    );
+  }
 
   if (justCreated) {
     return (

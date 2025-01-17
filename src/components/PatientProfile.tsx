@@ -1,5 +1,5 @@
-import { Container, Grid, Paper, Stack, Group, Title, Text, Button, Badge, Avatar, ActionIcon, Tooltip } from '@mantine/core';
-import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconUnlock, IconEdit, IconPlus, IconBook } from '@tabler/icons-react';
+import { Container, Grid, Paper, Stack, Anchor, Group, Title, Text, Button, Badge, Avatar, ActionIcon, Tooltip, Box, SimpleGrid, TextInput, Select } from '@mantine/core';
+import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { Patient, Appointment, Composition } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
@@ -8,6 +8,17 @@ import { useParams } from 'react-router-dom';
 import { useResource } from '@medplum/react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { showNotification } from '@mantine/notifications';
+
+const getPronounDisplay = (code: string): string => {
+  const pronounMap: Record<string, string> = {
+    'he-him': 'He/Him',
+    'she-her': 'She/Her',
+    'they-them': 'They/Them',
+    'other': 'Other'
+  };
+  return pronounMap[code] || code;
+};
 
 export function PatientProfile(): JSX.Element {
   const { id } = useParams();
@@ -21,6 +32,18 @@ export function PatientProfile(): JSX.Element {
   const medplum = useMedplum();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [appointmentNotes, setAppointmentNotes] = useState<Record<string, Composition | null>>({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: patient.name?.[0]?.given?.[0] || '',
+    familyName: patient.name?.[0]?.family || '',
+    phone: patient.telecom?.find(t => t.system === 'phone')?.value || '',
+    email: patient.telecom?.find(t => t.system === 'email')?.value || '',
+    birthDate: patient.birthDate || '',
+    pronouns: patient.extension?.find(e => 
+      e.url === 'http://hl7.org/fhir/StructureDefinition/individual-pronouns'
+    )?.extension?.find(e => e.url === 'value')?.valueCodeableConcept?.coding?.[0]?.code || '',
+    defaultTemplate: 'progress'
+  });
 
   useEffect(() => {
     medplum.searchResources('Appointment', {
@@ -56,9 +79,9 @@ export function PatientProfile(): JSX.Element {
     }
   }, [medplum, appointments]);
 
-  const upcomingAppointments = appointments.filter(
-    apt => new Date(apt.start || '') > new Date()
-  );
+  const upcomingAppointments = appointments
+    .filter(apt => new Date(apt.start || '') > new Date())
+    .sort((a, b) => new Date(a.start || '').getTime() - new Date(b.start || '').getTime());
 
   const pastAppointments = appointments.filter(
     apt => new Date(apt.start || '') <= new Date()
@@ -66,6 +89,83 @@ export function PatientProfile(): JSX.Element {
 
   const openAppointmentDetails = (appointment: Appointment) => {
     // Implement this function to open appointment details
+  };
+
+  const handleScheduleAppointment = () => {
+    navigate('/calendar', { 
+      state: { 
+        openNewAppointment: true,
+        selectedPatient: patient 
+      } 
+    });
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      const currentPatient = await medplum.readResource('Patient', patient.id as string);
+      
+      const updatedPatient = await medplum.updateResource({
+        ...currentPatient,
+        telecom: [
+          { system: 'phone', value: formData.phone },
+          { system: 'email', value: formData.email }
+        ],
+        birthDate: formData.birthDate,
+        extension: formData.pronouns ? [
+          {
+            url: 'http://hl7.org/fhir/StructureDefinition/individual-pronouns',
+            extension: [
+              {
+                url: 'value',
+                valueCodeableConcept: {
+                  coding: [
+                    {
+                      system: 'http://terminology.hl7.org/ValueSet/pronouns',
+                      code: formData.pronouns,
+                      display: getPronounDisplay(formData.pronouns)
+                    }
+                  ],
+                  text: getPronounDisplay(formData.pronouns)
+                }
+              }
+            ]
+          }
+        ] : []
+      });
+
+      showNotification({
+        title: 'Success',
+        message: 'Client information updated successfully',
+        color: 'green'
+      });
+
+      setIsEditing(false);
+      setPatient(updatedPatient);
+    } catch (error) {
+      showNotification({
+        title: 'Error',
+        message: 'Failed to update client information',
+        color: 'red'
+      });
+      console.error('Error updating patient:', error);
+    }
+  };
+
+  const handleAppointmentClick = (apt: Appointment) => {
+    const appointmentDate = new Date(apt.start);
+    navigate('/calendar', {
+      state: {
+        selectedDate: appointmentDate,
+        selectedAppointment: {
+          ...apt,
+          start: appointmentDate,
+          end: new Date(apt.end),
+          patientName: `${patient.name?.[0]?.given?.[0]} ${patient.name?.[0]?.family}`,
+          patientId: patient.id
+        },
+        openAppointmentDetails: true
+      }
+    });
   };
 
   return (
@@ -168,33 +268,146 @@ export function PatientProfile(): JSX.Element {
             {/* Client Information Card */}
             <Paper withBorder p="xl">
               <Stack gap="md">
-                <Group>
-                  <Avatar size="xl" radius="xl" />
-                  <div>
-                    <Text fw={500} size="lg">{patient.name?.[0]?.text}</Text>
-                    <Text size="sm" c="dimmed">
-                      {patient.birthDate && `${calculateAgeString(patient.birthDate)} old`}
-                    </Text>
-                  </div>
+                {/* Header */}
+                <Group position="apart">
+                  <Title order={4}>Client Info</Title>
+                  <Button 
+                    variant="light"
+                    size="sm"
+                    leftIcon={isEditing ? <IconCheck size={16} /> : <IconEdit size={16} />}
+                    onClick={() => {
+                      if (isEditing) {
+                        handleSaveChanges();
+                      } else {
+                        setIsEditing(true);
+                      }
+                    }}
+                  >
+                    {isEditing ? 'Save Changes' : 'Edit'}
+                  </Button>
                 </Group>
 
-                <Stack gap="xs">
-                  {patient.telecom?.map((contact, index) => (
-                    <Group key={index} spacing="xs">
-                      {contact.system === 'phone' && <IconPhone size={16} />}
-                      {contact.system === 'email' && <IconMail size={16} />}
-                      <Text size="sm">{contact.value}</Text>
-                    </Group>
-                  ))}
-                  {patient.address?.[0] && (
-                    <Group spacing="xs">
-                      <IconMapPin size={16} />
-                      <Text size="sm">
-                        {patient.address[0].line?.[0]}, {patient.address[0].city}, {patient.address[0].state}
-                      </Text>
-                    </Group>
+                {/* Name Section */}
+                {isEditing ? (
+                  <Group grow>
+                    <TextInput
+                      label="First Name"
+                      value={formData.firstName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, firstName: e.target.value }))}
+                    />
+                    <TextInput
+                      label="Last Name"
+                      value={formData.familyName}
+                      onChange={(e) => setFormData(prev => ({ ...prev, familyName: e.target.value }))}
+                    />
+                  </Group>
+                ) : (
+                  <Text fw={500} size="lg">{patient.name?.[0]?.text}</Text>
+                )}
+
+                {/* Contact Information */}
+                <Box>
+                  <Text size="sm" fw={500} c="dimmed" mb="xs">Contact Information</Text>
+                  {isEditing ? (
+                    <Stack spacing="xs">
+                      <TextInput
+                        icon={<IconPhone size={16} />}
+                        placeholder="(555) 555-5555"
+                        value={formData.phone}
+                        onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
+                      />
+                      <TextInput
+                        icon={<IconMail size={16} />}
+                        placeholder="client@example.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      />
+                    </Stack>
+                  ) : (
+                    <Stack spacing="xs">
+                      {patient.telecom?.find(t => t.system === 'phone')?.value && (
+                        <Group spacing="xs">
+                          <IconPhone size={16} />
+                          <Text size="sm">{patient.telecom?.find(t => t.system === 'phone')?.value}</Text>
+                        </Group>
+                      )}
+                      {patient.telecom?.find(t => t.system === 'email')?.value && (
+                        <Group spacing="xs">
+                          <IconMail size={16} />
+                          <Text size="sm">{patient.telecom?.find(t => t.system === 'email')?.value}</Text>
+                        </Group>
+                      )}
+                    </Stack>
                   )}
-                </Stack>
+                </Box>
+
+                {/* Documentation Preferences */}
+                <Box>
+                  <Text size="sm" fw={500} c="dimmed" mb="xs">Documentation Preferences</Text>
+                  <Select
+                    placeholder="Select default template"
+                    value={formData.defaultTemplate}
+                    onChange={(value) => setFormData(prev => ({ ...prev, defaultTemplate: value || '' }))}
+                    data={[
+                      { value: 'initial', label: 'Initial Assessment' },
+                      { value: 'progress', label: 'Progress Note' },
+                      { value: 'discharge', label: 'Discharge Summary' }
+                    ]}
+                    disabled={!isEditing}
+                  />
+                </Box>
+
+                {/* Demographics */}
+                <Box>
+                  <Text size="sm" fw={500} c="dimmed" mb="xs">Demographics</Text>
+                  <Stack spacing="xs">
+                    {isEditing ? (
+                      <>
+                        <TextInput
+                          label="Birth Date"
+                          type="date"
+                          value={formData.birthDate}
+                          onChange={(e) => setFormData(prev => ({ ...prev, birthDate: e.target.value }))}
+                        />
+                        <Select
+                          placeholder="Select pronouns"
+                          value={formData.pronouns}
+                          onChange={(value) => setFormData(prev => ({ ...prev, pronouns: value || '' }))}
+                          data={[
+                            { value: 'he-him', label: 'He/Him' },
+                            { value: 'she-her', label: 'She/Her' },
+                            { value: 'they-them', label: 'They/Them' },
+                            { value: 'other', label: 'Other' }
+                          ]}
+                        />
+                      </>
+                    ) : (
+                      <>
+                        {patient.birthDate && (
+                          <Group spacing="xs">
+                            <IconCalendar size={16} />
+                            <Text size="sm">{patient.birthDate}</Text>
+                          </Group>
+                        )}
+                        {patient.extension?.find(e => 
+                          e.url === 'http://hl7.org/fhir/StructureDefinition/individual-pronouns'
+                        )?.extension?.find(e => e.url === 'value')?.valueCodeableConcept?.coding?.[0]?.code && (
+                          <Text size="sm">Pronouns: {getPronounDisplay(patient.extension?.find(e => 
+                            e.url === 'http://hl7.org/fhir/StructureDefinition/individual-pronouns'
+                          )?.extension?.find(e => e.url === 'value')?.valueCodeableConcept?.coding?.[0]?.code || '')}</Text>
+                        )}
+                      </>
+                    )}
+                  </Stack>
+                </Box>
+
+                {/* Save/Cancel buttons */}
+                {isEditing && (
+                  <Group position="right" mt="md">
+                    <Button variant="subtle" onClick={() => setIsEditing(false)}>Cancel</Button>
+                    <Button onClick={handleSaveChanges}>Save Changes</Button>
+                  </Group>
+                )}
               </Stack>
             </Paper>
 
@@ -205,39 +418,32 @@ export function PatientProfile(): JSX.Element {
                 
                 {upcomingAppointments.length > 0 ? (
                   <Stack gap="xs">
-                    {upcomingAppointments.slice(0, 5).map((apt) => (
-                      <Group 
-                        key={apt.id}
-                        style={{
-                          padding: '4px 0',
-                          borderBottom: '1px solid var(--mantine-color-gray-2)'
+                  {upcomingAppointments.slice(0, 5).map((apt) => (
+                    <Group 
+                      key={apt.id}
+                      style={{
+                        padding: '4px 0',
+                        borderBottom: '1px solid var(--mantine-color-gray-2)'
+                      }}
+                    >
+                      <Anchor
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handleAppointmentClick(apt);
                         }}
+                        sx={(theme) => ({
+                          fontWeight: 500,
+                        })}
                       >
-                        <Text<'a'> 
-                          component="a"
-                          href="#"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // Navigate to calendar and open appointment details
-                            navigate(`/calendar?date=${format(new Date(apt.start), 'yyyy-MM-dd')}`);
-                            openAppointmentDetails(apt);
-                          }}
-                          style={{
-                            color: 'var(--mantine-color-blue-6)',
-                            textDecoration: 'none',
-                            '&:hover': {
-                              textDecoration: 'underline'
-                            }
-                          }}
-                        >
-                          {format(new Date(apt.start), 'MM/dd/yyyy')}
-                        </Text>
-                        <Text size="sm" c="dimmed">
-                          {format(new Date(apt.start), 'h:mm a')}
-                        </Text>
-                      </Group>
-                    ))}
-                  </Stack>
+                        {format(new Date(apt.start), 'MM/dd/yyyy')}
+                      </Anchor>
+                      <Text size="sm" c="dimmed">
+                        {format(new Date(apt.start), 'h:mm a')}
+                      </Text>
+                    </Group>
+                  ))}
+                </Stack>
                 ) : (
                   <Text c="dimmed" size="sm">No upcoming appointments</Text>
                 )}
@@ -246,6 +452,7 @@ export function PatientProfile(): JSX.Element {
                   variant="light" 
                   fullWidth 
                   leftSection={<IconCalendar size={16} />}
+                  onClick={handleScheduleAppointment}
                 >
                   Schedule Appointment
                 </Button>
