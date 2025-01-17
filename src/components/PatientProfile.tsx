@@ -376,8 +376,7 @@ export function PatientProfile(): JSX.Element {
                           data={[
                             { value: 'he-him', label: 'He/Him' },
                             { value: 'she-her', label: 'She/Her' },
-                            { value: 'they-them', label: 'They/Them' },
-                            { value: 'other', label: 'Other' }
+                            { value: 'they-them', label: 'They/Them' }
                           ]}
                         />
                       </>
