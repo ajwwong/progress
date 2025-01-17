@@ -385,7 +385,7 @@ export function PatientProfile(): JSX.Element {
                         {patient.birthDate && (
                           <Group spacing="xs">
                             <IconCalendar size={16} />
-                            <Text size="sm">{patient.birthDate}</Text>
+                            <Text size="sm">{format(new Date(patient.birthDate), 'MM/dd/yyyy')}</Text>
                           </Group>
                         )}
                         {patient.extension?.find(e => 
