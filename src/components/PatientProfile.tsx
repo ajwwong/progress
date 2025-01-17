@@ -1,7 +1,7 @@
-import { Container, Grid, Paper, Stack, Group, Title, Text, Button, Badge, Avatar } from '@mantine/core';
-import { IconCalendar, IconPhone, IconMail, IconMapPin } from '@tabler/icons-react';
+import { Container, Grid, Paper, Stack, Group, Title, Text, Button, Badge, Avatar, ActionIcon, Tooltip } from '@mantine/core';
+import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconUnlock, IconEdit, IconPlus, IconBook } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
-import { Patient, Appointment } from '@medplum/fhirtypes';
+import { Patient, Appointment, Composition } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
 import { calculateAgeString } from '@medplum/core';
 import { useParams } from 'react-router-dom';
@@ -20,6 +20,7 @@ export function PatientProfile(): JSX.Element {
 
   const medplum = useMedplum();
   const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [appointmentNotes, setAppointmentNotes] = useState<Record<string, Composition | null>>({});
 
   useEffect(() => {
     medplum.searchResources('Appointment', {
@@ -28,6 +29,32 @@ export function PatientProfile(): JSX.Element {
       _count: '50'
     }).then(setAppointments);
   }, [medplum, patient.id]);
+
+  useEffect(() => {
+    const fetchNotesForAppointments = async () => {
+      const notes: Record<string, Composition | null> = {};
+      
+      for (const apt of appointments) {
+        try {
+          const compositions = await medplum.searchResources('Composition', {
+            encounter: `Encounter/${apt.id}`,
+            _sort: '-date',
+            _count: '1'
+          });
+          notes[apt.id as string] = compositions[0] || null;
+        } catch (error) {
+          console.error('Error fetching note for appointment:', error);
+          notes[apt.id as string] = null;
+        }
+      }
+      
+      setAppointmentNotes(notes);
+    };
+
+    if (appointments.length > 0) {
+      fetchNotesForAppointments();
+    }
+  }, [medplum, appointments]);
 
   const upcomingAppointments = appointments.filter(
     apt => new Date(apt.start || '') > new Date()
@@ -72,6 +99,61 @@ export function PatientProfile(): JSX.Element {
                       <Badge color={apt.status === 'fulfilled' ? 'green' : 'blue'}>
                         {apt.status}
                       </Badge>
+                      
+                      {/* Note Actions */}
+                      {appointmentNotes[apt.id as string] ? (
+                        // Note exists
+                        <Group spacing="xs">
+                          <Tooltip label="Read Note">
+                            <ActionIcon 
+                              onClick={() => navigate(`/notes/${appointmentNotes[apt.id as string]?.id}`)}
+                              color="blue"
+                            >
+                              <IconBook size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                          
+                          {appointmentNotes[apt.id as string]?.status === 'preliminary' ? (
+                            <Tooltip label="Edit Note">
+                              <ActionIcon 
+                                onClick={() => navigate(`/notes/${appointmentNotes[apt.id as string]?.id}/edit`)}
+                                color="blue"
+                              >
+                                <IconEdit size={18} />
+                              </ActionIcon>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip label="Unlock Note">
+                              <ActionIcon 
+                                onClick={() => navigate(`/notes/${appointmentNotes[apt.id as string]?.id}/unlock`)}
+                                color="orange"
+                              >
+                                <IconLock size={18} />
+                              </ActionIcon>
+                            </Tooltip>
+                          )}
+                        </Group>
+                      ) : (
+                        // No note exists
+                        <Group spacing="xs">
+                          <Tooltip label="Create Note">
+                            <ActionIcon 
+                              onClick={() => navigate(`/notes/new?appointment=${apt.id}`)}
+                              color="blue"
+                            >
+                              <IconPlus size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                          <Tooltip label="Grab Note">
+                            <ActionIcon 
+                              onClick={() => navigate(`/notes/grab?appointment=${apt.id}`)}
+                              color="green"
+                            >
+                              <IconBook size={18} />
+                            </ActionIcon>
+                          </Tooltip>
+                        </Group>
+                      )}
                     </Group>
                   </Group>
                 </Paper>
