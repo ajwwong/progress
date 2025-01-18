@@ -1,5 +1,5 @@
 import { Stack, Group, Text, Button, TextInput, Paper, Collapse } from '@mantine/core';
-import { IconPlus, IconUserCheck } from '@tabler/icons-react';
+import { IconPlus, IconUserCheck, IconMicrophone } from '@tabler/icons-react';
 import { AsyncAutocomplete, ResourceAvatar, useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
@@ -78,14 +78,24 @@ export function PatientSelector({
     }
   };
 
+  const getContextIcon = () => {
+    if (context === 'audio' && selectedPatient && !justCreated) {
+      return <IconMicrophone size={16} color="var(--mantine-color-blue-6)" />;
+    }
+    return <ResourceAvatar value={selectedPatient} />;
+  };
+
   if (selectedPatient && !justCreated) {
     return (
-      <Paper p="sm" bg="blue.0">
+      <Paper p="sm" bg={context === 'audio' ? 'blue.1' : 'blue.0'}>
         <Group>
-          <ResourceAvatar value={selectedPatient} />
+          {getContextIcon()}
           <Stack gap={0}>
             <Text size="sm" fw={500}>{getContextText()}</Text>
             <Text size="sm">{getDisplayString(selectedPatient)}</Text>
+            {context === 'audio' && (
+              <Text size="xs" c="dimmed">Ready to start recording</Text>
+            )}
           </Stack>
         </Group>
       </Paper>

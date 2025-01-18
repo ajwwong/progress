@@ -11,8 +11,8 @@ import { AudioControls } from '../components/audio/AudioControls';
 import { TranscriptionView } from '../components/audio/TranscriptionView';
 
 interface AudioTranscribePageProps {
-  onTranscriptionStart: (time: string) => void;
-  onCompositionSaved: () => void;
+  onTranscriptionStart?: (time: string) => void;
+  onCompositionSaved?: () => void;
 }
 
 export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }: AudioTranscribePageProps): JSX.Element {
@@ -86,7 +86,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
 
       const savedComp = await medplum.createResource(initialComposition);
       setSavedComposition(savedComp);
-      onCompositionSaved();
+      onCompositionSaved?.();
 
       mediaRecorder.current.ondataavailable = (event) => {
         if (event.data.size > 0) {
@@ -134,7 +134,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
     try {
       const now = new Date();
       const timeString = now.toLocaleString();
-      onTranscriptionStart(timeString);
+      onTranscriptionStart?.(timeString);
       
       setStatus('Processing audio...');
       const arrayBuffer = await audioBlob.arrayBuffer();
@@ -244,7 +244,7 @@ ${transcript}`;
           const composition = await saveComposition(transcript, response.text, selectedPatient);
           
           const timeString = new Date().toLocaleString();
-          onTranscriptionStart(`${timeString} - ${selectedPatient?.name?.[0].given?.join(' ') || ''} ${selectedPatient?.name?.[0].family || ''}`);
+          onTranscriptionStart?.(`${timeString} - ${selectedPatient?.name?.[0].given?.join(' ') || ''} ${selectedPatient?.name?.[0].family || ''}`);
           
           setStatus('Psychotherapy note generated');
         } catch (compositionErr) {
@@ -339,7 +339,7 @@ ${transcript}`;
 
       const updated = await medplum.updateResource(updatedComposition);
       setSavedComposition(updated);
-      onCompositionSaved();
+      onCompositionSaved?.();
 
       return updated;
     } catch (err) {
