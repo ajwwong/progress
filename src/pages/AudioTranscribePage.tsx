@@ -6,7 +6,7 @@ import { Composition, Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
 import { useNavigate } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
-import { PatientSelector } from '../components/audio/PatientSelector';
+import { PatientSelector } from '../components/shared/PatientSelector';
 import { AudioControls } from '../components/audio/AudioControls';
 import { TranscriptionView } from '../components/audio/TranscriptionView';
 

@@ -160,7 +160,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
           <Group>
             <Text fw={500}>Patient:</Text>
             <Link 
-              to={`/Patient/${appointment.patientId}/details`}
+              to={`/Patient/${appointment.patientId}/profile`}
               style={{ 
                 color: 'var(--mantine-color-blue-6)',
                 textDecoration: 'underline',
