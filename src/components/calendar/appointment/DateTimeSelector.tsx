@@ -28,6 +28,7 @@ export function DateTimeSelector({
       <DatePickerInput
         label="Date"
         value={date}
+        firstDayOfWeek={0}
         onChange={onDateChange}
         required
       />
