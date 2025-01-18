@@ -146,6 +146,7 @@ export function App(): JSX.Element | null {
               <Route path="/billing" element={<BillingDashboard />} />
               <Route path="/settings" element={<PractitionerPage />} />
               <Route path="/Practitioner/:id" element={<PractitionerPage />} />
+              <Route path="/audio" element={<AudioTranscribePage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>

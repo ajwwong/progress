@@ -1,5 +1,5 @@
 import { Container, Grid, Paper, Stack, Anchor, Group, Title, Text, Button, Badge, Avatar, ActionIcon, Tooltip, Box, SimpleGrid, TextInput, Select } from '@mantine/core';
-import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck } from '@tabler/icons-react';
+import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck, IconMicrophone } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { Patient, Appointment, Composition } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
@@ -165,6 +165,14 @@ export function PatientProfile(): JSX.Element {
         },
         openAppointmentDetails: true
       }
+    });
+  };
+
+  const handleStartRecording = () => {
+    navigate('/audio', { 
+      state: { 
+        selectedPatient: patient 
+      } 
     });
   };
 
@@ -413,7 +421,19 @@ export function PatientProfile(): JSX.Element {
             {/* Upcoming Appointments Card */}
             <Paper withBorder p="xl">
               <Stack gap="md">
-                <Title order={4}>Upcoming Appointments</Title>
+                <Group position="apart">
+                  <Title order={4}>Upcoming Appointments</Title>
+                  <Group>
+                    <Button 
+                      variant="light" 
+                      size="sm"
+                      leftIcon={<IconMicrophone size={16} />}
+                      onClick={handleStartRecording}
+                    >
+                      Record Session
+                    </Button>
+                  </Group>
+                </Group>
                 
                 {upcomingAppointments.length > 0 ? (
                   <Stack gap="xs">

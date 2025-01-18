@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, forwardRef } from 'react';
 import { useMedplum, AsyncAutocomplete, ResourceAvatar } from '@medplum/react';
 import { Composition, Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
 import { PatientSelector } from '../components/shared/PatientSelector';
 import { AudioControls } from '../components/audio/AudioControls';
@@ -27,7 +27,9 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   const [isPaused, setIsPaused] = useState(false);
   const [isBlinking, setIsBlinking] = useState(false);
   const [savedComposition, setSavedComposition] = useState<Composition>();
-  const [selectedPatient, setSelectedPatient] = useState<Patient>();
+  const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(
+    useLocation().state?.selectedPatient
+  );
   const navigate = useNavigate();
   const [isTelehealth, setIsTelehealth] = useState(false);
 
@@ -377,6 +379,7 @@ ${transcript}`;
           <PatientSelector 
             onSelect={(patient: Patient) => setSelectedPatient(patient)}
             initialPatient={selectedPatient}
+            context="audio"
           />
           
           <AudioControls
