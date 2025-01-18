@@ -1,4 +1,4 @@
-import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider } from '@mantine/core';
+import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider, SegmentedControl } from '@mantine/core';
 import { IconPlayerRecord, IconPlayerStop, IconPlayerPlay, IconFileText, IconNotes, IconPlayerPause, IconPlus, IconCheck, IconX } from '@tabler/icons-react';
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { useMedplum, AsyncAutocomplete, ResourceAvatar } from '@medplum/react';
@@ -9,7 +9,6 @@ import { showNotification } from '@mantine/notifications';
 import { PatientSelector } from '../components/audio/PatientSelector';
 import { AudioControls } from '../components/audio/AudioControls';
 import { TranscriptionView } from '../components/audio/TranscriptionView';
-import { CreatePatientModal } from '../components/modals/CreatePatientModal';
 
 interface AudioTranscribePageProps {
   onTranscriptionStart: (time: string) => void;
@@ -30,7 +29,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   const [savedComposition, setSavedComposition] = useState<Composition>();
   const [selectedPatient, setSelectedPatient] = useState<Patient>();
   const navigate = useNavigate();
-  const [createPatientModalOpen, setCreatePatientModalOpen] = useState(false);
+  const [isTelehealth, setIsTelehealth] = useState(false);
 
   // Existing useEffect and function implementations remain exactly the same
   useEffect(() => {
@@ -354,50 +353,30 @@ ${transcript}`;
     }
   };
 
-  const handleCreateNewPatient = async (fullName: string) => {
-    try {
-      const nameParts = fullName.trim().split(' ');
-      const lastName = nameParts.pop() || '';
-      const firstName = nameParts.join(' ');
-
-      const newPatient = await medplum.createResource({
-        resourceType: 'Patient',
-        name: [{
-          given: firstName ? [firstName] : undefined,
-          family: lastName
-        }]
-      });
-
-      setSelectedPatient(newPatient);
-      
-      showNotification({
-        title: 'Success',
-        message: 'Patient created successfully',
-        color: 'green',
-        icon: <IconCheck size={16} />
-      });
-    } catch (error) {
-      console.error('Error creating patient:', error);
-      showNotification({
-        title: 'Error',
-        message: 'Failed to create patient',
-        color: 'red',
-        icon: <IconX size={16} />
-      });
-      throw error; // Re-throw to be handled by the modal
-    }
-  };
-
   return (
     <Container size="lg" mt="xl">
       <Paper shadow="sm" radius="md" p="xl" withBorder>
-        <Title order={2} mb="xl">Audio Session Recorder</Title>
+        <Stack spacing="lg">
+          <Group position="apart" align="center">
+            <Title order={2}>Audio Session Recorder</Title>
+            <Group>
+              <Text size="sm" c="dimmed">Session Type:</Text>
+              <SegmentedControl
+                size="sm"
+                data={[
+                  { label: 'In-Person', value: 'inPerson' },
+                  { label: 'Telehealth', value: 'telehealth' }
+                ]}
+                value={isTelehealth ? 'telehealth' : 'inPerson'}
+                onChange={(value) => setIsTelehealth(value === 'telehealth')}
+              />
+            </Group>
+          </Group>
         
         <Stack spacing="lg">
-          <PatientSelector
-            selectedPatient={selectedPatient}
-            onPatientSelect={setSelectedPatient}
-            onCreateClick={() => setCreatePatientModalOpen(true)}
+          <PatientSelector 
+            onSelect={(patient: Patient) => setSelectedPatient(patient)}
+            initialPatient={selectedPatient}
           />
           
           <AudioControls
@@ -423,13 +402,10 @@ ${transcript}`;
             psychNote={psychNote}
           />
         </Stack>
-      </Paper>
+     
 
-      <CreatePatientModal
-        opened={createPatientModalOpen}
-        onClose={() => setCreatePatientModalOpen(false)}
-        onSubmit={handleCreateNewPatient}
-      />
+     </Stack>
+     </Paper>
     </Container>
   );
 }
