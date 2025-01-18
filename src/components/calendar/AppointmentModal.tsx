@@ -1,6 +1,6 @@
 import { Modal, Button, Group, Stack } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
-import { PatientSelector } from './appointment/PatientSelector';
+import { PatientSelector } from '../shared/PatientSelector';
 import { DateTimeSelector } from './appointment/DateTimeSelector';
 import { AppointmentTypeSelector } from './appointment/AppointmentTypeSelector';
 import { RecurringOptions } from './appointment/RecurringOptions';
@@ -59,6 +59,7 @@ export function AppointmentModal({
         <PatientSelector 
           onSelect={(patient: Patient) => setState(prev => ({ ...prev, patient }))}
           initialPatient={initialPatient}
+          context="appointment"
         />
 
         <DateTimeSelector
