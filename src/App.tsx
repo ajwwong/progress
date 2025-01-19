@@ -86,7 +86,7 @@ export function App(): JSX.Element | null {
             links: [
               { icon: <IconCalendar />, label: 'Calendar', href: '/calendar' },
               { icon: <IconUser />, label: 'Patients', href: '/patient' },
-              { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/transcribe' },
+              { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/audio' },
               { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
               { icon: <IconSettings />, label: 'Settings', href: '/settings' }
             ],
@@ -127,7 +127,7 @@ export function App(): JSX.Element | null {
               <Route path="/calendar" element={<CalendarPage />} />
               <Route path="/patient" element={<PatientDirectoryPage />} />
               <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
-              <Route path="/transcribe" element={<AudioTranscribePage onTranscriptionStart={addTranscriptionTime} onCompositionSaved={triggerUpdate} />} />
+              <Route path="/audio" element={<AudioTranscribePage onTranscriptionStart={addTranscriptionTime} onCompositionSaved={triggerUpdate} />} />
               <Route path="/Patient/:id" element={<PatientPage />}>
                 <Route index element={<PatientOverview />} />
                 <Route path="overview" element={<PatientOverview />} />
@@ -146,7 +146,6 @@ export function App(): JSX.Element | null {
               <Route path="/billing" element={<BillingDashboard />} />
               <Route path="/settings" element={<PractitionerPage />} />
               <Route path="/Practitioner/:id" element={<PractitionerPage />} />
-              <Route path="/audio" element={<AudioTranscribePage />} />
             </Routes>
           </Suspense>
         </ErrorBoundary>
