@@ -31,7 +31,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
     useLocation().state?.selectedPatient
   );
   const navigate = useNavigate();
-  const [isTelehealth, setIsTelehealth] = useState(false);
+  const [isTelehealth, setIsTelehealth] = useState(true);
 
   // Existing useEffect and function implementations remain exactly the same
   useEffect(() => {

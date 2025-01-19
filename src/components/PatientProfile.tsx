@@ -1,5 +1,5 @@
-import { Container, Grid, Paper, Stack, Anchor, Group, Title, Text, Button, Badge, Avatar, ActionIcon, Tooltip, Box, SimpleGrid, TextInput, Select } from '@mantine/core';
-import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck, IconMicrophone } from '@tabler/icons-react';
+import { Container, Grid, Paper, Stack, Anchor, Group, Title, Text, Button, Collapse, Badge, Avatar, ActionIcon, Tooltip, Box, SimpleGrid, TextInput, Select, Center, Loader } from '@mantine/core';
+import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconChevronDown, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck, IconMicrophone, IconChevronRight } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { Patient, Appointment, Composition } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
@@ -7,7 +7,7 @@ import { calculateAgeString } from '@medplum/core';
 import { useParams } from 'react-router-dom';
 import { useResource } from '@medplum/react';
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
 
 const getPronounDisplay = (code: string): string => {
@@ -44,6 +44,10 @@ export function PatientProfile(): JSX.Element {
     )?.extension?.find(e => e.url === 'value')?.valueCodeableConcept?.coding?.[0]?.code || '',
     defaultTemplate: 'progress'
   });
+  const [compositions, setCompositions] = useState<{ [key: string]: Composition[] }>({});
+  const [compositionsLoading, setCompositionsLoading] = useState(true);
+  const [compositionsError, setCompositionsError] = useState<string>();
+  const [openNotes, setOpenNotes] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     medplum.searchResources('Appointment', {
@@ -78,6 +82,34 @@ export function PatientProfile(): JSX.Element {
       fetchNotesForAppointments();
     }
   }, [medplum, appointments]);
+
+  useEffect(() => {
+    if (patient.id) {
+      medplum.searchResources('Composition', {
+        subject: `Patient/${patient.id}`,
+        _sort: '-date',
+        _count: 100
+      })
+        .then(results => {
+          const groupedComps: { [key: string]: Composition[] } = {};
+          results.forEach(comp => {
+            const typeDisplay = comp.type?.coding?.[0]?.display || 
+                              comp.type?.text || 
+                              'Other Notes';
+            if (!groupedComps[typeDisplay]) {
+              groupedComps[typeDisplay] = [];
+            }
+            groupedComps[typeDisplay].push(comp);
+          });
+          setCompositions(groupedComps);
+        })
+        .catch(err => {
+          console.error('Error fetching compositions:', err);
+          setCompositionsError('Error loading notes');
+        })
+        .finally(() => setCompositionsLoading(false));
+    }
+  }, [medplum, patient.id]);
 
   const upcomingAppointments = appointments
     .filter(apt => new Date(apt.start || '') > new Date())
@@ -176,6 +208,18 @@ export function PatientProfile(): JSX.Element {
     });
   };
 
+  const toggleNote = (noteId: string) => {
+    setOpenNotes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(noteId)) {
+        newSet.delete(noteId);
+      } else {
+        newSet.add(noteId);
+      }
+      return newSet;
+    });
+  };
+
   return (
     <Container size="xl" py="xl">
       <Grid>
@@ -268,7 +312,73 @@ export function PatientProfile(): JSX.Element {
               ))}
             </Stack>
           </Paper>
-          </Stack>                  
+          </Stack>    
+
+            {/* Clinical Notes Card */}
+           <Stack spacing="xl">
+        <Group position="apart">
+          <Title order={2}>All Patient Notes</Title>
+          <Button 
+            component="a"
+            href="/transcribe"
+          >
+            <Group spacing={8}>
+              <IconChevronRight size={16} />
+              <span>New Note</span>
+            </Group>
+          </Button>
+        </Group>
+
+        {Object.entries(compositions).map(([type, notes]) => (
+          <Stack key={type} spacing="md">
+            <Title order={3} sx={(theme) => ({
+              backgroundColor: theme.colors.gray[1],
+              padding: theme.spacing.md,
+              borderRadius: theme.radius.sm
+            })}>
+              {type} ({notes.length})
+            </Title>
+            
+            <Stack spacing="md">
+              {notes.map((note) => (
+                <Paper key={note.id} withBorder>
+                  <Group p="md" position="apart" onClick={() => toggleNote(note.id || '')} sx={{ cursor: 'pointer' }}>
+                    <Group>
+                      {openNotes.has(note.id || '') ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
+                      <Text weight={500}>{note.title}</Text>
+                    </Group>
+                    <Text size="sm" color="dimmed">
+                      {new Date(note.date || '').toLocaleString()}
+                    </Text>
+                  </Group>
+                  
+                  <Collapse in={openNotes.has(note.id || '')}>
+                    <Box p="md">
+                      {note.section
+                        ?.filter(section => section.title !== 'Transcript')
+                        ?.map((section, index) => (
+                        <Box key={index} mb="md">
+                          <Text weight={500} mb="xs">{section.title}</Text>
+                          <Paper p="md" withBorder>
+                            <div 
+                              dangerouslySetInnerHTML={{ 
+                                __html: section.text?.div || '' 
+                              }}
+                              style={{
+                                whiteSpace: 'pre-wrap'
+                              }}
+                            />
+                          </Paper>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Collapse>
+                </Paper>
+              ))}
+            </Stack>
+          </Stack>
+        ))}
+      </Stack>            
         </Grid.Col>
               
         <Grid.Col span={4}>
@@ -477,6 +587,8 @@ export function PatientProfile(): JSX.Element {
                 </Button>
               </Stack>
             </Paper>
+
+          
           </Stack>
         </Grid.Col>
       </Grid>
