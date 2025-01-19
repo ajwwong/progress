@@ -1,5 +1,5 @@
-import { Container, Grid, Paper, Stack, Anchor, Group, Title, Text, Button, Collapse, Badge, Avatar, ActionIcon, Tooltip, Box, SimpleGrid, TextInput, Select, Center, Loader } from '@mantine/core';
-import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconChevronDown, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck, IconMicrophone, IconChevronRight } from '@tabler/icons-react';
+import { Container, Grid, Paper, Stack, Anchor, Group, Title, Text, Button, Collapse, Badge, Avatar, ActionIcon, Tooltip, Box, SimpleGrid, TextInput, Select, Center, Loader, Textarea, Modal } from '@mantine/core';
+import { IconCalendar, IconPhone, IconMail, IconMapPin, IconLock, IconChevronDown, IconUnlock, IconEdit, IconPlus, IconBook, IconCheck, IconMicrophone, IconChevronRight, IconWand } from '@tabler/icons-react';
 import { useMedplum } from '@medplum/react';
 import { Patient, Appointment, Composition } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
@@ -9,6 +9,7 @@ import { useResource } from '@medplum/react';
 import { format } from 'date-fns';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
+import { notifications } from '@mantine/notifications';
 
 const getPronounDisplay = (code: string): string => {
   const pronounMap: Record<string, string> = {
@@ -48,6 +49,12 @@ export function PatientProfile(): JSX.Element {
   const [compositionsLoading, setCompositionsLoading] = useState(true);
   const [compositionsError, setCompositionsError] = useState<string>();
   const [openNotes, setOpenNotes] = useState<Set<string>>(new Set());
+  const [editedSections, setEditedSections] = useState<{ [key: string]: string }>({});
+  const [modifiedSections, setModifiedSections] = useState<Set<string>>(new Set());
+  const [showMagicModal, setShowMagicModal] = useState(false);
+  const [magicInstructions, setMagicInstructions] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [editingSection, setEditingSection] = useState<{noteId: string, sectionTitle: string} | null>(null);
 
   useEffect(() => {
     medplum.searchResources('Appointment', {
@@ -220,6 +227,124 @@ export function PatientProfile(): JSX.Element {
     });
   };
 
+  const handleSaveSection = async (noteId: string, sectionTitle: string) => {
+    // Find the specific note we're editing
+    const composition = await medplum.readResource('Composition', noteId);
+    if (!composition) return;
+
+    const updatedComposition = {
+      ...composition,
+      section: composition.section?.map(section => {
+        if (section.title === sectionTitle) {
+          return {
+            ...section,
+            text: {
+              div: editedSections[sectionTitle],
+              status: 'generated'
+            }
+          };
+        }
+        return section;
+      })
+    };
+
+    try {
+      // Update the composition in Medplum
+      await medplum.updateResource(updatedComposition);
+      
+      // Fetch the updated compositions to refresh the state
+      const updatedCompositions = await medplum.searchResources('Composition', {
+        patient: `Patient/${patient.id}`,
+        _sort: '-date'
+      });
+
+      // Group compositions by type
+      const groupedCompositions = updatedCompositions.reduce((acc, comp) => {
+        const type = comp.type?.text || 'Other';
+        if (!acc[type]) {
+          acc[type] = [];
+        }
+        acc[type].push(comp);
+        return acc;
+      }, {} as Record<string, Composition[]>);
+
+      setCompositions(groupedCompositions);
+      
+      // Clear modification tracking
+      setModifiedSections(prev => {
+        const next = new Set(prev);
+        next.delete(sectionTitle);
+        return next;
+      });
+      
+      setEditingSection(null);
+      
+      notifications.show({
+        title: 'Success',
+        message: 'Changes saved successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to save changes',
+        color: 'red'
+      });
+    }
+  };
+
+  const handleTextChange = (sectionTitle: string, newText: string) => {
+    setEditedSections(prev => ({
+      ...prev,
+      [sectionTitle]: newText
+    }));
+    setModifiedSections(prev => {
+      const next = new Set(prev);
+      next.add(sectionTitle);
+      return next;
+    });
+  };
+
+  const handleMagicEdit = async (sectionTitle: string) => {
+    if (!editingSection || sectionTitle !== 'Psychotherapy Note') return;
+    
+    setIsProcessing(true);
+    try {
+      const currentNote = editedSections['Psychotherapy Note'];
+      const transcript = editedSections['Transcript'];
+      const prompt = `As an experienced psychodynamically-oriented therapist, please adjust the following psychotherapy note according to these instructions:
+
+${magicInstructions}
+
+Current note:
+${currentNote}
+
+Original transcript for reference:
+${transcript}
+
+Please provide the complete adjusted note while maintaining the same professional therapeutic style and structure.`;
+
+      const response = await medplum.executeBot(
+        '5731008c-42a6-4fdc-8969-2560667b4f1d',
+        { text: prompt },
+        'application/json'
+      );
+
+      if (response.text) {
+        handleTextChange(sectionTitle, response.text);
+        setShowMagicModal(false);
+      }
+    } catch (err) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to process magic edit',
+        color: 'red'
+      });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <Container size="xl" py="xl">
       <Grid>
@@ -340,40 +465,143 @@ export function PatientProfile(): JSX.Element {
             </Title>
             
             <Stack spacing="md">
-              {notes.map((note) => (
-                <Paper key={note.id} withBorder>
-                  <Group p="md" position="apart" onClick={() => toggleNote(note.id || '')} sx={{ cursor: 'pointer' }}>
-                    <Group>
-                      {openNotes.has(note.id || '') ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
-                      <Text weight={500}>{note.title}</Text>
-                    </Group>
-                    <Text size="sm" color="dimmed">
-                      {new Date(note.date || '').toLocaleString()}
-                    </Text>
-                  </Group>
-                  
-                  <Collapse in={openNotes.has(note.id || '')}>
-                    <Box p="md">
-                      {note.section
-                        ?.filter(section => section.title !== 'Transcript')
-                        ?.map((section, index) => (
-                        <Box key={index} mb="md">
-                          <Text weight={500} mb="xs">{section.title}</Text>
-                          <Paper p="md" withBorder>
-                            <div 
-                              dangerouslySetInnerHTML={{ 
-                                __html: section.text?.div || '' 
-                              }}
-                              style={{
-                                whiteSpace: 'pre-wrap'
-                              }}
-                            />
-                          </Paper>
-                        </Box>
-                      ))}
-                    </Box>
-                  </Collapse>
-                </Paper>
+              {notes.slice(0, 20).map((note) => (
+                <Stack key={note.id} spacing="xs">
+                  {note.section
+                    ?.filter(section => section.title !== 'Transcript')
+                    ?.map((section, index) => {
+                      const isEditing = editingSection?.noteId === note.id && editingSection?.sectionTitle === section.title;
+                      const textContent = section.text?.div
+                        ? section.text.div.replace(/<[^>]*>/g, '')
+                        : '';
+                      
+                      return (
+                        <Paper 
+                          key={index} 
+                          withBorder 
+                          p="md"
+                          sx={(theme) => ({
+                            borderColor: isEditing ? theme.colors.blue[4] : theme.colors.gray[2],
+                            backgroundColor: theme.white,
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              borderColor: theme.colors.blue[4],
+                              backgroundColor: theme.colors.gray[0]
+                            },
+                            '&:focus-within': {
+                              borderColor: theme.colors.blue[5]
+                            }
+                          })}
+                        >
+                          <Group position="apart" mb="md">
+                            <Group spacing="xs">
+                              <Text weight={600} size="sm" color="blue">
+                                {section.title}
+                              </Text>
+                              <Text size="xs" color="dimmed">
+                                {format(new Date(note.date || ''), 'MMM d, yyyy')}
+                              </Text>
+                            </Group>
+                            <Group spacing="xs">
+                              {isEditing ? (
+                                <>
+                                  {section.title === 'Psychotherapy Note' && (
+                                    <Tooltip label="Magic Edit">
+                                      <ActionIcon
+                                        onClick={() => setShowMagicModal(true)}
+                                        variant="light"
+                                        color="violet"
+                                        size="lg"
+                                      >
+                                        <IconWand size={20} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                  )}
+                                  <Button
+                                    onClick={() => handleSaveSection(note.id || '', section.title || '')}
+                                    variant="light"
+                                    color="blue"
+                                    size="sm"
+                                    leftIcon={<IconCheck size={16} />}
+                                  >
+                                    Save Changes
+                                  </Button>
+                                  <Button
+                                    onClick={() => setEditingSection(null)}
+                                    variant="subtle"
+                                    color="gray"
+                                    size="sm"
+                                  >
+                                    Cancel
+                                  </Button>
+                                </>
+                              ) : (
+                                <Tooltip label="Edit Section">
+                                  <ActionIcon
+                                    onClick={() => {
+                                      setEditingSection({ noteId: note.id || '', sectionTitle: section.title || '' });
+                                      setEditedSections(prev => ({
+                                        ...prev,
+                                        [section.title || '']: textContent
+                                      }));
+                                    }}
+                                    variant="light"
+                                    color="blue"
+                                    size="sm"
+                                  >
+                                    <IconEdit size={16} />
+                                  </ActionIcon>
+                                </Tooltip>
+                              )}
+                            </Group>
+                          </Group>
+                          
+                          {isEditing ? (
+                            <>
+                              <Box mb={8}>
+                                <Text size="sm" color="dimmed" sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                  <IconEdit size={14} />
+                                  Click inside to edit
+                                </Text>
+                              </Box>
+                              <Textarea
+                                value={editedSections[section.title || '']}
+                                onChange={(e) => handleTextChange(section.title || '', e.currentTarget.value)}
+                                minRows={5}
+                                autosize
+                                styles={(theme) => ({
+                                  input: {
+                                    backgroundColor: theme.white,
+                                    border: `1px solid ${theme.colors.gray[2]}`,
+                                    transition: 'all 200ms ease',
+                                    '&:hover': {
+                                      borderColor: theme.colors.blue[2],
+                                      backgroundColor: theme.colors.gray[0],
+                                    },
+                                    '&:focus': {
+                                      borderColor: theme.colors.blue[5],
+                                      backgroundColor: theme.white,
+                                    },
+                                  },
+                                })}
+                              />
+                            </>
+                          ) : (
+                            <Text 
+                              size="sm" 
+                              lineClamp={3}
+                              sx={(theme) => ({
+                                color: theme.colors.gray[7],
+                                lineHeight: 1.6,
+                              })}
+                            >
+                              {textContent}
+                            </Text>
+                          )}
+                        </Paper>
+                      );
+                    })}
+                </Stack>
               ))}
             </Stack>
           </Stack>
@@ -592,6 +820,47 @@ export function PatientProfile(): JSX.Element {
           </Stack>
         </Grid.Col>
       </Grid>
+
+      {/* Magic Edit Modal */}
+      <Modal
+        opened={showMagicModal}
+        onClose={() => setShowMagicModal(false)}
+        title={<Title order={3}>Magic Edit - Psychotherapy Note</Title>}
+        size="lg"
+      >
+        <Stack spacing="md">
+          <Textarea
+            label="Edit Instructions"
+            description="Describe how you want to modify the note"
+            placeholder="e.g., 'Expand on the client's attachment patterns' or 'Add more detail about treatment progress'"
+            value={magicInstructions}
+            onChange={(e) => setMagicInstructions(e.currentTarget.value)}
+            minRows={3}
+            autosize
+            styles={(theme) => ({
+              input: {
+                backgroundColor: theme.colors.gray[0]
+              }
+            })}
+          />
+          <Group position="right">
+            <Button 
+              onClick={() => setShowMagicModal(false)}
+              variant="subtle"
+              color="gray"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => handleMagicEdit(editingSection?.sectionTitle || '')}
+              loading={isProcessing}
+              color="violet"
+            >
+              Apply Magic Edit
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Container>
   );
 }

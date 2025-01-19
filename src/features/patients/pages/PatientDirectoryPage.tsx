@@ -326,7 +326,7 @@ export function PatientDirectoryPage(): JSX.Element {
                   </Table.Td>
                   <Table.Td>
                     <Stack spacing={4}>
-                      {patient.telecom?.map((t, i) => (
+                      {patient.telecom?.filter(t => t.system && t.value).map((t, i) => (
                         <Group key={i} spacing={6}>
                           {t.system === 'phone' && <IconPhone size={14} />}
                           {t.system === 'email' && <IconMail size={14} />}
