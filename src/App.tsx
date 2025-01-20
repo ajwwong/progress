@@ -129,7 +129,7 @@ export function App(): JSX.Element | null {
               <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
               <Route path="/audio" element={<AudioTranscribePage onTranscriptionStart={addTranscriptionTime} onCompositionSaved={triggerUpdate} />} />
               <Route path="/Patient/:id" element={<PatientPage />}>
-                <Route index element={<PatientOverview />} />
+                <Route index element={<PatientProfile />} />
                 <Route path="overview" element={<PatientOverview />} />
                 <Route path="timeline" element={<Timeline />} />
                 <Route path="history" element={<PatientHistory />} />
