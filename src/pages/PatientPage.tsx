@@ -22,7 +22,7 @@ export function PatientPage(): JSX.Element {
           <Tabs.Tab value="profile">Dashboard</Tabs.Tab>
           <Tabs.Tab value="recent">Most Recent</Tabs.Tab>
           <Tabs.Tab value="overview">Overview</Tabs.Tab>
-          <Tabs.Tab value="notes">Session Notes</Tabs.Tab>
+          {/* <Tabs.Tab value="notes">Session Notes</Tabs.Tab> */}
         </Tabs.List>
       </Tabs>
       <Outlet />

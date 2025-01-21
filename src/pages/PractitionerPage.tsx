@@ -1,4 +1,4 @@
-import { Container, Stack, Tabs, TextInput, Title, Text, Button, Group, Select, PasswordInput, Switch, MultiSelect, SegmentedControl, Paper, Badge } from '@mantine/core';
+import { Container, Stack, Tabs, TextInput, Title, Text, Button, Group, Select, PasswordInput, Switch, MultiSelect, SegmentedControl, Paper, Badge, Radio } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
@@ -10,17 +10,34 @@ import type { Stripe, StripeElements } from '@stripe/stripe-js';
 
 export function PractitionerPage(): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile() as Practitioner | undefined;
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   const [stripe, setStripe] = useState<Stripe | null>(null);
   const [elements, setElements] = useState<StripeElements | null>(null);
   const [subscriptionActive, setSubscriptionActive] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const stripePromise = loadStripe('your_publishable_key');
+  const [referencePreference, setReferencePreference] = useState<string>('patient');
+  const [quotePreference, setQuotePreference] = useState<string>('exclude');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [title, setTitle] = useState('');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    if (profile) {
+      setFirstName(profile.name?.[0]?.given?.[0] || '');
+      setLastName(profile.name?.[0]?.family || '');
+      setTitle(profile.name?.[0]?.prefix?.[0] || '');
+      setEmail(profile.telecom?.find(t => t.system === 'email')?.value || '');
+      setProfileLoading(false);
+    }
+  }, [profile]);
 
   useEffect(() => {
     medplum.searchResources('Invoice', {
@@ -71,18 +88,21 @@ export function PractitionerPage(): JSX.Element {
   }, []);
 
   const handleProfileUpdate = async () => {
+    if (!profile) return;
+    
     setLoading(true);
     try {
       const updatedProfile = await medplum.updateResource({
         ...profile,
         name: [{
           ...profile.name?.[0],
-          given: [profile.name?.[0]?.given?.[0] || ''],
-          family: profile.name?.[0]?.family || ''
+          given: [firstName],
+          family: lastName,
+          prefix: [title]
         }],
         telecom: [
-          { system: 'email', value: profile.telecom?.find(t => t.system === 'email')?.value || '' },
-          { system: 'phone', value: profile.telecom?.find(t => t.system === 'phone')?.value || '' }
+          { system: 'email', value: email },
+          ...(profile.telecom?.filter(t => t.system !== 'email') || [])
         ]
       });
 
@@ -137,7 +157,7 @@ export function PractitionerPage(): JSX.Element {
     }
 
     setLoading(true);
-    setError(undefined);
+    setError('');
 
     try {
       const cardElement = elements.getElement('card');
@@ -167,7 +187,11 @@ export function PractitionerPage(): JSX.Element {
         color: 'green',
       });
     } catch (err) {
-      setError(err.message);
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
     } finally {
       setLoading(false);
     }
@@ -184,70 +208,86 @@ export function PractitionerPage(): JSX.Element {
         </Tabs.List>
 
         <Tabs.Panel value="profile" pt="xl">
-          <Stack spacing="xl">
+          <Stack gap="xl">
             <Title order={2}>Profile Settings</Title>
             <Text c="dimmed">Manage your account information.</Text>
 
-            <Group align="flex-start" spacing="xl">
-              <Stack style={{ flex: 1 }}>
-                <TextInput
-                  label="Email"
-                  value={profile.telecom?.find(t => t.system === 'email')?.value || ''}
-                  disabled
-                />
+            {profileLoading ? (
+              <Text>Loading profile...</Text>
+            ) : (
+              <Group align="flex-start" gap="xl">
+                <Stack style={{ flex: 1 }}>
+                  <TextInput
+                    label="Email"
+                    value={email}
+                    disabled
+                  />
 
-                <TextInput
-                  label="Name"
-                  defaultValue={profile.name?.[0]?.given?.[0] || ''}
-                />
+                  <TextInput
+                    label="First Name"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    placeholder="Enter your first name"
+                  />
 
-                <TextInput
-                  label="Title"
-                  defaultValue={profile.name?.[0]?.prefix?.[0] || ''}
-                />
+                  <TextInput
+                    label="Last Name"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    placeholder="Enter your last name"
+                  />
 
-                <Select
-                  label="Specialty"
-                  placeholder="Select specialty"
-                  data={[
-                    'Psychotherapy',
-                    'Counseling',
-                    'Clinical Psychology',
-                    'Psychiatry',
-                    'Marriage and Family Therapy'
-                  ]}
-                  defaultValue={profile.qualification?.[0]?.code?.text}
-                />
+                  <TextInput
+                    label="Title"
+                    value={title}
+                    onChange={(e) => setTitle(e.target.value)}
+                    placeholder="Enter your title"
+                  />
 
-                <Button color="blue" onClick={handleProfileUpdate} loading={loading}>
-                  Save Changes
-                </Button>
-              </Stack>
-            </Group>
+                  <Select
+                    label="Specialty"
+                    placeholder="Select specialty"
+                    data={[
+                      'Psychotherapy',
+                      'Counseling',
+                      'Clinical Psychology',
+                      'Psychiatry',
+                      'Marriage and Family Therapy'
+                    ]}
+                    defaultValue={profile?.qualification?.[0]?.code?.text}
+                  />
+
+                  <Button color="blue" onClick={handleProfileUpdate} loading={loading}>
+                    Save Changes
+                  </Button>
+                </Stack>
+              </Group>
+            )}
           </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="note-preferences" pt="xl">
-          <Stack spacing="xl">
+          <Stack gap="xl">
             <Title order={2}>Note preferences</Title>
             <Text c="dimmed">These settings will be applied to all future notes.</Text>
 
-            <Stack spacing="md">
+            <Stack gap="md">
               <Text fw={500}>How do you refer to the person you are supporting?</Text>
-              <SegmentedControl
-                data={[
-                  { label: 'Patient', value: 'patient' },
-                  { label: 'Client', value: 'client' },
-                ]}
-              />
+              <Radio.Group value={referencePreference} onChange={setReferencePreference}>
+                <Group>
+                  <Radio label="Patient" value="patient" />
+                  <Radio label="Client" value="client" />
+                  <Radio label="Use their name" value="name" />
+                </Group>
+              </Radio.Group>
 
               <Text fw={500}>Would you like to include quotes in your notes?</Text>
-              <SegmentedControl
-                data={[
-                  { label: 'Exclude quotes', value: 'exclude' },
-                  { label: 'Include quotes', value: 'include' },
-                ]}
-              />
+              <Radio.Group value={quotePreference} onChange={setQuotePreference}>
+                <Group>
+                  <Radio label="Exclude quotes" value="exclude" />
+                  <Radio label="Include quotes" value="include" />
+                </Group>
+              </Radio.Group>
 
               <Text fw={500}>Interventions</Text>
               <MultiSelect
@@ -272,18 +312,18 @@ export function PractitionerPage(): JSX.Element {
                 ]}
                 placeholder="Search and select interventions"
                 searchable
-                maxSelectedValues={10}
+                maxDropdownHeight={200}
                 onChange={(selected) => console.log('Selected interventions:', selected)}
               />
 
               <Button color="blue">Save</Button>
 
-              <Group position="apart" mt="md">
+              <Group justify="apart" mt="md">
                 <Text fw={500}>Include date & time for 'Copy note'</Text>
                 <Switch label="When enabled, 'Copy Note' will include the date and time." />
               </Group>
 
-              <Group position="apart">
+              <Group justify="apart">
                 <Text fw={500}>Record storage settings</Text>
                 <Switch label="Delete notes after 30 days" />
               </Group>
@@ -292,14 +332,14 @@ export function PractitionerPage(): JSX.Element {
         </Tabs.Panel>
 
         <Tabs.Panel value="billing" pt="xl">
-          <Stack spacing="xl">
+          <Stack gap="xl">
             <Title order={2}>Billing</Title>
             <Text c="dimmed">Manage your subscription and payment methods</Text>
 
             {/* Subscription Section */}
             <Paper withBorder p="xl">
-              <Stack spacing="lg">
-                <Group position="apart">
+              <Stack gap="lg">
+                <Group justify="apart">
                   <div>
                     <Text size="lg" fw={500}>Transcription Service Subscription</Text>
                     <Text size="sm" c="dimmed">Monthly access to AI transcription services</Text>
@@ -330,7 +370,7 @@ export function PractitionerPage(): JSX.Element {
                 )}
 
                 <Button
-                  leftIcon={<IconCreditCard size={16} />}
+                  leftSection={<IconCreditCard size={16} />}
                   loading={loading}
                   onClick={handleSubscribe}
                   disabled={subscriptionActive}
@@ -342,13 +382,13 @@ export function PractitionerPage(): JSX.Element {
 
             {/* Payment History Section */}
             <Paper withBorder p="xl">
-              <Stack spacing="lg">
+              <Stack gap="lg">
                 <Title order={3}>Payment History</Title>
                 
                 {invoices.map((invoice) => (
                   <Paper key={invoice.id} p="md" withBorder>
-                    <Group position="apart">
-                      <Stack spacing={4}>
+                    <Group justify="apart">
+                      <Stack gap={4}>
                         <Text fw={500}>
                           {new Date(invoice.date || '').toLocaleDateString('en-US', {
                             month: 'long',
@@ -364,7 +404,7 @@ export function PractitionerPage(): JSX.Element {
                         <Button
                           variant="light"
                           size="sm"
-                          leftIcon={<IconDownload size={16} />}
+                          leftSection={<IconDownload size={16} />}
                           onClick={() => {
                             const paymentIntentId = invoice.identifier?.find(
                               id => id.system === 'https://stripe.com/payment_intent'
@@ -402,7 +442,7 @@ export function PractitionerPage(): JSX.Element {
 
         <Tabs.Panel value="change-password" pt="xl">
           <form onSubmit={handlePasswordChange}>
-            <Stack spacing="xl">
+            <Stack gap="xl">
               <Title order={2}>Change Password</Title>
               <Text c="dimmed">Update your account password.</Text>
 

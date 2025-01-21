@@ -2,13 +2,16 @@ import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, Ac
 import { IconPlayerRecord, IconPlayerStop, IconPlayerPlay, IconFileText, IconNotes, IconPlayerPause, IconPlus, IconCheck, IconX } from '@tabler/icons-react';
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { useMedplum, AsyncAutocomplete, ResourceAvatar } from '@medplum/react';
-import { Composition, Patient } from '@medplum/fhirtypes';
+import { Composition, Patient, Practitioner } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showNotification } from '@mantine/notifications';
 import { PatientSelector } from '../components/shared/PatientSelector';
 import { AudioControls } from '../components/audio/AudioControls';
 import { TranscriptionView } from '../components/audio/TranscriptionView';
+import { useAudioRecording } from '../hooks/useAudioRecording';
+import { useTranscription } from '../hooks/useTranscription';
+import { useActiveComposition } from '../hooks/useActiveComposition';
 
 interface AudioTranscribePageProps {
   onTranscriptionStart?: (time: string) => void;
@@ -56,12 +59,16 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       mediaRecorder.current = new MediaRecorder(stream);
       chunksRef.current = [];
 
-      const profile = await medplum.getProfile();
+      const profile = await medplum.getProfile() as Practitioner;
+      if (!profile) {
+        throw new Error('No practitioner profile found');
+      }
+
       const practitionerName = profile.name?.[0] ? 
         `${profile.name[0].given?.[0] || ''} ${profile.name[0].family || ''}`.trim() : 
         'Unknown Practitioner';
 
-      const initialComposition = {
+      const initialComposition: Composition = {
         resourceType: 'Composition',
         status: 'preliminary',
         type: {
@@ -72,7 +79,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
           }]
         },
         date: new Date().toISOString(),
-        title: 'Therapy Session Notes',
+        title: 'Progress Note',
         author: [{
           reference: `Practitioner/${profile.id}`,
           display: practitionerName
@@ -85,7 +92,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       };
 
       const savedComp = await medplum.createResource(initialComposition);
-      setSavedComposition(savedComp);
+      setSavedComposition(savedComp as Composition);
       onCompositionSaved?.();
 
       mediaRecorder.current.ondataavailable = (event) => {
@@ -104,7 +111,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       setIsRecording(true);
       setStatus('Recording...');
     } catch (err) {
-      console.error('Error starting recording:', err);
+      const error = err as Error;
+      console.error('Error starting recording:', error);
       setStatus('Error: Could not start recording');
     }
   };
@@ -148,8 +156,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       
       setStatus('Transcribing...');
       const response = await medplum.executeBot(
-        '1255675e-266d-4ab9-bc69-a850c6ca4875',  // Old transcription bot ID
-       // 'deaa415b-66ba-468e-9faa-01f698376327',  // New transcription bot ID  
+        '1255675e-266d-4ab9-bc69-a850c6ca4875',
         {
           type: 'audio',
           binaryId: binary.id
@@ -160,22 +167,19 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       if (response.details?.transcript) {
         setTranscript(response.details.transcript);
         
-        const updatedComposition = {
+        const updatedComposition: Composition = {
           ...savedComposition,
-          section: [
-            {
-              title: 'Transcript',
-              text: {
-                status: 'generated',
-                div: `<div xmlns="http://www.w3.org/1999/xhtml">${response.details.transcript}</div>`
-              }
+          section: [{
+            title: 'Transcript',
+            text: {
+              status: 'generated' as const,
+              div: `<div xmlns="http://www.w3.org/1999/xhtml">${response.details.transcript}</div>`
             }
-          ],
-          subject: savedComposition.subject
+          }]
         };
 
         const updated = await medplum.updateResource(updatedComposition);
-        setSavedComposition(updated);
+        setSavedComposition(updated as Composition);
         setStatus('Transcription complete');
       } else {
         setStatus('Error: No transcript received');
@@ -187,27 +191,25 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       // Update the composition with a dummy transcript
       if (savedComposition) {
         const dummyTranscript = "This is where the transcription would go";
-        const updatedComposition = {
+        const updatedComposition: Composition = {
           ...savedComposition,
-          section: [
-            {
-              title: 'Transcript',
-              text: {
-                status: 'generated',
-                div: `<div xmlns="http://www.w3.org/1999/xhtml">${dummyTranscript}</div>`
-              }
+          section: [{
+            title: 'Transcript',
+            text: {
+              status: 'generated' as const,
+              div: `<div xmlns="http://www.w3.org/1999/xhtml">${dummyTranscript}</div>`
             }
-          ],
-          subject: savedComposition.subject
+          }]
         };
 
         try {
           const updated = await medplum.updateResource(updatedComposition);
-          setSavedComposition(updated);
+          setSavedComposition(updated as Composition);
           setTranscript(dummyTranscript);
           setStatus('Dummy transcript added');
         } catch (updateErr) {
-          console.error('Error updating composition with dummy transcript:', updateErr);
+          const error = updateErr as Error;
+          console.error('Error updating composition with dummy transcript:', error);
         }
       }
     }
@@ -248,41 +250,43 @@ ${transcript}`;
           
           setStatus('Psychotherapy note generated');
         } catch (compositionErr) {
-          console.error('Error saving composition:', compositionErr);
-          setStatus(`Error: Could not save composition - ${compositionErr.message}`);
+          const error = compositionErr as Error;
+          console.error('Error saving composition:', error);
+          setStatus(`Error: Could not save composition - ${error.message}`);
         }
       } else {
         setStatus('Error: No note generated');
       }
     } catch (err) {
-      console.error('Error generating note:', err);
-      setStatus(`Error: Could not generate note - ${err.message}`);
+      const error = err as Error;
+      console.error('Error generating note:', error);
+      setStatus(`Error: Could not generate note - ${error.message}`);
 
       // Update the composition with a dummy note
       if (savedComposition) {
         const dummyNote = "This is where the psychotherapy note would go";
-        const updatedComposition = {
+        const updatedComposition: Composition = {
           ...savedComposition,
           section: [
             {
               title: 'Psychotherapy Note',
               text: {
-                status: 'generated',
+                status: 'generated' as const,
                 div: `<div xmlns="http://www.w3.org/1999/xhtml">${dummyNote}</div>`
               }
             },
-            ...savedComposition.section // Retain existing sections like Transcript
-          ],
-          subject: savedComposition.subject
+            ...(savedComposition.section || [])
+          ]
         };
 
         try {
           const updated = await medplum.updateResource(updatedComposition);
-          setSavedComposition(updated);
+          setSavedComposition(updated as Composition);
           setPsychNote(dummyNote);
           setStatus('Dummy note added');
         } catch (updateErr) {
-          console.error('Error updating composition with dummy note:', updateErr);
+          const error = updateErr as Error;
+          console.error('Error updating composition with dummy note:', error);
         }
       }
     }
@@ -312,21 +316,21 @@ ${transcript}`;
     }
 
     try {
-      const updatedComposition = {
+      const updatedComposition: Composition = {
         ...savedComposition,
-        status: 'final',
+        status: 'final' as const,
         section: [
           {
             title: 'Psychotherapy Note',
             text: {
-              status: 'generated',
+              status: 'generated' as const,
               div: `<div xmlns="http://www.w3.org/1999/xhtml">${note}</div>`
             }
           },
           {
             title: 'Transcript',
             text: {
-              status: 'generated',
+              status: 'generated' as const,
               div: `<div xmlns="http://www.w3.org/1999/xhtml">${transcript}</div>`
             }
           }
@@ -338,13 +342,14 @@ ${transcript}`;
       };
 
       const updated = await medplum.updateResource(updatedComposition);
-      setSavedComposition(updated);
+      setSavedComposition(updated as Composition);
       onCompositionSaved?.();
 
-      return updated;
+      return updated as Composition;
     } catch (err) {
-      console.error('Error saving composition:', err);
-      throw err;
+      const error = err as Error;
+      console.error('Error saving composition:', error);
+      throw error;
     }
   };
 
@@ -358,8 +363,8 @@ ${transcript}`;
   return (
     <Container size="lg" mt="xl">
       <Paper shadow="sm" radius="md" p="xl" withBorder>
-        <Stack spacing="lg">
-          <Group position="apart" align="center">
+        <Stack gap="lg">
+          <Group justify="space-between" align="center">
             <Title order={2}>Audio Session Recorder</Title>
             <Group>
               <Text size="sm" c="dimmed">Session Type:</Text>
@@ -375,40 +380,38 @@ ${transcript}`;
             </Group>
           </Group>
         
-        <Stack spacing="lg">
-          <PatientSelector 
-            onSelect={(patient: Patient) => setSelectedPatient(patient)}
-            initialPatient={selectedPatient}
-            context="audio"
-          />
-          
-          <AudioControls
-            isRecording={isRecording}
-            isPaused={isPaused}
-            isBlinking={isBlinking}
-            hasTranscript={!!transcript}
-            hasAudioBlob={!!audioBlob}
-            status={status}
-            disabled={!selectedPatient}
-            onStart={startRecording}
-            onStop={stopRecording}
-            onPause={pauseRecording}
-            onResume={resumeRecording}
-            onCancel={cancelRecording}
-            onPlay={playAudio}
-            onTranscribe={transcribeAudio}
-            onGenerateNote={generateNote}
-          />
+          <Stack gap="lg">
+            <PatientSelector 
+              onSelect={(patient: Patient) => setSelectedPatient(patient)}
+              initialPatient={selectedPatient}
+              context="audio"
+            />
+            
+            <AudioControls
+              isRecording={isRecording}
+              isPaused={isPaused}
+              isBlinking={isBlinking}
+              hasTranscript={!!transcript}
+              hasAudioBlob={!!audioBlob}
+              status={status}
+              disabled={!selectedPatient}
+              onStart={startRecording}
+              onStop={stopRecording}
+              onPause={pauseRecording}
+              onResume={resumeRecording}
+              onCancel={cancelRecording}
+              onPlay={playAudio}
+              onTranscribe={transcribeAudio}
+              onGenerateNote={generateNote}
+            />
 
-          <TranscriptionView 
-            transcript={transcript}
-            psychNote={psychNote}
-          />
+            <TranscriptionView 
+              transcript={transcript}
+              psychNote={psychNote}
+            />
+          </Stack>
         </Stack>
-     
-
-     </Stack>
-     </Paper>
+      </Paper>
     </Container>
   );
 }

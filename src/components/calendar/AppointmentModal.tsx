@@ -1,4 +1,4 @@
-import { Modal, Button, Group, Stack } from '@mantine/core';
+import { Modal, Button, Group, Stack, Title } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { PatientSelector } from '../shared/PatientSelector';
 import { DateTimeSelector } from './appointment/DateTimeSelector';
@@ -52,8 +52,16 @@ export function AppointmentModal({
     <Modal
       opened={opened}
       onClose={handleClose}
-      title="New Appointment"
+      title={<Title order={3} fw={500}>New Appointment</Title>}
       size="lg"
+      styles={{
+        title: {
+          marginBottom: '0.1rem'
+        },
+        body: {
+          paddingTop: '0.5rem'
+        }
+      }}
     >
       <Stack gap="md">
         <PatientSelector 

@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Container, Stack, Group, Title, Text, TextInput, Button, Select, Switch, SegmentedControl, MultiSelect, Tabs, PasswordInput, Paper, Badge } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { OperationOutcome, Invoice } from '@medplum/fhirtypes';
+import { OperationOutcome, Invoice, Practitioner } from '@medplum/fhirtypes';
 import { IconDownload, IconHistory, IconSettings, IconAlertCircle, IconCreditCard } from '@tabler/icons-react';
 import { StripeConnect } from './provider/StripeConnect';
 import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
+import { showNotification } from '@mantine/notifications';
+import { Radio } from '@mantine/core';
 
 // Initialize Stripe with your publishable key
 const stripePromise = loadStripe('your_publishable_key');
@@ -113,7 +115,7 @@ function BillingTab() {
         color: 'green',
       });
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setLoading(false);
     }
@@ -230,14 +232,35 @@ function BillingTab() {
 }
 
 export function SettingsPage(): JSX.Element {
+  const medplumProfile = useMedplumProfile();
+  const profile = ((medplumProfile as unknown) as { profile: Practitioner })?.profile;
   const medplum = useMedplum();
-  const profile = useMedplumProfile();
+
+  const [firstName, setFirstName] = useState('');
+  const [middleName, setMiddleName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [title, setTitle] = useState('');
+  const [specialty, setSpecialty] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (profile) {
+      const profileName = profile.name?.[0];
+      if (profileName) {
+        setFirstName(profileName.given?.[0] || '');
+        setMiddleName(profileName.given?.slice(1).join(' ') || '');
+        setLastName(profileName.family || '');
+      }
+      setTitle(profile.qualification?.[0]?.identifier?.[0]?.value || '');
+      setSpecialty(profile.qualification?.[0]?.code?.text || null);
+    }
+  }, [profile]);
 
   useEffect(() => {
     medplum.searchResources('Invoice', {
@@ -246,6 +269,51 @@ export function SettingsPage(): JSX.Element {
     }).then(setInvoices)
       .finally(() => setLoading(false));
   }, [medplum]);
+
+  const handleProfileSave = async () => {
+    if (!profile) return;
+
+    setSaving(true);
+    try {
+      const givenNames = [firstName];
+      if (middleName) {
+        givenNames.push(...middleName.split(' '));
+      }
+
+      const updatedProfile = {
+        ...profile,
+        name: [{
+          given: givenNames,
+          family: lastName
+        }],
+        qualification: [{
+          identifier: [{
+            value: title
+          }],
+          code: {
+            text: specialty || undefined
+          }
+        }]
+      };
+
+      await medplum.updateResource(updatedProfile);
+      
+      showNotification({
+        title: 'Success',
+        message: 'Profile updated successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      showNotification({
+        title: 'Error',
+        message: errorMessage,
+        color: 'red'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -257,8 +325,7 @@ export function SettingsPage(): JSX.Element {
         return;
       }
 
-       // Call Medplum's change password endpoint
-       const response = await medplum.post('auth/changepassword', {
+      await medplum.post('auth/changepassword', {
         oldPassword,
         newPassword
       });
@@ -266,9 +333,14 @@ export function SettingsPage(): JSX.Element {
       setOldPassword('');
       setNewPassword('');
       setConfirmPassword('');
-      alert('Password successfully changed');
+      showNotification({
+        title: 'Success',
+        message: 'Password changed successfully',
+        color: 'green'
+      });
     } catch (err) {
-      setError(err.message);
+      const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+      setError(errorMessage);
     }
   };
 
@@ -283,35 +355,56 @@ export function SettingsPage(): JSX.Element {
         </Tabs.List>
 
         <Tabs.Panel value="profile" pt="xl">
-          <Stack spacing="xl">
+          <Stack gap="xl">
             <Title order={2}>Settings</Title>
             <Text c="dimmed">Manage account preferences and note settings.</Text>
 
-            <Group align="flex-start" spacing="xl">
-              <Stack style={{ flex: 1 }}>
+            <Group align="flex-start" gap="xl">
+              <Stack style={{ flex: 1 }} gap="md">
                 <Title order={3}>Profile</Title>
                 <Text c="dimmed">Personalize your experience.</Text>
 
                 <TextInput
                   label="Email"
-                  value="jjwong@gmail.com"
+                  value={profile?.telecom?.[0]?.value || ''}
                   disabled
                 />
 
                 <TextInput
-                  label="Name"
-                  placeholder="Enter your name"
-                  defaultValue="Albert Wong"
+                  label="First Name"
+                  placeholder="Enter your first name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  required
+                />
+
+                <TextInput
+                  label="Middle Name(s)"
+                  placeholder="Enter your middle name(s)"
+                  value={middleName}
+                  onChange={(e) => setMiddleName(e.target.value)}
+                />
+
+                <TextInput
+                  label="Last Name"
+                  placeholder="Enter your last name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  required
                 />
 
                 <TextInput
                   label="Title"
                   placeholder="Enter title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                 />
 
                 <Select
                   label="Specialty"
                   placeholder="Enter your specialty"
+                  value={specialty}
+                  onChange={setSpecialty}
                   data={[
                     'Psychotherapy',
                     'Counseling',
@@ -336,35 +429,44 @@ export function SettingsPage(): JSX.Element {
                     'Experimental Psychology',
                     'Military Psychology',
                     'Occupational Health Psychology'
-                  ]}                />
+                  ]}
+                />
 
-                <Button color="blue">Save</Button>
+                <Button 
+                  color="blue" 
+                  onClick={handleProfileSave}
+                  loading={saving}
+                  leftSection={<IconSettings size={16} />}
+                >
+                  Save Changes
+                </Button>
               </Stack>
             </Group>
           </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="note-preferences" pt="xl">
-          <Stack spacing="xl">
+          <Stack gap="xl">
             <Title order={2}>Note preferences</Title>
             <Text c="dimmed">These settings will be applied to all future notes.</Text>
 
-            <Stack spacing="md">
+            <Stack gap="md">
               <Text fw={500}>How do you refer to the person you are supporting?</Text>
-              <SegmentedControl
-                data={[
-                  { label: 'Patient', value: 'patient' },
-                  { label: 'Client', value: 'client' },
-                ]}
-              />
+              <Radio.Group>
+                <Group gap="md">
+                  <Radio label="Patient" value="patient" />
+                  <Radio label="Client" value="client" />
+                  <Radio label="Use their name" value="name" />
+                </Group>
+              </Radio.Group>
 
               <Text fw={500}>Would you like to include quotes in your notes?</Text>
-              <SegmentedControl
-                data={[
-                  { label: 'Exclude quotes', value: 'exclude' },
-                  { label: 'Include quotes', value: 'include' },
-                ]}
-              />
+              <Radio.Group>
+                <Group gap="md">
+                  <Radio label="Exclude quotes" value="exclude" />
+                  <Radio label="Include quotes" value="include" />
+                </Group>
+              </Radio.Group>
 
               <Text fw={500}>Interventions</Text>
               <MultiSelect
@@ -422,57 +524,97 @@ export function SettingsPage(): JSX.Element {
                 ]}
                 placeholder="Search and select interventions"
                 searchable
-                maxSelectedValues={10}
+                maxDropdownHeight={200}
                 onChange={(selected) => console.log('Selected interventions:', selected)}
               />
-
-              <Button color="blue">Save</Button>
-
-              <Group position="apart" mt="md">
-                <Text fw={500}>Include date & time for 'Copy note'</Text>
-                <Switch label="When enabled, 'Copy Note' will include the date and time." />
-              </Group>
-
-              <Group position="apart">
-                <Text fw={500}>Record storage settings</Text>
-                <Switch label="Delete notes after 30 days" />
-              </Group>
             </Stack>
           </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="billing" pt="xl">
-          <BillingTab />
+          <Stack gap="xl">
+            <Title order={2}>Billing</Title>
+            <Text c="dimmed">View and manage your billing information.</Text>
+
+            <Group justify="space-between">
+              <Stack gap="md">
+                <Title order={3}>Recent Invoices</Title>
+                <Text c="dimmed">View your recent invoices.</Text>
+              </Stack>
+            </Group>
+
+            {loading ? (
+              <Text>Loading...</Text>
+            ) : (
+              <Stack gap="md">
+                {invoices.map((invoice: any) => (
+                  <Paper key={invoice.id} p="md" withBorder>
+                    <Group justify="space-between">
+                      <div>
+                        <Text fw={500}>{invoice.id}</Text>
+                        <Text size="sm" c="dimmed">
+                          {new Date(invoice.date).toLocaleDateString()}
+                        </Text>
+                      </div>
+                      <Button 
+                        variant="light" 
+                        size="sm"
+                        leftSection={<IconDownload size={16} />}
+                        onClick={() => console.log('Download invoice:', invoice.id)}
+                      >
+                        Download
+                      </Button>
+                    </Group>
+                  </Paper>
+                ))}
+              </Stack>
+            )}
+          </Stack>
         </Tabs.Panel>
 
         <Tabs.Panel value="change-password" pt="xl">
-          <form onSubmit={handleSubmit}>
-            <Stack spacing="xl">
-              <Title order={2}>Change Password</Title>
-              <Text c="dimmed">Update your account password.</Text>
+          <Stack gap="xl">
+            <Title order={2}>Change Password</Title>
+            <Text c="dimmed">Update your account password.</Text>
 
-              <PasswordInput
-                label="Current Password"
-                value={oldPassword}
-                onChange={(e) => setOldPassword(e.target.value)}
-                required
-              />
-              <PasswordInput
-                label="New Password"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                required
-              />
-              <PasswordInput
-                label="Confirm New Password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-              />
-              {error && <div style={{ color: 'red' }}>{error}</div>}
-              <Button type="submit">Change Password</Button>
-            </Stack>
-          </form>
+            <form onSubmit={handleSubmit}>
+              <Stack gap="md">
+                <TextInput
+                  label="Current Password"
+                  type="password"
+                  value={oldPassword}
+                  onChange={(e) => setOldPassword(e.target.value)}
+                  required
+                />
+
+                <TextInput
+                  label="New Password"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                />
+
+                <TextInput
+                  label="Confirm New Password"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                />
+
+                {error && (
+                  <Text c="red" size="sm">
+                    {error}
+                  </Text>
+                )}
+
+                <Button type="submit" color="blue">
+                  Change Password
+                </Button>
+              </Stack>
+            </form>
+          </Stack>
         </Tabs.Panel>
       </Tabs>
     </Container>

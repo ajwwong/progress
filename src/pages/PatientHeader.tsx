@@ -1,7 +1,8 @@
 import { Patient, Reference } from '@medplum/fhirtypes';
-import { HumanNameDisplay, MedplumLink, useResource } from '@medplum/react';
-import { Title, Paper, Group, Stack, Text } from '@mantine/core';
-import classes from './PatientHeader.module.css';
+import { HumanNameDisplay, useResource } from '@medplum/react';
+import { Paper, Group, Text, Stack } from '@mantine/core';
+import { IconCalendar } from '@tabler/icons-react';
+import { format } from 'date-fns';
 
 export interface PatientHeaderProps {
   readonly patient: Patient | Reference<Patient>;
@@ -15,19 +16,20 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
 
   return (
     <Paper p="md" radius="md" withBorder>
-      <Stack spacing="xs">
-        <MedplumLink to={patient}>
-          <Title order={1}>
+      <Stack gap="xs">
+        <Group gap="xs">
+          <Text size="xl" fw={600}>
             {patient.name ? <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /> : '[blank]'}
-          </Title>
-        </MedplumLink>
-        {patient.birthDate && (
-          <Group gap="xs">
-            <Text size="sm" c="dimmed">
-              {new Date(patient.birthDate).toLocaleDateString()}
-            </Text>
-          </Group>
-        )}
+          </Text>
+          {patient.birthDate && (
+            <Group gap={4}>
+              <IconCalendar size={16} style={{ color: 'var(--mantine-color-gray-6)' }} />
+              <Text size="sm" c="dimmed">
+                {format(new Date(patient.birthDate), 'MMM d, yyyy')}
+              </Text>
+            </Group>
+          )}
+        </Group>
       </Stack>
     </Paper>
   );

@@ -20,7 +20,7 @@ export function PatientProfile(): JSX.Element {
         <Grid.Col span={8}>
           <Stack gap="xl">
             <PatientNotes patient={patient} />
-          </Stack>            
+      </Stack>            
         </Grid.Col>
               
         <Grid.Col span={4}>

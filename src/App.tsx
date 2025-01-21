@@ -25,9 +25,9 @@ import { PatientDirectoryPage } from './features/patients/pages/PatientDirectory
 import { ClientRoutes } from './routes/ClientRoutes';
 import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
-import { SettingsPage } from './pages/SettingsPage';
 import { PractitionerPage } from './pages/PractitionerPage';
 import { PatientRecentComposition } from './components/PatientRecentComposition';
+import { TemplateRoutes } from './components/templates/TemplateRoutes';
 
 
 export const CalendarContext = createContext<{
@@ -141,7 +141,7 @@ export function App(): JSX.Element | null {
               <Route path="/:resourceType/:id" element={<ResourcePage />} />
               <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
               <Route path="/composition/:id" element={<NoteView />} />
-              <Route path="/templates" element={<NoteTemplatesPage />} />
+              <Route path="/templates/*" element={<TemplateRoutes />} />
               <Route path="/portal/*" element={<ClientRoutes />} />
               <Route path="/billing" element={<BillingDashboard />} />
               <Route path="/settings" element={<PractitionerPage />} />

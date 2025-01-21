@@ -6,6 +6,7 @@ import { usePatientNotes } from '../../hooks/usePatientNotes';
 import { notifications } from '@mantine/notifications';
 import { useMedplum } from '@medplum/react';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 
 interface PatientNotesProps {
   patient: Patient;
@@ -30,6 +31,24 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
   const [editingSection, setEditingSection] = useState<{noteId: string, sectionTitle: string} | null>(null);
   const [viewingSection, setViewingSection] = useState<string | null>(null);
   const [contentHeights, setContentHeights] = useState<{ [key: string]: number }>({});
+  const navigate = useNavigate();
+
+  // Group notes by year
+  const notesByYear = notes
+    .filter(note => note.sections?.some(section => section.content?.trim()))
+    .reduce((acc, note) => {
+      const year = new Date(note.date).getFullYear();
+      if (!acc[year]) {
+        acc[year] = [];
+      }
+      acc[year].push(note);
+      return acc;
+    }, {} as { [key: number]: typeof notes });
+
+  // Sort years in descending order
+  const sortedYears = Object.keys(notesByYear)
+    .map(Number)
+    .sort((a, b) => b - a);
 
   const handleTextChange = (sectionTitle: string, newText: string) => {
     setEditedSections(prev => ({
@@ -124,6 +143,10 @@ Please provide the complete adjusted note while maintaining the same professiona
     }
   };
 
+  const handleStartRecording = () => {
+    navigate('/audio', { state: { selectedPatient: patient } });
+  };
+
   if (isLoading) {
     return (
       <Paper withBorder p="xl">
@@ -145,226 +168,297 @@ Please provide the complete adjusted note while maintaining the same professiona
 
   return (
     <Stack gap="md">
-      {notes.length === 0 || !notes.some(note => note.sections?.some(section => section.content?.trim())) ? (
+      <Paper 
+        withBorder 
+        p="md" 
+        radius="md"
+        style={{
+          borderTop: '3px solid var(--mantine-color-blue-4)',
+          backgroundColor: 'var(--mantine-color-gray-0)'
+        }}
+      >
+        <Group justify="space-between" align="center">
+          <Group gap="xs">
+            <Title 
+              order={3} 
+              style={{
+                fontFamily: 'var(--mantine-font-family)',
+                color: 'var(--mantine-color-blue-8)',
+                letterSpacing: '-0.3px'
+              }}
+            >
+              Clinical Notes
+            </Title>
+            <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+              Therapeutic Progress Documentation
+            </Text>
+          </Group>
+          <Button
+            leftSection={<IconPlus size={16} style={{ strokeWidth: 2.5 }} />}
+            onClick={handleStartRecording}
+            loading={isActionLoading}
+            variant="light"
+            color="blue"
+            size="sm"
+            styles={(theme) => ({
+              root: {
+                transition: 'all 200ms ease',
+                '&:hover': {
+                  backgroundColor: theme.colors.blue[1],
+                  transform: 'translateY(-1px)'
+                }
+              }
+            })}
+          >
+            Create New Note
+          </Button>
+        </Group>
+      </Paper>
+
+      {isLoading ? (
+        <Paper withBorder p="xl">
+          <Loader />
+        </Paper>
+      ) : error ? (
+        <Paper withBorder p="xl">
+          <Text c="red">{error}</Text>
+        </Paper>
+      ) : notes.length === 0 ? (
         <Paper withBorder p="xl">
           <Text c="dimmed" ta="center">There are no items for {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family} in the selected time period.</Text>
         </Paper>
       ) : (
-        notes
-          .filter(note => note.sections?.some(section => section.content?.trim()))
-          .map((note) => (
-            <Paper key={note.id} withBorder p="md" radius="md">
+        <Stack gap="md">
+          {sortedYears.map(year => (
+            <Box key={year}>
+              <Group 
+                justify="apart" 
+                style={{ 
+                  borderBottom: '2px solid var(--mantine-color-gray-3)',
+                  marginBottom: 'var(--mantine-spacing-md)',
+                  paddingBottom: 'var(--mantine-spacing-xs)'
+                }}
+              >
+                <Text fw={700} size="lg" c="dimmed">{year}</Text>
+              </Group>
               <Stack gap="md">
-                <Box>
-                  {note.sections
-                    .filter(section => section.content?.trim())
-                    .map((section, index) => {
-                      const sectionId = `${note.id}-${section.title}`;
-                      const isExpanded = expandedSection === sectionId;
+                {notesByYear[year].map((note) => (
+                  <Paper key={note.id} withBorder p="md" radius="md">
+                    <Stack gap="md">
+                      <Box>
+                        {note.sections
+                          .filter(section => section.content?.trim())
+                          .map((section, index) => {
+                            const sectionId = `${note.id}-${section.title}`;
+                            const isExpanded = expandedSection === sectionId;
 
-                      return (
-                        <Box 
-                          key={index} 
-                          mb="md"
-                          style={{
-                            borderLeft: '3px solid var(--mantine-color-blue-3)',
-                            paddingLeft: 'var(--mantine-spacing-md)',
-                            cursor: 'pointer',
-                            transition: 'all 200ms ease'
-                          }}
-                          onClick={() => {
-                            if (section.title === 'Psychotherapy Note') {
-                              setExpandedSection(isExpanded ? null : sectionId);
-                              setViewingSection(isExpanded ? null : sectionId);
-                            }
-                          }}
-                        >
-                          <Group justify="space-between" mb="xs">
-                            <Group gap="xs">
-                              <Text fw={600} size="sm" style={{ 
-                                display: 'flex', 
-                                alignItems: 'center', 
-                                gap: 4,
-                                color: 'var(--mantine-color-blue-8)',
-                                fontSize: 'var(--mantine-font-size-sm)'
-                              }}>
-                                <IconCalendar size={14} />
-                                {format(new Date(note.date), 'MMM d')}
-                                <Text span size="xs" c="dimmed" ml={4}>
-                                  {format(new Date(note.date), 'h:mm a')}
-                                </Text>
-                              </Text>
-                              <Text fw={500} size="sm" c="dimmed">
-                                {section.title}
-                              </Text>
-                            </Group>
-                            <Group gap={8}>
-                              {section.title === 'Psychotherapy Note' && isExpanded && (
-                                <Tooltip label="Magic Edit">
-                                  <ActionIcon
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      setEditingSection({ noteId: note.id || '', sectionTitle: section.title });
-                                      setShowMagicModal(true);
-                                    }}
-                                    variant="light"
-                                    color="violet"
-                                    size="sm"
-                                  >
-                                    <IconWand size={14} />
-                                  </ActionIcon>
-                                </Tooltip>
-                              )}
-                              <Tooltip label="Edit">
-                                <ActionIcon
-                                  size="sm"
-                                  variant="light"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedSection(isExpanded ? null : sectionId);
-                                    setViewingSection(null);
-                                    if (!editedSections[section.title]) {
-                                      setEditedSections(prev => ({
-                                        ...prev,
-                                        [section.title]: section.content
-                                      }));
-                                    }
-                                  }}
-                                >
-                                  <IconEdit size={14} />
-                                </ActionIcon>
-                              </Tooltip>
-                              {isExpanded && !viewingSection && (
-                                <Button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    modifiedSections.has(section.title) 
-                                      ? handleSaveSection(note.id, section.title)
-                                      : handleCopySection(section.content, section.title);
-                                  }}
-                                  variant={modifiedSections.has(section.title) ? "filled" : "light"}
-                                  color={modifiedSections.has(section.title) ? "blue" : justCopied === section.title ? "teal" : "violet"}
-                                  size="sm"
-                                  leftSection={
-                                    modifiedSections.has(section.title) 
-                                      ? <IconCheck size={16} /> 
-                                      : justCopied === section.title 
-                                        ? <IconCheck size={16} /> 
-                                        : <IconCopy size={16} />
-                                  }
-                                >
-                                  {modifiedSections.has(section.title) 
-                                    ? 'Save Changes' 
-                                    : justCopied === section.title 
-                                      ? 'Copied!' 
-                                      : 'Copy Text'}
-                                </Button>
-                              )}
-                            </Group>
-                          </Group>
-                          
-                          <div style={{
-                            overflow: 'hidden',
-                            transition: 'max-height 300ms ease-in-out, opacity 200ms ease-in-out',
-                            maxHeight: isExpanded ? '2000px' : '200px',
-                            opacity: isExpanded ? 1 : 0.9
-                          }}>
-                            {isExpanded ? (
-                              viewingSection === sectionId ? (
-                                <Text 
-                                  size="sm" 
-                                  style={{ 
-                                    whiteSpace: 'pre-wrap',
-                                    backgroundColor: 'var(--mantine-color-gray-0)',
-                                    padding: 'var(--mantine-spacing-md)',
-                                    borderRadius: 'var(--mantine-radius-sm)'
-                                  }}
-                                >
-                                  {section.content}
-                                </Text>
-                              ) : (
-                                <>
-                                  <Box mb={8}>
-                                    <Text size="sm" color="dimmed" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <IconEdit size={14} />
-                                      Click inside to edit
-                                    </Text>
-                                  </Box>
-                                  <Textarea
-                                    value={editedSections[section.title] || section.content}
-                                    onChange={(e) => handleTextChange(section.title, e.currentTarget.value)}
-                                    minRows={5}
-                                    autosize
-                                    onClick={(e) => e.stopPropagation()}
-                                    styles={(theme) => ({
-                                      input: {
-                                        backgroundColor: theme.white,
-                                        border: `1px solid ${theme.colors.gray[2]}`,
-                                        transition: 'all 200ms ease',
-                                        '&:hover': {
-                                          borderColor: theme.colors.blue[2],
-                                          backgroundColor: theme.colors.gray[0],
-                                        },
-                                        '&:focus': {
-                                          borderColor: theme.colors.blue[5],
-                                          backgroundColor: theme.white,
-                                        },
-                                      },
-                                    })}
-                                  />
-                                </>
-                              )
-                            ) : (
-                              <Text 
-                                ref={(el) => {
-                                  if (el) {
-                                    const sectionKey = `${note.id}-${section.title}`;
-                                    if (!contentHeights[sectionKey]) {
-                                      setContentHeights(prev => ({
-                                        ...prev,
-                                        [sectionKey]: el.scrollHeight
-                                      }));
-                                    }
-                                  }
+                            return (
+                              <Box 
+                                key={index} 
+                                mb="md"
+                                style={{
+                                  borderLeft: '3px solid var(--mantine-color-blue-3)',
+                                  paddingLeft: 'var(--mantine-spacing-md)',
+                                  cursor: 'pointer',
+                                  transition: 'all 200ms ease'
                                 }}
-                                size="sm" 
-                                style={{ 
-                                  whiteSpace: 'pre-wrap',
-                                  maxHeight: '200px',
-                                  overflow: 'hidden',
-                                  position: 'relative'
+                                onClick={() => {
+                                  if (section.title !== 'Transcript') {
+                                    setExpandedSection(isExpanded ? null : sectionId);
+                                    setViewingSection(isExpanded ? null : sectionId);
+                                  }
                                 }}
                               >
-                                {section.content}
-                                {contentHeights[`${note.id}-${section.title}`] > 200 && (
-                                  <div 
-                                    style={{
-                                      position: 'absolute',
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      height: '50px',
-                                      background: 'linear-gradient(transparent 0%, white)'
-                                    }}
-                                  />
-                                )}
-                              </Text>
-                            )}
-                          </div>
-                        </Box>
-                      );
-                    })}
-                </Box>
+                                <Group justify="space-between" mb="xs">
+                                  <Group gap="xs">
+                                    <Text fw={600} size="sm" style={{ 
+                                      display: 'flex', 
+                                      alignItems: 'center', 
+                                      gap: 4,
+                                      color: 'var(--mantine-color-blue-8)',
+                                      fontSize: 'var(--mantine-font-size-sm)'
+                                    }}>
+                                      <IconCalendar size={14} />
+                                      {format(new Date(note.date), 'MMM d')}
+                                      <Text span size="xs" c="dimmed" ml={4}>
+                                        {format(new Date(note.date), 'h:mm a')}
+                                      </Text>
+                                    </Text>
+                                    <Text fw={500} size="sm" c="dimmed">
+                                      {section.title}
+                                    </Text>
+                                  </Group>
+                                  <Group gap={8}>
+                                    {section.title !== 'Transcript' && isExpanded && (
+                                      <Tooltip label="Magic Edit">
+                                        <ActionIcon
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setEditingSection({ noteId: note.id || '', sectionTitle: section.title });
+                                            setShowMagicModal(true);
+                                          }}
+                                          variant="light"
+                                          color="blue"
+                                          size="sm"
+                                        >
+                                          <IconWand size={14} />
+                                        </ActionIcon>
+                                      </Tooltip>
+                                    )}
+                                    <Tooltip label="Edit">
+                                      <ActionIcon
+                                        size="sm"
+                                        variant="light"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          setExpandedSection(isExpanded ? null : sectionId);
+                                          setViewingSection(null);
+                                          if (!editedSections[section.title]) {
+                                            setEditedSections(prev => ({
+                                              ...prev,
+                                              [section.title]: section.content
+                                            }));
+                                          }
+                                        }}
+                                      >
+                                        <IconEdit size={14} />
+                                      </ActionIcon>
+                                    </Tooltip>
+                                    {isExpanded && !viewingSection && (
+                                      <Button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          modifiedSections.has(section.title) 
+                                            ? handleSaveSection(note.id, section.title)
+                                            : handleCopySection(section.content, section.title);
+                                        }}
+                                        variant={modifiedSections.has(section.title) ? "filled" : "light"}
+                                        color={modifiedSections.has(section.title) ? "blue" : justCopied === section.title ? "teal" : "blue"}
+                                        size="sm"
+                                        leftSection={
+                                          modifiedSections.has(section.title) 
+                                            ? <IconCheck size={16} /> 
+                                            : justCopied === section.title 
+                                              ? <IconCheck size={16} /> 
+                                              : <IconCopy size={16} />
+                                        }
+                                      >
+                                        {modifiedSections.has(section.title) 
+                                          ? 'Save Changes' 
+                                          : justCopied === section.title 
+                                            ? 'Copied!' 
+                                            : 'Copy Text'}
+                                      </Button>
+                                    )}
+                                  </Group>
+                                </Group>
+                                
+                                <div style={{
+                                  overflow: 'hidden',
+                                  transition: 'max-height 300ms ease-in-out, opacity 200ms ease-in-out',
+                                  maxHeight: isExpanded ? '2000px' : '200px',
+                                  opacity: isExpanded ? 1 : 0.9
+                                }}>
+                                  {isExpanded ? (
+                                    viewingSection === sectionId ? (
+                                      <Text 
+                                        size="sm" 
+                                        style={{ 
+                                          whiteSpace: 'pre-wrap',
+                                          backgroundColor: 'var(--mantine-color-gray-0)',
+                                          padding: 'var(--mantine-spacing-md)',
+                                          borderRadius: 'var(--mantine-radius-sm)'
+                                        }}
+                                      >
+                                        {section.content}
+                                      </Text>
+                                    ) : (
+                                      <>
+                                        <Box mb={8}>
+                                          <Text size="sm" color="dimmed" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                                            <IconEdit size={14} />
+                                            Click inside to edit
+                                          </Text>
+                                        </Box>
+                                        <Textarea
+                                          value={editedSections[section.title] || section.content}
+                                          onChange={(e) => handleTextChange(section.title, e.currentTarget.value)}
+                                          minRows={5}
+                                          autosize
+                                          onClick={(e) => e.stopPropagation()}
+                                          styles={(theme) => ({
+                                            input: {
+                                              backgroundColor: theme.white,
+                                              border: `1px solid ${theme.colors.gray[2]}`,
+                                              transition: 'all 200ms ease',
+                                              '&:hover': {
+                                                borderColor: theme.colors.blue[2],
+                                                backgroundColor: theme.colors.gray[0],
+                                              },
+                                              '&:focus': {
+                                                borderColor: theme.colors.blue[5],
+                                                backgroundColor: theme.white,
+                                              },
+                                            },
+                                          })}
+                                        />
+                                      </>
+                                    )
+                                  ) : (
+                                    <Text 
+                                      ref={(el) => {
+                                        if (el) {
+                                          const sectionKey = `${note.id}-${section.title}`;
+                                          if (!contentHeights[sectionKey]) {
+                                            setContentHeights(prev => ({
+                                              ...prev,
+                                              [sectionKey]: el.scrollHeight
+                                            }));
+                                          }
+                                        }
+                                      }}
+                                      size="sm" 
+                                      style={{ 
+                                        whiteSpace: 'pre-wrap',
+                                        maxHeight: '200px',
+                                        overflow: 'hidden',
+                                        position: 'relative'
+                                      }}
+                                    >
+                                      {section.content}
+                                      {contentHeights[`${note.id}-${section.title}`] > 200 && (
+                                        <div 
+                                          style={{
+                                            position: 'absolute',
+                                            bottom: 0,
+                                            left: 0,
+                                            right: 0,
+                                            height: '50px',
+                                            background: 'linear-gradient(transparent 0%, white)'
+                                          }}
+                                        />
+                                      )}
+                                    </Text>
+                                  )}
+                                </div>
+                              </Box>
+                            );
+                          })}
+                      </Box>
+                    </Stack>
+                  </Paper>
+                ))}
               </Stack>
-            </Paper>
-          ))
+            </Box>
+          ))}
+        </Stack>
       )}
 
       {/* Magic Edit Modal */}
       <Modal
         opened={showMagicModal}
         onClose={() => setShowMagicModal(false)}
-        title={<Title order={3}>Magic Edit - Psychotherapy Note</Title>}
+        title={<Title order={3} style={{ color: 'var(--mantine-color-blue-8)' }}>Magic Edit - Psychotherapy Note</Title>}
         size="lg"
       >
         <Stack gap="md">
@@ -393,7 +487,7 @@ Please provide the complete adjusted note while maintaining the same professiona
             <Button
               onClick={handleMagicEdit}
               loading={isProcessing}
-              color="violet"
+              color="blue"
             >
               Apply Magic Edit
             </Button>

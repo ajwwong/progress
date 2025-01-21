@@ -118,7 +118,7 @@ export function PatientSelector({
 
   return (
     <Stack gap="md">
-      <Group align="center" mb="xs">
+      <Group align="center" mb={4}>
         <Text size="sm" fw={500}>Patient</Text>
         {!showNewForm && (
           <Button 

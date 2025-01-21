@@ -1,10 +1,10 @@
 import { Composition, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { Box, Container, Text, Title, Textarea, Button, Group, Modal, Paper, Stack, Divider, Collapse, Tooltip, ActionIcon } from '@mantine/core';
+import { Box, Container, Text, Title, Textarea, Button, Group, Drawer, Paper, Stack, Divider, Collapse, Tooltip, ActionIcon, Radio } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconSignature, IconLock } from '@tabler/icons-react';
-import { SignNoteModal } from '../components/modals/SignNoteModal';
+import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconLock } from '@tabler/icons-react';
+import { MantineTheme } from '@mantine/core';
 
 export function NoteView(): JSX.Element {
   const { id } = useParams();
@@ -14,13 +14,17 @@ export function NoteView(): JSX.Element {
   const [error, setError] = useState<string>();
   const [editedSections, setEditedSections] = useState<{ [key: string]: string }>({});
   const [modifiedSections, setModifiedSections] = useState<Set<string>>(new Set());
-  const [showMagicModal, setShowMagicModal] = useState(false);
+  const [sectionTimestamps, setSectionTimestamps] = useState<{ [key: string]: string }>({});
+  const [showMagicDrawer, setShowMagicDrawer] = useState(false);
   const [magicInstructions, setMagicInstructions] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
   const [justCopied, setJustCopied] = useState<string>('');
   const [patient, setPatient] = useState<Patient>();
-  const [showSignModal, setShowSignModal] = useState(false);
+  const [selectedPronoun, setSelectedPronoun] = useState<string | undefined>(undefined);
+  const [selectedIdentifier, setSelectedIdentifier] = useState<string | undefined>(undefined);
+  const [selectedQuotes, setSelectedQuotes] = useState<string | undefined>(undefined);
+  const [selectedLength, setSelectedLength] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (id) {
@@ -31,15 +35,17 @@ export function NoteView(): JSX.Element {
           
           if (authorRef === profileRef) {
             setComposition(comp);
-            const patientRef = comp.subject?.reference;
-            if (patientRef) {
-              medplum.readReference(comp.subject).then(setPatient);
+            if (comp.subject) {
+              medplum.readReference(comp.subject).then(pat => setPatient(pat as Patient));
             }
             const sections: { [key: string]: string } = {};
+            const timestamps: { [key: string]: string } = {};
             comp.section?.forEach((section) => {
               sections[section.title || ''] = section.text?.div?.replace(/<[^>]*>/g, '') || '';
+              timestamps[section.title || ''] = comp.date || new Date().toISOString();
             });
             setEditedSections(sections);
+            setSectionTimestamps(timestamps);
           } else {
             setError('You do not have permission to view this composition');
           }
@@ -47,6 +53,12 @@ export function NoteView(): JSX.Element {
         .catch(err => setError('Error loading composition'));
     }
   }, [medplum, id, profile]);
+
+  useEffect(() => {
+    if (!showMagicDrawer) {
+      clearSelections();
+    }
+  }, [showMagicDrawer]);
 
   const handleSignNote = async () => {
     if (!composition) return;
@@ -65,8 +77,8 @@ export function NoteView(): JSX.Element {
     };
   
     try {
-      await medplum.updateResource(updatedComposition);
-      setComposition(updatedComposition);
+      const result = await medplum.updateResource(updatedComposition);
+      setComposition(result);
     } catch (err) {
       setError('Error signing note');
     }
@@ -92,8 +104,12 @@ export function NoteView(): JSX.Element {
     };
 
     try {
-      await medplum.updateResource(updatedComposition);
-      setComposition(updatedComposition);
+      const result = await medplum.updateResource(updatedComposition);
+      setComposition(result);
+      setSectionTimestamps(prev => ({
+        ...prev,
+        [sectionTitle]: new Date().toISOString()
+      }));
       setModifiedSections(prev => {
         const next = new Set(prev);
         next.delete(sectionTitle);
@@ -120,6 +136,14 @@ export function NoteView(): JSX.Element {
       next.add(sectionTitle);
       return next;
     });
+  };
+
+  const clearSelections = () => {
+    setSelectedPronoun(undefined);
+    setSelectedIdentifier(undefined);
+    setSelectedQuotes(undefined);
+    setSelectedLength(undefined);
+    setMagicInstructions('');
   };
 
   const handleMagicEdit = async (sectionTitle: string) => {
@@ -149,7 +173,8 @@ Please provide the complete adjusted note while maintaining the same professiona
 
       if (response.text) {
         handleTextChange(sectionTitle, response.text);
-        setShowMagicModal(false);
+        setShowMagicDrawer(false);
+        clearSelections();
       }
     } catch (err) {
       setError('Error processing magic edit');
@@ -168,8 +193,8 @@ Please provide the complete adjusted note while maintaining the same professiona
     };
 
     try {
-      await medplum.updateResource(updatedComposition);
-      setComposition(updatedComposition);
+      const result = await medplum.updateResource(updatedComposition);
+      setComposition(result);
     } catch (err) {
       setError('Error unlocking note');
     }
@@ -190,320 +215,274 @@ Please provide the complete adjusted note while maintaining the same professiona
 
   return (
     <Container size="md" mt="xl">
-      <Stack spacing="lg">
+      <Stack gap="lg">
         <Paper p="xl" radius="md" withBorder>
-          <Stack spacing="md">
-            <Title order={2} mb="md">
-              {patient ? (
-                <Group spacing="xs">
-                  <Text inherit component="span">
-                    {patient.name?.[0]?.given?.[0]} {patient.name?.[0]?.family}
-                  </Text>
-                  <Text inherit component="span" c="dimmed" fw={400}>
-                    - Session Notes
-                  </Text>
-                </Group>
-              ) : (
-                'Session Notes'
-              )}
-            </Title>
-            <Text size="sm" color="dimmed">
-              {new Date(composition?.date || '').toLocaleString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: 'numeric',
-                minute: '2-digit'
-              })}
+          <Box mb="md">
+            <Title order={2} c="blue.8">Clinical Notes</Title>
+            <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+              Therapeutic Progress Documentation
             </Text>
+          </Box>
+          
+          <Stack gap="md">
+            {error && (
+              <Text c="red.6">{error}</Text>
+            )}
+            
+            <Stack gap="md">
+              {composition?.section?.map((section, index) => {
+                const sectionTitle = section.title || '';
+                const sectionText = editedSections[sectionTitle] || '';
+                const isModified = modifiedSections.has(sectionTitle);
+                const isTranscript = sectionTitle === 'Transcript';
+                
+                if (isTranscript && !isTranscriptVisible) {
+                  return (
+                    <Text
+                      key={index}
+                      size="lg"
+                      fw={500}
+                      mb="lg"
+                      style={{ cursor: 'pointer' }}
+                      onClick={() => setIsTranscriptVisible(true)}
+                    >
+                      Show Transcript
+                    </Text>
+                  );
+                }
+
+                if (isTranscript) {
+                  return (
+                    <Paper
+                      key={index}
+                      withBorder
+                      p="md"
+                      radius="md"
+                      mb="lg"
+                      bg="white"
+                    >
+                      <Group justify="space-between" mb="md">
+                        <Title order={3}>{sectionTitle}</Title>
+                        <Group gap="xs">
+                          <Button
+                            onClick={() => handleCopySection(sectionText, sectionTitle)}
+                            variant={justCopied === sectionTitle ? "filled" : "light"}
+                            color={justCopied === sectionTitle ? "teal" : "blue"}
+                            size="sm"
+                            leftSection={justCopied === sectionTitle ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                          >
+                            {justCopied === sectionTitle ? "Copied!" : "Copy"}
+                          </Button>
+                          <Button
+                            onClick={() => setIsTranscriptVisible(false)}
+                            variant="subtle"
+                            size="sm"
+                          >
+                            Hide Transcript
+                          </Button>
+                        </Group>
+                      </Group>
+
+                      <Textarea
+                        value={sectionText}
+                        readOnly
+                        minRows={5}
+                        autosize
+                        mt="md"
+                      />
+                    </Paper>
+                  );
+                }
+
+                return (
+                  <Paper
+                    key={index}
+                    withBorder
+                    p="md"
+                    radius="md"
+                    mb="lg"
+                    bg="white"
+                  >
+                    <Group justify="space-between" mb="md">
+                      <Title order={3}>{sectionTitle}</Title>
+                      <Group gap="xs">
+                        <Tooltip label="Magic Edit">
+                          <ActionIcon
+                            onClick={() => setShowMagicDrawer(true)}
+                            variant="light"
+                            color="violet"
+                            size="lg"
+                          >
+                            <IconWand size={20} />
+                          </ActionIcon>
+                        </Tooltip>
+                        <Button
+                          onClick={() => handleCopySection(sectionText, sectionTitle)}
+                          variant={justCopied === sectionTitle ? "filled" : "light"}
+                          color={justCopied === sectionTitle ? "teal" : "blue"}
+                          size="sm"
+                          leftSection={justCopied === sectionTitle ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                        >
+                          {justCopied === sectionTitle ? "Copied!" : "Copy"}
+                        </Button>
+                        {isModified && (
+                          <Button
+                            onClick={() => handleSaveSection(sectionTitle)}
+                            variant="light"
+                            color="red"
+                            size="sm"
+                            leftSection={<IconEdit size={16} />}
+                          >
+                            Save Changes
+                          </Button>
+                        )}
+                      </Group>
+                    </Group>
+
+                    <Text size="sm" c="dimmed" mb="md" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      Last modified: {new Date(sectionTimestamps[sectionTitle] || composition?.date || '').toLocaleString()}
+                      {composition?.attester?.[0] && <IconLock size={16} />}
+                    </Text>
+
+                    <Textarea
+                      value={sectionText}
+                      onChange={(e) => handleTextChange(sectionTitle, e.target.value)}
+                      minRows={5}
+                      autosize
+                      mt="md"
+                      readOnly={!!composition?.attester?.[0]}
+                    />
+                  </Paper>
+                );
+              })}
+            </Stack>
           </Stack>
         </Paper>
 
-        {composition?.section?.map((section, index, array) => (
-          <>
-            {section.title === 'Transcript' && (
-              <Text 
-                align="center" 
-                size="lg" 
-                weight={500} 
-                mb="lg"
-                sx={{ cursor: 'pointer' }}
-                onClick={() => setIsTranscriptVisible(!isTranscriptVisible)}
-              >
-                View Full Transcript
-              </Text>
-            )}
-            {section.title === 'Transcript' ? (
-              <Collapse in={isTranscriptVisible}>
-                <Paper key={index} withBorder p="md" radius="md" mb="lg">
-                  <Group position="apart" mb="md">
-                    <Title order={3} size="h4">
-                      {section.title}
-                    </Title>
-                    <Group spacing="xs">
-                      <Button
-                        onClick={() => 
-                          modifiedSections.has(section.title || '') 
-                            ? handleSaveSection(section.title || '')
-                            : handleCopySection(editedSections[section.title || ''], section.title || '')
-                        }
-                        variant={modifiedSections.has(section.title || '') ? "filled" : "light"}
-                        color={modifiedSections.has(section.title || '') ? "blue" : justCopied === section.title ? "teal" : "violet"}
-                        size="sm"
-                        leftIcon={
-                          modifiedSections.has(section.title || '') 
-                            ? <IconCheck size={16} /> 
-                            : justCopied === section.title 
-                              ? <IconCheck size={16} /> 
-                              : <IconCopy size={16} />
-                        }
-                        sx={(theme) => ({
-                          backgroundColor: modifiedSections.has(section.title || '') 
-                            ? theme.colors.blue[6]
-                            : justCopied === section.title 
-                              ? theme.colors.teal[1]
-                              : theme.colors.violet[1],
-                          color: justCopied === section.title 
-                            ? theme.colors.teal[7]
-                            : modifiedSections.has(section.title || '')
-                              ? theme.white
-                              : theme.colors.violet[9],
-                          '&:hover': {
-                            backgroundColor: modifiedSections.has(section.title || '')
-                              ? theme.colors.blue[7]
-                              : justCopied === section.title
-                                ? theme.colors.teal[2]
-                                : theme.colors.violet[2]
-                          }
-                        })}
-                      >
-                        {modifiedSections.has(section.title || '') 
-                          ? 'Save Changes' 
-                          : justCopied === section.title 
-                            ? 'Copied!' 
-                            : 'Copy Text'}
-                      </Button>
-                    </Group>
-                  </Group>
-                  <Box mb={8}>
-                    <Text size="sm" color="dimmed" sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <IconEdit size={14} />
-                      Click inside to edit
-                    </Text>
-                  </Box>
-                  <Textarea
-                    value={editedSections[section.title || '']}
-                    onChange={(e) => handleTextChange(section.title || '', e.currentTarget.value)}
-                    minRows={5}
-                    autosize
-                    styles={(theme) => ({
-                      input: {
-                        backgroundColor: theme.white,
-                        border: `1px solid ${theme.colors.gray[2]}`,
-                        transition: 'all 200ms ease',
-                        '&:hover': {
-                          borderColor: theme.colors.blue[2],
-                          backgroundColor: theme.colors.gray[0],
-                        },
-                        '&:focus': {
-                          borderColor: theme.colors.blue[5],
-                          backgroundColor: theme.white,
-                        },
-                      },
-                    })}
-                  />
-                </Paper>
-              </Collapse>
-            ) : (
-              <Paper 
-                key={index} 
-                withBorder 
-                p="md" 
-                radius="md" 
-                mb="lg"
-                sx={(theme) => ({
-                  borderColor: theme.colors.gray[2],
-                  backgroundColor: theme.white,
-                  transition: 'all 200ms ease',
-                  '&:hover': {
-                    borderColor: theme.colors.blue[4],
-                    backgroundColor: theme.colors.gray[0]
-                  },
-                  '&:focus-within': {
-                    borderColor: theme.colors.blue[5]
-                  }
-                })}
-              >
-                <Group position="apart" mb="md">
-                  <Title order={3} size="h4">
-                    {section.title}
-                  </Title>
-                  <Group spacing="xs">
-                    {section.title === 'Psychotherapy Note' && !composition?.attester?.[0] && (
-                      <Tooltip label="Magic Edit">
-                        <ActionIcon
-                          onClick={() => setShowMagicModal(true)}
-                          variant="light"
-                          color="violet"
-                          size="lg"
-                          sx={(theme) => ({
-                            '&:hover': {
-                              backgroundColor: theme.colors.violet[1]
-                            }
-                          })}
-                        >
-                          <IconWand size={20} />
-                        </ActionIcon>
-                      </Tooltip>
-                    )}
-                    <Button
-                      onClick={() => 
-                        modifiedSections.has(section.title || '') 
-                          ? handleSaveSection(section.title || '')
-                          : handleCopySection(editedSections[section.title || ''], section.title || '')
-                      }
-                      variant={modifiedSections.has(section.title || '') ? "filled" : "light"}
-                      color={modifiedSections.has(section.title || '') ? "blue" : justCopied === section.title ? "teal" : "violet"}
-                      size="sm"
-                      leftIcon={
-                        modifiedSections.has(section.title || '') 
-                          ? <IconCheck size={16} /> 
-                          : justCopied === section.title 
-                            ? <IconCheck size={16} /> 
-                            : <IconCopy size={16} />
-                      }
-                    >
-                      {modifiedSections.has(section.title || '') 
-                        ? 'Save Changes' 
-                        : justCopied === section.title 
-                          ? 'Copied!' 
-                          : 'Copy Text'}
-                    </Button>
-                    {section.title === 'Psychotherapy Note' && (
-                      composition?.attester?.[0] ? (
-                        <Button
-                          onClick={() => handleUnlock()}
-                          variant="light"
-                          color="red"
-                          size="sm"
-                          leftIcon={<IconLock size={16} />}
-                        >
-                          Unlock Note
-                        </Button>
-                      ) : (
-                        <Button
-                          onClick={() => setShowSignModal(true)}
-                          variant="light"
-                          color="blue"
-                          size="sm"
-                          leftIcon={<IconSignature size={16} />}
-                        >
-                          Approve & Sign
-                        </Button>
-                      )
-                    )}
-                  </Group>
-                </Group>
-                <Box mb={8}>
-                  <Text size="sm" color="dimmed" sx={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <IconEdit size={14} />
-                    Click inside to edit
-                  </Text>
-                </Box>
-                <Textarea
-                  value={editedSections[section.title || '']}
-                  onChange={(e) => handleTextChange(section.title || '', e.currentTarget.value)}
-                  minRows={5}
-                  autosize
-                  styles={(theme) => ({
-                    input: {
-                      backgroundColor: theme.white,
-                      border: `1px solid ${theme.colors.gray[2]}`,
-                      transition: 'all 200ms ease',
-                      '&:hover': {
-                        borderColor: theme.colors.blue[2],
-                        backgroundColor: theme.colors.gray[0],
-                      },
-                      '&:focus': {
-                        borderColor: theme.colors.blue[5],
-                        backgroundColor: theme.white,
-                      },
-                    },
-                  })}
-                />
-              </Paper>
-            )}
-          </>
-        ))}
-
-        <Modal
-          opened={showMagicModal}
-          onClose={() => setShowMagicModal(false)}
-          title={<Title order={3}>Magic Edit - Psychotherapy Note</Title>}
-          size="lg"
+        <Drawer
+          opened={showMagicDrawer}
+          onClose={() => setShowMagicDrawer(false)}
+          title={<Title order={3} c="blue.8">Magic Edit</Title>}
+          position="right"
+          size="sm"
+          padding="lg"
         >
-          <Stack spacing="md">
+          <Stack gap="md">
+            <Text size="sm" c="dimmed">
+              Choose quick edit options or provide custom instructions below
+            </Text>
+
+            <Box>
+              <Text fw={500} size="sm" mb="xs">Pronouns</Text>
+              <Radio.Group
+                value={selectedPronoun}
+                onChange={(value) => {
+                  setSelectedPronoun(value === selectedPronoun ? undefined : value);
+                  const instructions = {
+                    'she': "Change all pronouns to she/her",
+                    'he': "Change all pronouns to he/him",
+                    'they': "Change all pronouns to they/their"
+                  }[value];
+                  setMagicInstructions(instructions || '');
+                }}
+              >
+                <Group>
+                  <Radio label="She/Her" value="she" />
+                  <Radio label="He/Him" value="he" />
+                  <Radio label="They/Their" value="they" />
+                </Group>
+              </Radio.Group>
+            </Box>
+
+            <Box>
+              <Text fw={500} size="sm" mb="xs">Identifier</Text>
+              <Radio.Group
+                value={selectedIdentifier}
+                onChange={(value) => {
+                  setSelectedIdentifier(value === selectedIdentifier ? undefined : value);
+                  const instructions = {
+                    'patient': "Change all references to use 'patient'",
+                    'client': "Change all references to use 'client'",
+                    'name': "Use the client's actual name instead of 'patient' or 'client'"
+                  }[value];
+                  setMagicInstructions(instructions || '');
+                }}
+              >
+                <Group>
+                  <Radio label="Patient" value="patient" />
+                  <Radio label="Client" value="client" />
+                  <Radio label="Name" value="name" />
+                </Group>
+              </Radio.Group>
+            </Box>
+
+            <Box>
+              <Text fw={500} size="sm" mb="xs">Quotes</Text>
+              <Radio.Group
+                value={selectedQuotes}
+                onChange={(value) => {
+                  setSelectedQuotes(value === selectedQuotes ? undefined : value);
+                  const instructions = {
+                    'remove': "Remove direct quotes and paraphrase the content professionally",
+                    'add': "Add quotes around direct client statements"
+                  }[value];
+                  setMagicInstructions(instructions || '');
+                }}
+              >
+                <Group>
+                  <Radio label="Remove Quotes" value="remove" />
+                  <Radio label="Add Quotes" value="add" />
+                </Group>
+              </Radio.Group>
+            </Box>
+
+            <Box>
+              <Text fw={500} size="sm" mb="xs">Length</Text>
+              <Radio.Group
+                value={selectedLength}
+                onChange={(value) => {
+                  setSelectedLength(value === selectedLength ? undefined : value);
+                  const instructions = {
+                    'concise': "Make the note more concise while maintaining key clinical information",
+                    'detail': "Expand the note with more detail and clinical observations"
+                  }[value];
+                  setMagicInstructions(instructions || '');
+                }}
+              >
+                <Group>
+                  <Radio label="Make Concise" value="concise" />
+                  <Radio label="Add Detail" value="detail" />
+                </Group>
+              </Radio.Group>
+            </Box>
+
+            <Divider my="sm" />
+            
+            <Text size="sm" fw={500}>Custom Instructions</Text>
             <Textarea
-              label="Edit Instructions"
-              description="Describe how you want to modify the note"
-              placeholder="e.g., 'Expand on the client's attachment patterns' or 'Add more detail about treatment progress'"
               value={magicInstructions}
-              onChange={(e) => setMagicInstructions(e.currentTarget.value)}
-              minRows={3}
+              onChange={(e) => setMagicInstructions(e.target.value)}
+              placeholder="Example: Make the language more professional and expand on the cognitive behavioral interventions used"
+              minRows={5}
               autosize
-              styles={(theme) => ({
-                input: {
-                  backgroundColor: theme.colors.gray[0]
-                }
-              })}
             />
-            <Group position="right">
-              <Button 
-                onClick={() => setShowMagicModal(false)}
+
+            <Group justify="flex-end">
+              <Button
+                onClick={() => setShowMagicDrawer(false)}
                 variant="subtle"
-                color="gray"
               >
                 Cancel
               </Button>
               <Button
                 onClick={() => handleMagicEdit('Psychotherapy Note')}
                 loading={isProcessing}
-                color="violet"
               >
                 Apply Magic Edit
               </Button>
             </Group>
           </Stack>
-        </Modal>
-
-        <SignNoteModal
-          opened={showSignModal}
-          onClose={() => setShowSignModal(false)}
-          onSign={async () => {
-            if (!composition) return;
-            
-            const updatedComposition = {
-              ...composition,
-              status: 'final',
-              date: new Date().toISOString(),
-              attester: [{
-                mode: 'legal',
-                time: new Date().toISOString(),
-                party: {
-                  reference: `Practitioner/${profile?.id}`
-                }
-              }]
-            };
-
-            try {
-              await medplum.updateResource(updatedComposition);
-              setComposition(updatedComposition);
-            } catch (err) {
-              setError('Error signing note');
-            }
-          }}
-        />
+        </Drawer>
       </Stack>
     </Container>
   );
