@@ -55,8 +55,98 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
 
     try {
       setStatus('Starting recording...');
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder.current = new MediaRecorder(stream);
+      
+      let audioStream: MediaStream;
+      
+      if (isTelehealth) {
+        try {
+          // First get microphone audio to ensure we have it
+          const micStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+
+          // Then try to get system audio
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({ 
+            video: {
+              displaySurface: "browser"
+            },
+            audio: {
+              autoGainControl: false,
+              echoCancellation: false,
+              noiseSuppression: false,
+            }
+          });
+
+          // Create a new audio context
+          const audioContext = new AudioContext();
+          
+          // Create sources for both streams
+          const micSource = audioContext.createMediaStreamSource(micStream);
+          const sysSource = audioContext.createMediaStreamSource(displayStream);
+          
+          // Create a merger to combine both audio streams
+          const merger = audioContext.createChannelMerger(2);
+          
+          // Connect both sources to the merger
+          micSource.connect(merger, 0, 0);
+          sysSource.connect(merger, 0, 1);
+          
+          // Create a destination to get the combined stream
+          const dest = audioContext.createMediaStreamDestination();
+          merger.connect(dest);
+          
+          // Create the final combined stream
+          audioStream = dest.stream;
+          
+          // Clean up video tracks
+          displayStream.getVideoTracks().forEach(track => track.stop());
+          
+          // Add cleanup function
+          const cleanup = () => {
+            audioContext.close();
+            displayStream.getTracks().forEach(track => track.stop());
+            micStream.getTracks().forEach(track => track.stop());
+          };
+          
+          // Add cleanup to window unload
+          window.addEventListener('beforeunload', cleanup);
+          
+        } catch (err) {
+          console.warn('Failed to capture system audio, falling back to microphone only:', err);
+          showNotification({
+            title: 'System Audio Capture Failed',
+            message: 'Recording with microphone only. Make sure you have granted necessary permissions.',
+            color: 'yellow'
+          });
+          
+          // Fallback to microphone only
+          audioStream = await navigator.mediaDevices.getUserMedia({ 
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+        }
+      } else {
+        // For in-person, just capture microphone with enhanced settings
+        audioStream = await navigator.mediaDevices.getUserMedia({ 
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true
+          }
+        });
+      }
+
+      if (!audioStream || audioStream.getAudioTracks().length === 0) {
+        throw new Error('No audio input detected');
+      }
+
+      mediaRecorder.current = new MediaRecorder(audioStream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       chunksRef.current = [];
 
       const profile = await medplum.getProfile() as Practitioner;
