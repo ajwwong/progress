@@ -24,17 +24,22 @@ export function PractitionerPage(): JSX.Element {
   const stripePromise = loadStripe('your_publishable_key');
   const [referencePreference, setReferencePreference] = useState<string>('patient');
   const [quotePreference, setQuotePreference] = useState<string>('exclude');
+  const [selectedInterventions, setSelectedInterventions] = useState<string[]>([]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
-  const [title, setTitle] = useState('');
   const [email, setEmail] = useState('');
 
   useEffect(() => {
     if (profile) {
       setFirstName(profile.name?.[0]?.given?.[0] || '');
       setLastName(profile.name?.[0]?.family || '');
-      setTitle(profile.name?.[0]?.prefix?.[0] || '');
       setEmail(profile.telecom?.find(t => t.system === 'email')?.value || '');
+      setReferencePreference(profile.extension?.find(e => e.url === 'https://progress.care/fhir/reference-preference')?.valueString || 'patient');
+      setQuotePreference(profile.extension?.find(e => e.url === 'https://progress.care/fhir/quote-preference')?.valueString || 'exclude');
+      const interventionsExt = profile.extension?.find(e => e.url === 'https://progress.care/fhir/interventions');
+      if (interventionsExt?.valueString) {
+        setSelectedInterventions(JSON.parse(interventionsExt.valueString));
+      }
       setProfileLoading(false);
     }
   }, [profile]);
@@ -97,8 +102,7 @@ export function PractitionerPage(): JSX.Element {
         name: [{
           ...profile.name?.[0],
           given: [firstName],
-          family: lastName,
-          prefix: [title]
+          family: lastName
         }],
         telecom: [
           { system: 'email', value: email },
@@ -197,6 +201,50 @@ export function PractitionerPage(): JSX.Element {
     }
   };
 
+  const handleNotePreferencesUpdate = async () => {
+    if (!profile) return;
+    
+    setLoading(true);
+    try {
+      const updatedProfile = await medplum.updateResource({
+        ...profile,
+        extension: [
+          ...(profile.extension?.filter(e => 
+            e.url !== 'https://progress.care/fhir/reference-preference' && 
+            e.url !== 'https://progress.care/fhir/quote-preference' &&
+            e.url !== 'https://progress.care/fhir/interventions'
+          ) || []),
+          {
+            url: 'https://progress.care/fhir/reference-preference',
+            valueString: referencePreference
+          },
+          {
+            url: 'https://progress.care/fhir/quote-preference',
+            valueString: quotePreference
+          },
+          {
+            url: 'https://progress.care/fhir/interventions',
+            valueString: JSON.stringify(selectedInterventions)
+          }
+        ]
+      });
+
+      showNotification({
+        icon: <IconCircleCheck />,
+        title: 'Success',
+        message: 'Note preferences updated successfully'
+      });
+    } catch (err) {
+      showNotification({
+        color: 'red',
+        icon: <IconCircleOff />,
+        title: 'Error',
+        message: normalizeErrorString(err)
+      });
+    }
+    setLoading(false);
+  };
+
   return (
     <Container size="md" py="xl">
       <Tabs defaultValue="profile">
@@ -235,13 +283,6 @@ export function PractitionerPage(): JSX.Element {
                     value={lastName}
                     onChange={(e) => setLastName(e.target.value)}
                     placeholder="Enter your last name"
-                  />
-
-                  <TextInput
-                    label="Title"
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="Enter your title"
                   />
 
                   <Select
@@ -313,10 +354,13 @@ export function PractitionerPage(): JSX.Element {
                 placeholder="Search and select interventions"
                 searchable
                 maxDropdownHeight={200}
-                onChange={(selected) => console.log('Selected interventions:', selected)}
+                value={selectedInterventions}
+                onChange={setSelectedInterventions}
               />
 
-              <Button color="blue">Save</Button>
+              <Button color="blue" onClick={handleNotePreferencesUpdate} loading={loading}>
+                Save Note Preferences
+              </Button>
 
               <Group justify="apart" mt="md">
                 <Text fw={500}>Include date & time for 'Copy note'</Text>
