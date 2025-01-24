@@ -306,79 +306,58 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   };
 
   const generateNote = async () => {
-    if (!transcript) return;
+    if (!transcript || !savedComposition) return;
     
-    setStatus('Generating psychotherapy note...');
+    setStatus('Initiating note generation...');
     
     try {
-      const prompt = `As an experienced psychodynamically-oriented therapist, create a rich, insightful, and valuable psychotherapy note based on the following therapy session transcript. Your note should demonstrate deep clinical expertise and provide a comprehensive psychodynamic perspective on the session. Please include the following elements in your note:
+      // Prepare the input data for the bot
+      const botInput = {
+        transcript: transcript,
+        compositionId: savedComposition.id,
+        patientId: selectedPatient?.id,
+        // Add metadata that might be useful for the note
+        metadata: {
+          date: new Date().toISOString(),
+          patientName: selectedPatient ? `${selectedPatient.name?.[0]?.given?.join(' ')} ${selectedPatient.name?.[0]?.family}` : 'Unknown',
+          sessionType: isTelehealth ? 'Telehealth' : 'In-Person'
+        }
+      };
 
-1. Session Overview
-2. Client Presentation
-3. Psychodynamic Formulation
-4. Key Moments
-5. Interpretation and Insight
-6. Treatment Progress
-7. Future Directions
-
-Transcript:
-${transcript}`;
-
-      const response = await medplum.executeBot(
+      // Call the bot with the properly structured input
+      const botResponse = await medplum.executeBot(
         '5731008c-42a6-4fdc-8969-2560667b4f1d',
-        { text: prompt },
+        botInput,
         'application/json'
       );
 
-      if (response.text) {
-        setPsychNote(response.text);
-        try {
-          const composition = await saveComposition(transcript, response.text, selectedPatient);
-          
-          const timeString = new Date().toLocaleString();
-          onTranscriptionStart?.(`${timeString} - ${selectedPatient?.name?.[0].given?.join(' ') || ''} ${selectedPatient?.name?.[0].family || ''}`);
-          
-          setStatus('Psychotherapy note generated');
-        } catch (compositionErr) {
-          const error = compositionErr as Error;
-          console.error('Error saving composition:', error);
-          setStatus(`Error: Could not save composition - ${error.message}`);
+      if (botResponse.success) {
+        showNotification({
+          title: 'Note Generation Started',
+          message: 'The note is being generated and will be saved automatically. You can safely navigate away from this page.',
+          color: 'blue'
+        });
+        
+        setStatus('Note generation in progress (you can navigate away)');
+        
+        // If the bot returns a note immediately, update the UI
+        if (botResponse.note) {
+          setPsychNote(botResponse.note);
         }
       } else {
-        setStatus('Error: No note generated');
+        throw new Error(botResponse.error || 'Unknown error occurred');
       }
+      
     } catch (err) {
       const error = err as Error;
-      console.error('Error generating note:', error);
-      setStatus(`Error: Could not generate note - ${error.message}`);
-
-      // Update the composition with a dummy note
-      if (savedComposition) {
-        const dummyNote = "This is where the psychotherapy note would go";
-        const updatedComposition: Composition = {
-          ...savedComposition,
-          section: [
-            {
-              title: 'Psychotherapy Note',
-              text: {
-                status: 'generated' as const,
-                div: `<div xmlns="http://www.w3.org/1999/xhtml">${dummyNote}</div>`
-              }
-            },
-            ...(savedComposition.section || [])
-          ]
-        };
-
-        try {
-          const updated = await medplum.updateResource(updatedComposition);
-          setSavedComposition(updated as Composition);
-          setPsychNote(dummyNote);
-          setStatus('Dummy note added');
-        } catch (updateErr) {
-          const error = updateErr as Error;
-          console.error('Error updating composition with dummy note:', error);
-        }
-      }
+      console.error('Error initiating note generation:', error);
+      setStatus(`Error: Could not start note generation - ${error.message}`);
+      
+      showNotification({
+        title: 'Error',
+        message: 'Failed to start note generation process',
+        color: 'red'
+      });
     }
   };
 

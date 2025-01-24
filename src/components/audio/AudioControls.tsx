@@ -44,17 +44,17 @@ export function AudioControls({
 }: AudioControlsProps): JSX.Element {
   return (
     <Paper p="md" radius="md" bg="gray.0">
-      <Group position="apart" mb="xs">
-        <Text size="sm" weight={500}>Status</Text>
-        <Text size="sm" color={status.includes('Error') ? 'red' : 'dimmed'}>{status}</Text>
+      <Group justify="space-between" mb="xs">
+        <Text size="sm" fw={500}>Status</Text>
+        <Text size="sm" c={status.includes('Error') ? 'red' : 'dimmed'}>{status}</Text>
       </Group>
 
       {isRecording && (
         <Box mb="md">
-          <Group position="apart" align="center">
+          <Group justify="space-between" align="center">
             {!isPaused && (
-              <Box 
-                sx={(theme) => ({
+              <Box
+                style={(theme) => ({
                   width: 8,
                   height: 8,
                   borderRadius: '50%',
@@ -64,14 +64,14 @@ export function AudioControls({
                 })}
               />
             )}
-            <Text size="sm" color="dimmed" align="center" style={{ flex: 1 }}>
+            <Text size="sm" c="dimmed" style={{ flex: 1, textAlign: 'center' }}>
               {isPaused ? 'Recording Paused' : 'Recording in Progress'}
             </Text>
           </Group>
         </Box>
       )}
 
-      <Stack spacing="md">
+      <Stack gap="md">
         {!isRecording ? (
           <Button
             fullWidth
