@@ -20,7 +20,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
             },
             body: JSON.stringify({
                 model: 'claude-3-sonnet-20240229',
-                max_tokens: 1024,
+                max_tokens: 4042,
                 messages: [
                     { 
                         role: 'user', 

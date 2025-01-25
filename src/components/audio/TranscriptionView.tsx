@@ -9,7 +9,7 @@ export function TranscriptionView({ transcript, psychNote }: TranscriptionViewPr
   if (!transcript && !psychNote) return null;
 
   return (
-    <Stack spacing="lg" mt="md">
+    <Stack gap="lg" mt="md">
       {transcript && (
         <Paper p="md" radius="md" withBorder>
           <Title order={3} size="h5" mb="md">Transcript</Title>

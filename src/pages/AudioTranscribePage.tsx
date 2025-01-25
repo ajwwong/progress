@@ -375,21 +375,23 @@ Important JSON formatting rules:
 5. Each section must have exactly these fields: "title" and "content"`;
       } else {
         templateInstructions = `
-You MUST return your response as a valid JSON object, with no additional text before or after. The response must follow this exact format:
+IMPORTANT: You MUST provide a COMPLETE response. Do not truncate or abbreviate any section.
+You MUST return your response as a valid JSON object, with no additional text before or after. 
+The response must follow this exact format:
 
 {
   "sections": [
     {
       "title": "Subjective & History",
-      "content": "[Your detailed subjective content]"
+      "content": "[Your detailed subjective content - COMPLETE, not truncated]"
     },
     {
       "title": "Mental Status Exam",
-      "content": "[Your detailed MSE content]"
+      "content": "[Your detailed MSE content - COMPLETE, not truncated]"
     },
     {
       "title": "Assessment & Plan",
-      "content": "[Your detailed assessment and plan]"
+      "content": "[Your detailed assessment and plan - COMPLETE, not truncated]"
     }
   ]
 }
@@ -399,11 +401,19 @@ Important JSON formatting rules:
 2. Escape any quotes within content using backslash
 3. Use \\n for line breaks
 4. Do not include any text outside the JSON object
-5. Each section must have exactly these fields: "title" and "content"`;
+5. Each section must have exactly these fields: "title" and "content"
+6. DO NOT truncate or abbreviate any section content
+7. Ensure your response includes ALL content for each section`;
       }
 
       // Create the prompt for the psychotherapy note
       const prompt = `As an experienced clinical psychologist or psychotherapist ${therapeuticApproach}, create a comprehensive and clinically precise psychotherapy progress note based on the following therapy session transcript. Your note should reflect deep clinical expertise, demonstrate thorough assessment and therapeutic insight, and adhere to professional documentation standards.${patientNameInfo}
+
+IMPORTANT RESPONSE REQUIREMENTS:
+1. You MUST provide a COMPLETE response for each section
+2. DO NOT truncate or abbreviate any section
+3. Include ALL relevant clinical information
+4. Ensure each section is fully detailed and complete
 
 Important Documentation Requirements:
 1. Use clear, objective, and professional language
@@ -418,28 +428,43 @@ Style and Format Preferences:
 - ${quotePreference === 'include' ? 'Include relevant quotes from the session when appropriate to support clinical observations' : 'Do not include direct quotes from the session'}
 - Use specific, behavioral descriptions rather than general statements
 - Include clinical reasoning for interventions and recommendations
-- Please use the following sample note as a reference for the exact format we will be using for the note, and please inlcude the full template instructions in your response:
+- Please use the following sample note as a reference for the exact format we will be using for the note:
 
 ${templateInstructions}
 
 Please ensure each section is thorough, clinically relevant, and provides sufficient detail for continuity of care. The note should clearly document the session's clinical significance and support treatment planning.
+
+IMPORTANT: Your response MUST be complete and include ALL content for each section. Do not truncate or abbreviate any section.
 
 Transcript:
 ${transcript}`;
 
       console.log('Prompt being sent to Claude:', prompt);
 
-      // Call the bot with the prompt
+      // Call the bot with the prompt and handle streaming response
       const botResponse = await medplum.executeBot(
         '5731008c-42a6-4fdc-8969-2560667b4f1d',
         {
-          prompt: prompt
+          prompt: prompt,
+          stream: true, // Enable streaming if supported
+          maxTokens: 4000, // Request larger response
+          options: {
+            responseFormat: {
+              type: "json"
+            },
+            temperature: 0.1, // Lower temperature for more consistent responses
+          }
         },
         'application/json'
       );
 
-      console.log('Bot response:', botResponse);
-
+      // Log response details
+      console.log('Bot response type:', typeof botResponse);
+      console.log('Bot response length:', typeof botResponse === 'string' 
+        ? botResponse.length 
+        : JSON.stringify(botResponse).length
+      );
+      
       if (!botResponse) {
         throw new Error('No response received from the bot');
       }
