@@ -2,73 +2,155 @@ import { Container, Paper, Stack, Group, Title, Button, TextInput, Select, Divid
 import { useNavigate, useParams } from 'react-router-dom';
 import { IconArrowLeft, IconDeviceFloppy, IconEye, IconTrash, IconPlus, IconGripVertical } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
-import { useTemplates } from './hooks/useTemplates';
-import { NoteTemplate, defaultSections } from './types';
+import { useMedplum } from '@medplum/react';
+import { Questionnaire, QuestionnaireItem } from '@medplum/fhirtypes';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+
+const defaultItems: QuestionnaireItem[] = [
+  {
+    linkId: 'mental-status',
+    text: 'Mental Status Exam',
+    type: 'text',
+    initial: [{ valueString: '' }]
+  },
+  {
+    linkId: 'clinical-observations',
+    text: 'Clinical Observations',
+    type: 'text',
+    initial: [{ valueString: '' }]
+  },
+  {
+    linkId: 'treatment-progress',
+    text: 'Treatment Progress',
+    type: 'text',
+    initial: [{ valueString: '' }]
+  },
+  {
+    linkId: 'plan',
+    text: 'Plan & Recommendations',
+    type: 'text',
+    initial: [{ valueString: '' }]
+  }
+];
 
 export function TemplateEditorPage(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams();
-  const { templates, saveTemplate, deleteTemplate } = useTemplates();
-  const [template, setTemplate] = useState<NoteTemplate>({
-    name: '',
-    type: 'progress',
-    sections: defaultSections
+  const medplum = useMedplum();
+  const [template, setTemplate] = useState<Questionnaire>({
+    resourceType: 'Questionnaire',
+    status: 'active',
+    title: '',
+    code: [{
+      system: 'http://progress.care/fhir',
+      code: 'note-template',
+      display: 'Note Template'
+    }],
+    extension: [
+      {
+        url: 'http://progress.care/fhir/template-type',
+        valueCode: 'progress'
+      }
+    ],
+    item: defaultItems
   });
   const [isDirty, setIsDirty] = useState(false);
   const [showPreview, setShowPreview] = useState(false);
 
   useEffect(() => {
-    if (id) {
-      const existingTemplate = templates.find(t => t.id === id);
-      if (existingTemplate) {
-        setTemplate(existingTemplate);
+    const loadTemplate = async () => {
+      if (id) {
+        try {
+          const existingTemplate = await medplum.readResource('Questionnaire', id);
+          setTemplate(existingTemplate);
+        } catch (err) {
+          console.error('Error loading template:', err);
+        }
       }
-    }
-  }, [id, templates]);
+    };
+    loadTemplate();
+  }, [id, medplum]);
 
   const handleSave = async () => {
-    const success = await saveTemplate(template);
-    if (success) {
+    try {
+      if (template.id) {
+        await medplum.updateResource(template);
+      } else {
+        await medplum.createResource(template);
+      }
       setIsDirty(false);
       navigate('/templates');
+    } catch (err) {
+      console.error('Error saving template:', err);
     }
   };
 
   const handleDelete = async () => {
     if (template.id) {
-      await deleteTemplate(template.id);
-      navigate('/templates');
+      try {
+        await medplum.deleteResource('Questionnaire', template.id);
+        navigate('/templates');
+      } catch (err) {
+        console.error('Error deleting template:', err);
+      }
     }
   };
 
-  const updateField = (field: keyof NoteTemplate, value: any) => {
+  const updateField = (field: keyof Questionnaire, value: any) => {
     setTemplate(prev => ({ ...prev, [field]: value }));
     setIsDirty(true);
   };
 
-  const addSection = () => {
+  const updateTemplateType = (type: string) => {
     setTemplate(prev => ({
       ...prev,
-      sections: [...prev.sections, { title: '', content: '' }]
+      extension: [
+        ...(prev.extension || []).filter(e => e.url !== 'http://progress.care/fhir/template-type'),
+        {
+          url: 'http://progress.care/fhir/template-type',
+          valueCode: type
+        }
+      ]
+    }));
+    setIsDirty(true);
+  };
+
+  const addSection = () => {
+    const newLinkId = `section-${Date.now()}`;
+    setTemplate(prev => ({
+      ...prev,
+      item: [
+        ...(prev.item || []),
+        {
+          linkId: newLinkId,
+          text: 'New Section',
+          type: 'text',
+          initial: [{ valueString: '' }]
+        }
+      ]
     }));
     setIsDirty(true);
   };
 
   const updateSection = (index: number, field: string, value: string) => {
-    setTemplate(prev => ({
-      ...prev,
-      sections: prev.sections.map((section, i) => 
-        i === index ? { ...section, [field]: value } : section
-      )
-    }));
+    setTemplate(prev => {
+      const items = [...(prev.item || [])];
+      items[index] = {
+        ...items[index],
+        [field]: value,
+        ...(field === 'text' ? {} : {
+          initial: [{ valueString: value }]
+        })
+      };
+      return { ...prev, item: items };
+    });
     setIsDirty(true);
   };
 
   const removeSection = (index: number) => {
     setTemplate(prev => ({
       ...prev,
-      sections: prev.sections.filter((_, i) => i !== index)
+      item: prev.item?.filter((_, i) => i !== index)
     }));
     setIsDirty(true);
   };
@@ -76,246 +158,182 @@ export function TemplateEditorPage(): JSX.Element {
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const sections = Array.from(template.sections);
-    const [reorderedSection] = sections.splice(result.source.index, 1);
-    sections.splice(result.destination.index, 0, reorderedSection);
-
-    setTemplate(prev => ({ ...prev, sections }));
+    setTemplate(prev => {
+      const items = [...(prev.item || [])];
+      const [reorderedItem] = items.splice(result.source.index, 1);
+      items.splice(result.destination!.index, 0, reorderedItem);
+      return { ...prev, item: items };
+    });
     setIsDirty(true);
   };
 
+  const getTemplateType = () => {
+    return template.extension?.find(e => 
+      e.url === 'http://progress.care/fhir/template-type'
+    )?.valueCode || 'progress';
+  };
+
   return (
-    <Container size="xl" py="xl">
-      {/* Header */}
-      <Paper shadow="sm" p="md" radius="md" withBorder mb="xl">
-        <Group justify="space-between">
-          <Group>
-            <Button 
-              variant="subtle" 
-              leftSection={<IconArrowLeft size={16} />}
-              onClick={() => navigate('/templates')}
-            >
-              Back to Templates
-            </Button>
-            <Divider orientation="vertical" />
-            <Title order={3}>{id ? 'Edit Template' : 'New Template'}</Title>
-            {isDirty && <Badge color="yellow">Unsaved Changes</Badge>}
-          </Group>
-          <Group>
-            <Button
-              variant="light"
-              leftSection={<IconEye size={16} />}
-              onClick={() => setShowPreview(true)}
-            >
-              Preview
-            </Button>
-            {template.id && (
+    <Container size="xl">
+      <Paper shadow="sm" p="xl" radius="md" withBorder>
+        <Stack gap="xl">
+          {/* Header */}
+          <Group justify="space-between">
+            <Group>
+              <Button
+                variant="subtle"
+                leftSection={<IconArrowLeft size={16} />}
+                onClick={() => navigate('/templates')}
+              >
+                Back
+              </Button>
+              <Title order={2}>{template.id ? 'Edit Template' : 'New Template'}</Title>
+            </Group>
+            <Group>
               <Button
                 variant="light"
-                color="red"
-                leftSection={<IconTrash size={16} />}
-                onClick={handleDelete}
+                leftSection={<IconEye size={16} />}
+                onClick={() => setShowPreview(true)}
               >
-                Delete
+                Preview
               </Button>
-            )}
-            <Button
-              leftSection={<IconDeviceFloppy size={16} />}
-              onClick={handleSave}
-              disabled={!isDirty}
-            >
-              Save Template
-            </Button>
-          </Group>
-        </Group>
-      </Paper>
-
-      <Grid>
-        {/* Main Editor */}
-        <Grid.Col span={8}>
-          <Stack gap="md">
-            <Paper shadow="sm" p="md" radius="md" withBorder>
-              <Stack gap="md">
-                <TextInput
-                  label="Template Name"
-                  placeholder="Enter template name"
-                  value={template.name}
-                  onChange={(e) => updateField('name', e.target.value)}
-                  required
-                />
-                <Select
-                  label="Template Type"
-                  value={template.type}
-                  onChange={(value) => updateField('type', value)}
-                  data={[
-                    { value: 'progress', label: 'Progress Note' },
-                    { value: 'intake', label: 'Intake Assessment' },
-                    { value: 'discharge', label: 'Discharge Summary' },
-                    { value: 'treatment', label: 'Treatment Plan' }
-                  ]}
-                  required
-                />
-              </Stack>
-            </Paper>
-
-            <Paper shadow="sm" p="md" radius="md" withBorder>
-              <Stack gap="md">
-                <Group justify="space-between">
-                  <Title order={4}>Sections</Title>
-                  <Button
-                    variant="light"
-                    leftSection={<IconPlus size={16} />}
-                    onClick={addSection}
-                    size="sm"
-                  >
-                    Add Section
-                  </Button>
-                </Group>
-
-                <DragDropContext onDragEnd={handleDragEnd}>
-                  <Droppable droppableId="sections">
-                    {(provided) => (
-                      <div {...provided.droppableProps} ref={provided.innerRef}>
-                        <Stack gap="md">
-                          {template.sections.map((section, index) => (
-                            <Draggable 
-                              key={index} 
-                              draggableId={`section-${index}`} 
-                              index={index}
-                            >
-                              {(provided) => (
-                                <Paper
-                                  shadow="sm"
-                                  p="md"
-                                  radius="md"
-                                  withBorder
-                                  ref={provided.innerRef}
-                                  {...provided.draggableProps}
-                                >
-                                  <Group justify="space-between" mb="xs">
-                                    <Group>
-                                      <div {...provided.dragHandleProps}>
-                                        <IconGripVertical 
-                                          size={16} 
-                                          style={{ 
-                                            color: 'var(--mantine-color-gray-5)',
-                                            cursor: 'grab'
-                                          }} 
-                                        />
-                                      </div>
-                                      <TextInput
-                                        placeholder="Section Title"
-                                        value={section.title}
-                                        onChange={(e) => updateSection(index, 'title', e.target.value)}
-                                        size="sm"
-                                        style={{ width: '200px' }}
-                                      />
-                                    </Group>
-                                    <ActionIcon
-                                      color="red"
-                                      variant="light"
-                                      onClick={() => removeSection(index)}
-                                    >
-                                      <IconTrash size={16} />
-                                    </ActionIcon>
-                                  </Group>
-                                  <Textarea
-                                    placeholder="Default content or instructions..."
-                                    value={section.content}
-                                    onChange={(e) => updateSection(index, 'content', e.target.value)}
-                                    minRows={3}
-                                    autosize
-                                  />
-                                </Paper>
-                              )}
-                            </Draggable>
-                          ))}
-                          {provided.placeholder}
-                        </Stack>
-                      </div>
-                    )}
-                  </Droppable>
-                </DragDropContext>
-              </Stack>
-            </Paper>
-          </Stack>
-        </Grid.Col>
-
-        {/* Side Panel */}
-        <Grid.Col span={4}>
-          <Stack gap="md">
-            <Paper shadow="sm" p="md" radius="md" withBorder>
-              <Stack gap="xs">
-                <Title order={4}>Template Preview</Title>
-                <Text size="sm" c="dimmed">
-                  Preview how your template will look when creating a new note.
-                </Text>
-                <Button 
-                  variant="light" 
-                  fullWidth
-                  leftSection={<IconEye size={16} />}
-                  onClick={() => setShowPreview(true)}
+              {template.id && (
+                <Button
+                  variant="light"
+                  color="red"
+                  leftSection={<IconTrash size={16} />}
+                  onClick={handleDelete}
                 >
-                  Open Preview
+                  Delete
                 </Button>
-              </Stack>
-            </Paper>
+              )}
+              <Button
+                leftSection={<IconDeviceFloppy size={16} />}
+                onClick={handleSave}
+                disabled={!isDirty}
+              >
+                Save
+              </Button>
+            </Group>
+          </Group>
 
-            <Paper shadow="sm" p="md" radius="md" withBorder>
-              <Stack gap="xs">
-                <Title order={4}>Common Sections</Title>
-                <Text size="sm" c="dimmed">
-                  Click to add these common sections to your template.
-                </Text>
-                <Stack gap="xs">
-                  {[
-                    'Mental Status Exam',
-                    'Risk Assessment',
-                    'Treatment Goals',
-                    'Interventions Used',
-                    'Plan & Recommendations'
-                  ].map((section) => (
-                    <Button
-                      key={section}
-                      variant="light"
-                      size="sm"
-                      fullWidth
-                      onClick={() => {
-                        setTemplate(prev => ({
-                          ...prev,
-                          sections: [...prev.sections, { title: section, content: '' }]
-                        }));
-                        setIsDirty(true);
-                      }}
-                    >
-                      {section}
-                    </Button>
-                  ))}
-                </Stack>
-              </Stack>
-            </Paper>
+          <Divider />
+
+          {/* Basic Info */}
+          <Grid>
+            <Grid.Col span={8}>
+              <TextInput
+                label="Template Name"
+                value={template.title || ''}
+                onChange={(e) => updateField('title', e.currentTarget.value)}
+                placeholder="Enter template name"
+              />
+            </Grid.Col>
+            <Grid.Col span={4}>
+              <Select
+                label="Template Type"
+                value={getTemplateType()}
+                onChange={(value) => value && updateTemplateType(value)}
+                data={[
+                  { value: 'progress', label: 'Progress Note' },
+                  { value: 'intake', label: 'Intake Assessment' },
+                  { value: 'discharge', label: 'Discharge Summary' },
+                  { value: 'treatment', label: 'Treatment Plan' }
+                ]}
+              />
+            </Grid.Col>
+          </Grid>
+
+          {/* Sections */}
+          <Stack gap="md">
+            <Group justify="space-between">
+              <Title order={3}>Sections</Title>
+              <Button
+                size="sm"
+                variant="light"
+                leftSection={<IconPlus size={16} />}
+                onClick={addSection}
+              >
+                Add Section
+              </Button>
+            </Group>
+
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="sections">
+                {(provided) => (
+                  <div {...provided.droppableProps} ref={provided.innerRef}>
+                    <Stack gap="md">
+                      {template.item?.map((item, index) => (
+                        <Draggable 
+                          key={item.linkId} 
+                          draggableId={item.linkId} 
+                          index={index}
+                        >
+                          {(provided) => (
+                            <Paper
+                              ref={provided.innerRef}
+                              {...provided.draggableProps}
+                              shadow="sm"
+                              p="md"
+                              withBorder
+                            >
+                              <Group align="flex-start">
+                                <div {...provided.dragHandleProps}>
+                                  <IconGripVertical size={16} style={{ marginTop: 8 }} />
+                                </div>
+                                <Box style={{ flex: 1 }}>
+                                  <Stack gap="sm">
+                                    <TextInput
+                                      value={item.text || ''}
+                                      onChange={(e) => updateSection(index, 'text', e.currentTarget.value)}
+                                      placeholder="Section Title"
+                                    />
+                                    <Textarea
+                                      value={item.initial?.[0]?.valueString || ''}
+                                      onChange={(e) => updateSection(index, 'initial', e.currentTarget.value)}
+                                      placeholder="Sample content for this section..."
+                                      minRows={3}
+                                      autosize
+                                    />
+                                  </Stack>
+                                </Box>
+                                <ActionIcon
+                                  color="red"
+                                  variant="subtle"
+                                  onClick={() => removeSection(index)}
+                                >
+                                  <IconTrash size={16} />
+                                </ActionIcon>
+                              </Group>
+                            </Paper>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </Stack>
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           </Stack>
-        </Grid.Col>
-      </Grid>
+        </Stack>
+      </Paper>
 
       {/* Preview Modal */}
       <Modal
         opened={showPreview}
         onClose={() => setShowPreview(false)}
-        title={<Title order={3}>{template.name || 'Untitled Template'}</Title>}
+        title="Template Preview"
         size="xl"
       >
         <Stack gap="md">
-          <Text size="sm" c="dimmed">
-            Template Type: {template.type.charAt(0).toUpperCase() + template.type.slice(1)}
-          </Text>
-          {template.sections.map((section, index) => (
-            <Paper key={index} shadow="sm" p="md" radius="md" withBorder>
-              <Title order={4} mb="xs">{section.title || 'Untitled Section'}</Title>
+          {template.item?.map((item, index) => (
+            <Box key={index}>
+              <Text fw={500} mb={4}>{item.text}</Text>
               <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                {section.content || 'No default content'}
+                {item.initial?.[0]?.valueString || 'No sample content'}
               </Text>
-            </Paper>
+            </Box>
           ))}
         </Stack>
       </Modal>

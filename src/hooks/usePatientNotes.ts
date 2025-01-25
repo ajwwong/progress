@@ -231,15 +231,33 @@ export function usePatientNotes(patient: Patient): UsePatientNotesResult {
         ] : currentNote.extension
       };
 
+      // Update local state optimistically
+      setNotes(prevNotes => {
+        return prevNotes.map(note => {
+          if (note.id === id) {
+            return {
+              ...note,
+              ...updates,
+              // Ensure sections are properly updated if they're included in the updates
+              sections: updates.sections || note.sections
+            };
+          }
+          return note;
+        });
+      });
+
+      // Send update to server
       await medplum.updateResource(updatedNote);
-      await fetchNotes();
 
       notifications.show({
         title: 'Success',
         message: 'Note updated successfully',
-        color: 'green'
+        color: 'green',
+        autoClose: 2000
       });
     } catch (err) {
+      // If server update fails, revert the optimistic update
+      await fetchNotes();
       console.error('Error updating note:', err);
       notifications.show({
         title: 'Error',

@@ -1,6 +1,7 @@
 export interface NoteSection {
   title: string;
   content: string;
+  sampleContent?: string;
 }
 
 export interface NoteTemplate {

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useMedplum } from '@medplum/react';
+import { Questionnaire } from '@medplum/fhirtypes';
 import { NoteTemplate } from '../types';
 
 // Default template based on the provided example
@@ -57,18 +58,31 @@ export function useTemplates() {
 
   const loadTemplates = async () => {
     try {
-      const results = await medplum.searchResources('Basic', 'code=note-template');
-      const loadedTemplates = results.map(r => ({
-        id: r.id || '',
-        name: r.extension?.find(e => e.url === 'name')?.valueString || '',
-        type: (r.extension?.find(e => e.url === 'type')?.valueString as NoteTemplate['type']) || 'progress',
-        sections: r.extension?.find(e => e.url === 'sections')?.valueString 
-          ? JSON.parse(r.extension.find(e => e.url === 'sections')?.valueString || '[]')
-          : []
+      const results = await medplum.searchResources('Questionnaire', {
+        _count: '100'
+      });
+      
+      // Filter for templates
+      const templateResults = results.filter(q => 
+        q.code?.some(c => c.code === 'note-template')
+      );
+
+      const loadedTemplates = templateResults.map(q => ({
+        id: q.id || '',
+        name: q.title || '',
+        type: q.extension?.find(e => 
+          e.url === 'http://progress.care/fhir/template-type'
+        )?.valueCode as NoteTemplate['type'] || 'progress',
+        sections: q.item?.map(item => ({
+          title: item.text || '',
+          sampleContent: item.initial?.[0]?.valueString || ''
+        })) || []
       }));
+      
       setTemplates(loadedTemplates);
     } catch (error) {
       console.error('Error loading templates:', error);
+      setError(error instanceof Error ? error.message : 'Failed to load templates');
     } finally {
       setLoading(false);
     }
@@ -76,20 +90,48 @@ export function useTemplates() {
 
   const saveTemplate = async (template: NoteTemplate): Promise<boolean> => {
     try {
-      // TODO: Replace with actual API call
+      const resource: Questionnaire = {
+        resourceType: 'Questionnaire',
+        status: 'active',
+        title: template.name,
+        code: [{
+          system: 'http://progress.care/fhir',
+          code: 'note-template',
+          display: 'Note Template'
+        }],
+        extension: [
+          {
+            url: 'http://progress.care/fhir/template-type',
+            valueCode: template.type
+          }
+        ],
+        item: template.sections.map(section => ({
+          linkId: section.title.toLowerCase().replace(/\s+/g, '-'),
+          text: section.title,
+          type: 'text',
+          initial: [{
+            valueString: section.content
+          }]
+        }))
+      };
+
       if (template.id) {
-        setTemplates(prev => 
-          prev.map(t => t.id === template.id ? template : t)
-        );
+        // Update existing template
+        await medplum.updateResource({
+          ...resource,
+          id: template.id
+        });
       } else {
-        const newTemplate = {
-          ...template,
-          id: Math.random().toString(36).substr(2, 9)
-        };
-        setTemplates(prev => [...prev, newTemplate]);
+        // Create new template
+        const savedResource = await medplum.createResource(resource);
+        template.id = savedResource.id;
       }
+
+      // Refresh templates list
+      await loadTemplates();
       return true;
     } catch (err) {
+      console.error('Error saving template:', err);
       setError(err instanceof Error ? err.message : 'Failed to save template');
       return false;
     }
@@ -97,20 +139,19 @@ export function useTemplates() {
 
   const deleteTemplate = async (id: string): Promise<boolean> => {
     try {
-      // TODO: Replace with actual API call
-      setTemplates(prev => prev.filter(t => t.id !== id));
+      await medplum.deleteResource('Questionnaire', id);
+      await loadTemplates();
       return true;
     } catch (err) {
+      console.error('Error deleting template:', err);
       setError(err instanceof Error ? err.message : 'Failed to delete template');
       return false;
     }
   };
 
   useEffect(() => {
-    // TODO: Replace with actual API call
-    setTemplates(mockTemplates);
-    setLoading(false);
-  }, []);
+    loadTemplates();
+  }, [medplum]);
 
   return {
     templates,

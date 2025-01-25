@@ -27,13 +27,13 @@ const theme = {
 export function PatientDirectoryPage(): JSX.Element {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [clientStatus, setClientStatus] = useState('all');
+  const [clientStatus, setClientStatus] = useState('active');
   const [insurancePayer, setInsurancePayer] = useState('all');
   const [isLoading, setIsLoading] = useState(false);
   const [lastSessions, setLastSessions] = useState<Record<string, string>>({});
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const patientsPerPage = 40;
+  const patientsPerPage = 100;
   const medplum = useMedplum();
   const navigate = useMedplumNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);

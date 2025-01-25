@@ -3,8 +3,10 @@ import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { Box, Container, Text, Title, Textarea, Button, Group, Drawer, Paper, Stack, Divider, Collapse, Tooltip, ActionIcon, Radio } from '@mantine/core';
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconLock } from '@tabler/icons-react';
+import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconLock, IconRefresh } from '@tabler/icons-react';
 import { MantineTheme } from '@mantine/core';
+import { showNotification } from '@mantine/notifications';
+import { MagicEditModal } from '../components/notes/MagicEditModal';
 
 export function NoteView(): JSX.Element {
   const { id } = useParams();
@@ -15,9 +17,8 @@ export function NoteView(): JSX.Element {
   const [editedSections, setEditedSections] = useState<{ [key: string]: string }>({});
   const [modifiedSections, setModifiedSections] = useState<Set<string>>(new Set());
   const [sectionTimestamps, setSectionTimestamps] = useState<{ [key: string]: string }>({});
-  const [showMagicDrawer, setShowMagicDrawer] = useState(false);
-  const [magicInstructions, setMagicInstructions] = useState('');
-  const [isProcessing, setIsProcessing] = useState(false);
+  const [showMagicModal, setShowMagicModal] = useState(false);
+  const [currentSection, setCurrentSection] = useState<string>('');
   const [isTranscriptVisible, setIsTranscriptVisible] = useState(false);
   const [justCopied, setJustCopied] = useState<string>('');
   const [patient, setPatient] = useState<Patient>();
@@ -54,18 +55,12 @@ export function NoteView(): JSX.Element {
     }
   }, [medplum, id, profile]);
 
-  useEffect(() => {
-    if (!showMagicDrawer) {
-      clearSelections();
-    }
-  }, [showMagicDrawer]);
-
   const handleSignNote = async () => {
     if (!composition) return;
   
-    const updatedComposition = {
+    const updatedComposition: Composition = {
       ...composition,
-      status: 'final',
+      status: 'final' as const,
       date: new Date().toISOString(),
       attester: [{
         mode: 'legal',
@@ -78,7 +73,7 @@ export function NoteView(): JSX.Element {
   
     try {
       const result = await medplum.updateResource(updatedComposition);
-      setComposition(result);
+      setComposition(result as Composition);
     } catch (err) {
       setError('Error signing note');
     }
@@ -87,7 +82,7 @@ export function NoteView(): JSX.Element {
   const handleSaveSection = async (sectionTitle: string) => {
     if (!composition) return;
 
-    const updatedComposition = {
+    const updatedComposition: Composition = {
       ...composition,
       section: composition.section?.map(section => {
         if (section.title === sectionTitle) {
@@ -95,7 +90,7 @@ export function NoteView(): JSX.Element {
             ...section,
             text: {
               div: editedSections[sectionTitle],
-              status: 'generated'
+              status: 'generated' as const
             }
           };
         }
@@ -105,7 +100,7 @@ export function NoteView(): JSX.Element {
 
     try {
       const result = await medplum.updateResource(updatedComposition);
-      setComposition(result);
+      setComposition(result as Composition);
       setSectionTimestamps(prev => ({
         ...prev,
         [sectionTitle]: new Date().toISOString()
@@ -138,32 +133,30 @@ export function NoteView(): JSX.Element {
     });
   };
 
-  const clearSelections = () => {
-    setSelectedPronoun(undefined);
-    setSelectedIdentifier(undefined);
-    setSelectedQuotes(undefined);
-    setSelectedLength(undefined);
-    setMagicInstructions('');
-  };
-
-  const handleMagicEdit = async (sectionTitle: string) => {
-    if (!composition || sectionTitle !== 'Psychotherapy Note') return;
+  const handleRegenerate = async () => {
+    if (!composition || !editedSections['Transcript']) return;
     
-    setIsProcessing(true);
     try {
-      const currentNote = editedSections['Psychotherapy Note'];
       const transcript = editedSections['Transcript'];
-      const prompt = `As an experienced psychodynamically-oriented therapist, please adjust the following psychotherapy note according to these instructions:
+      const prompt = `As an experienced psychodynamically-oriented therapist, please generate a comprehensive psychotherapy note based on the following session transcript. The note should be thorough, clinically precise, and reflect deep therapeutic insight.
 
-${magicInstructions}
+Please structure the note with these sections:
+1. Subjective & History
+2. Mental Status Exam
+3. Assessment & Plan
 
-Current note:
-${currentNote}
-
-Original transcript for reference:
+Transcript:
 ${transcript}
 
-Please provide the complete adjusted note while maintaining the same professional therapeutic style and structure.`;
+Return the note as a JSON object with this exact format:
+{
+  "sections": [
+    {
+      "title": "section title",
+      "content": "section content"
+    }
+  ]
+}`;
 
       const response = await medplum.executeBot(
         '5731008c-42a6-4fdc-8969-2560667b4f1d',
@@ -172,29 +165,50 @@ Please provide the complete adjusted note while maintaining the same professiona
       );
 
       if (response.text) {
-        handleTextChange(sectionTitle, response.text);
-        setShowMagicDrawer(false);
-        clearSelections();
+        try {
+          const jsonMatch = response.text.match(/\{[\s\S]*\}/);
+          if (!jsonMatch) throw new Error('No JSON found in response');
+          
+          const noteContent = JSON.parse(jsonMatch[0]);
+          
+          if (!noteContent?.sections) throw new Error('Invalid note format');
+          
+          // Update each section in the composition
+          noteContent.sections.forEach((section: { title: string, content: string }) => {
+            handleTextChange(section.title, section.content);
+          });
+
+          showNotification({
+            title: 'Note Regenerated',
+            message: 'The clinical note has been regenerated successfully.',
+            color: 'green'
+          });
+        } catch (parseErr) {
+          throw new Error('Failed to parse regenerated note');
+        }
       }
     } catch (err) {
-      setError('Error processing magic edit');
-    } finally {
-      setIsProcessing(false);
+      setError('Error regenerating note');
+      showNotification({
+        title: 'Error',
+        message: 'Failed to regenerate note',
+        color: 'red'
+      });
     }
   };
 
   const handleUnlock = async () => {
     if (!composition) return;
     
-    const updatedComposition = {
+    const updatedComposition: Composition = {
       ...composition,
-      status: 'preliminary',
+      status: 'preliminary' as const,
       attester: undefined
     };
 
     try {
       const result = await medplum.updateResource(updatedComposition);
-      setComposition(result);
+      setComposition(result as Composition);
     } catch (err) {
       setError('Error unlocking note');
     }
@@ -203,11 +217,16 @@ Please provide the complete adjusted note while maintaining the same professiona
   if (error) {
     return (
       <Container size="md" mt="xl">
-        <Paper p="xl" radius="md" withBorder sx={(theme) => ({
-          backgroundColor: theme.colors.red[0],
-          borderColor: theme.colors.red[3]
-        })}>
-          <Title order={2} color="red">{error}</Title>
+        <Paper 
+          p="xl" 
+          radius="md" 
+          withBorder 
+          style={(theme: MantineTheme) => ({
+            backgroundColor: theme.colors.red[0],
+            borderColor: theme.colors.red[3]
+          })}
+        >
+          <Title order={2} c="red">{error}</Title>
         </Paper>
       </Container>
     );
@@ -308,10 +327,14 @@ Please provide the complete adjusted note while maintaining the same professiona
                       <Group gap="xs">
                         <Tooltip label="Magic Edit">
                           <ActionIcon
-                            onClick={() => setShowMagicDrawer(true)}
+                            onClick={() => {
+                              setCurrentSection(sectionTitle);
+                              setShowMagicModal(true);
+                            }}
                             variant="light"
                             color="violet"
                             size="lg"
+                            disabled={!!composition?.attester?.[0]}
                           >
                             <IconWand size={20} />
                           </ActionIcon>
@@ -334,6 +357,16 @@ Please provide the complete adjusted note while maintaining the same professiona
                             leftSection={<IconEdit size={16} />}
                           >
                             Save Changes
+                          </Button>
+                        )}
+                        {sectionTitle === 'Psychotherapy Note' && !composition?.attester?.[0] && (
+                          <Button
+                            onClick={handleRegenerate}
+                            color="blue"
+                            size="sm"
+                            leftSection={<IconRefresh size={16} />}
+                          >
+                            Regenerate Note
                           </Button>
                         )}
                       </Group>
@@ -359,130 +392,16 @@ Please provide the complete adjusted note while maintaining the same professiona
           </Stack>
         </Paper>
 
-        <Drawer
-          opened={showMagicDrawer}
-          onClose={() => setShowMagicDrawer(false)}
-          title={<Title order={3} c="blue.8">Magic Edit</Title>}
-          position="right"
-          size="sm"
-          padding="lg"
-        >
-          <Stack gap="md">
-            <Text size="sm" c="dimmed">
-              Choose quick edit options or provide custom instructions below
-            </Text>
-
-            <Box>
-              <Text fw={500} size="sm" mb="xs">Pronouns</Text>
-              <Radio.Group
-                value={selectedPronoun}
-                onChange={(value) => {
-                  setSelectedPronoun(value === selectedPronoun ? undefined : value);
-                  const instructions = {
-                    'she': "Change all pronouns to she/her",
-                    'he': "Change all pronouns to he/him",
-                    'they': "Change all pronouns to they/their"
-                  }[value];
-                  setMagicInstructions(instructions || '');
-                }}
-              >
-                <Group>
-                  <Radio label="She/Her" value="she" />
-                  <Radio label="He/Him" value="he" />
-                  <Radio label="They/Their" value="they" />
-                </Group>
-              </Radio.Group>
-            </Box>
-
-            <Box>
-              <Text fw={500} size="sm" mb="xs">Identifier</Text>
-              <Radio.Group
-                value={selectedIdentifier}
-                onChange={(value) => {
-                  setSelectedIdentifier(value === selectedIdentifier ? undefined : value);
-                  const instructions = {
-                    'patient': "Change all references to use 'patient'",
-                    'client': "Change all references to use 'client'",
-                    'name': "Use the client's actual name instead of 'patient' or 'client'"
-                  }[value];
-                  setMagicInstructions(instructions || '');
-                }}
-              >
-                <Group>
-                  <Radio label="Patient" value="patient" />
-                  <Radio label="Client" value="client" />
-                  <Radio label="Name" value="name" />
-                </Group>
-              </Radio.Group>
-            </Box>
-
-            <Box>
-              <Text fw={500} size="sm" mb="xs">Quotes</Text>
-              <Radio.Group
-                value={selectedQuotes}
-                onChange={(value) => {
-                  setSelectedQuotes(value === selectedQuotes ? undefined : value);
-                  const instructions = {
-                    'remove': "Remove direct quotes and paraphrase the content professionally",
-                    'add': "Add quotes around direct client statements"
-                  }[value];
-                  setMagicInstructions(instructions || '');
-                }}
-              >
-                <Group>
-                  <Radio label="Remove Quotes" value="remove" />
-                  <Radio label="Add Quotes" value="add" />
-                </Group>
-              </Radio.Group>
-            </Box>
-
-            <Box>
-              <Text fw={500} size="sm" mb="xs">Length</Text>
-              <Radio.Group
-                value={selectedLength}
-                onChange={(value) => {
-                  setSelectedLength(value === selectedLength ? undefined : value);
-                  const instructions = {
-                    'concise': "Make the note more concise while maintaining key clinical information",
-                    'detail': "Expand the note with more detail and clinical observations"
-                  }[value];
-                  setMagicInstructions(instructions || '');
-                }}
-              >
-                <Group>
-                  <Radio label="Make Concise" value="concise" />
-                  <Radio label="Add Detail" value="detail" />
-                </Group>
-              </Radio.Group>
-            </Box>
-
-            <Divider my="sm" />
-            
-            <Text size="sm" fw={500}>Custom Instructions</Text>
-            <Textarea
-              value={magicInstructions}
-              onChange={(e) => setMagicInstructions(e.target.value)}
-              placeholder="Example: Make the language more professional and expand on the cognitive behavioral interventions used"
-              minRows={5}
-              autosize
-            />
-
-            <Group justify="flex-end">
-              <Button
-                onClick={() => setShowMagicDrawer(false)}
-                variant="subtle"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => handleMagicEdit('Psychotherapy Note')}
-                loading={isProcessing}
-              >
-                Apply Magic Edit
-              </Button>
-            </Group>
-          </Stack>
-        </Drawer>
+        <MagicEditModal
+          opened={showMagicModal}
+          onClose={() => setShowMagicModal(false)}
+          onEdit={(editedText) => {
+            handleTextChange(currentSection, editedText);
+          }}
+          currentContent={editedSections[currentSection] || ''}
+          transcriptContent={editedSections['Transcript']}
+          sectionTitle={currentSection}
+        />
       </Stack>
     </Container>
   );
