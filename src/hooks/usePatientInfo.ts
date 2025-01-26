@@ -44,7 +44,9 @@ export function usePatientInfo(patient: Patient): UsePatientInfoResult {
     pronouns: patient.extension?.find(e => 
       e.url === 'http://hl7.org/fhir/StructureDefinition/individual-pronouns'
     )?.extension?.find(e => e.url === 'value')?.valueCodeableConcept?.coding?.[0]?.code || '',
-    defaultTemplate: 'progress'
+    defaultTemplate: patient.extension?.find(e => 
+      e.url === 'http://example.com/fhir/StructureDefinition/default-template'
+    )?.valueString || ''
   });
 
   const startEditing = () => setIsEditing(true);
@@ -61,6 +63,39 @@ export function usePatientInfo(patient: Patient): UsePatientInfoResult {
     try {
       const currentPatient = await medplum.readResource('Patient', patient.id as string);
       
+      // Prepare extensions array with both pronouns and default template
+      const extensions = [];
+      
+      // Add pronouns extension if it exists
+      if (formData.pronouns) {
+        extensions.push({
+          url: 'http://hl7.org/fhir/StructureDefinition/individual-pronouns',
+          extension: [
+            {
+              url: 'value',
+              valueCodeableConcept: {
+                coding: [
+                  {
+                    system: 'http://terminology.hl7.org/ValueSet/pronouns',
+                    code: formData.pronouns,
+                    display: getPronounDisplay(formData.pronouns)
+                  }
+                ],
+                text: getPronounDisplay(formData.pronouns)
+              }
+            }
+          ]
+        });
+      }
+
+      // Add default template extension if it exists
+      if (formData.defaultTemplate) {
+        extensions.push({
+          url: 'http://example.com/fhir/StructureDefinition/default-template',
+          valueString: formData.defaultTemplate
+        });
+      }
+
       const updatedPatient = await medplum.updateResource({
         ...currentPatient,
         name: [
@@ -75,26 +110,7 @@ export function usePatientInfo(patient: Patient): UsePatientInfoResult {
           { system: 'email', value: formData.email }
         ],
         birthDate: formData.birthDate,
-        extension: formData.pronouns ? [
-          {
-            url: 'http://hl7.org/fhir/StructureDefinition/individual-pronouns',
-            extension: [
-              {
-                url: 'value',
-                valueCodeableConcept: {
-                  coding: [
-                    {
-                      system: 'http://terminology.hl7.org/ValueSet/pronouns',
-                      code: formData.pronouns,
-                      display: getPronounDisplay(formData.pronouns)
-                    }
-                  ],
-                  text: getPronounDisplay(formData.pronouns)
-                }
-              }
-            ]
-          }
-        ] : []
+        extension: extensions
       });
 
       notifications.show({

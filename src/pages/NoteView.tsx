@@ -1,19 +1,30 @@
 import { Composition, Patient } from '@medplum/fhirtypes';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { Box, Container, Text, Title, Textarea, Button, Group, Drawer, Paper, Stack, Divider, Collapse, Tooltip, ActionIcon, Radio } from '@mantine/core';
-import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconLock, IconRefresh } from '@tabler/icons-react';
+import { Box, Container, Text, Title, Textarea, Button, Group, Drawer, Paper, Stack, Divider, Collapse, Tooltip, ActionIcon, Radio, Loader, Badge, Anchor } from '@mantine/core';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { IconWand, IconCopy, IconCheck, IconEdit, IconBook, IconLock, IconRefresh, IconCalendar } from '@tabler/icons-react';
 import { MantineTheme } from '@mantine/core';
 import { showNotification } from '@mantine/notifications';
 import { MagicEditModal } from '../components/notes/MagicEditModal';
+import { useDisclosure } from '@mantine/hooks';
+import { format } from 'date-fns';
+
+// Autosave debounce time in milliseconds
+const AUTOSAVE_DELAY = 2000;
+
+// Add at the top with other constants
+const TRANSCRIPT_TITLES = ['transcript', 'session transcript', 'audio transcript', 'recording transcript'];
 
 export function NoteView(): JSX.Element {
   const { id } = useParams();
+  const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [composition, setComposition] = useState<Composition>();
   const [error, setError] = useState<string>();
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [editedSections, setEditedSections] = useState<{ [key: string]: string }>({});
   const [modifiedSections, setModifiedSections] = useState<Set<string>>(new Set());
   const [sectionTimestamps, setSectionTimestamps] = useState<{ [key: string]: string }>({});
@@ -27,33 +38,47 @@ export function NoteView(): JSX.Element {
   const [selectedQuotes, setSelectedQuotes] = useState<string | undefined>(undefined);
   const [selectedLength, setSelectedLength] = useState<string | undefined>(undefined);
 
-  useEffect(() => {
-    if (id) {
-      medplum.readResource('Composition', id)
-        .then(comp => {
-          const authorRef = comp.author?.[0]?.reference;
-          const profileRef = `Practitioner/${profile?.id}`;
-          
-          if (authorRef === profileRef) {
-            setComposition(comp);
-            if (comp.subject) {
-              medplum.readReference(comp.subject).then(pat => setPatient(pat as Patient));
-            }
-            const sections: { [key: string]: string } = {};
-            const timestamps: { [key: string]: string } = {};
-            comp.section?.forEach((section) => {
-              sections[section.title || ''] = section.text?.div?.replace(/<[^>]*>/g, '') || '';
-              timestamps[section.title || ''] = comp.date || new Date().toISOString();
-            });
-            setEditedSections(sections);
-            setSectionTimestamps(timestamps);
-          } else {
-            setError('You do not have permission to view this composition');
-          }
-        })
-        .catch(err => setError('Error loading composition'));
+  // Autosave timer
+  const [autosaveTimer, setAutosaveTimer] = useState<NodeJS.Timeout>();
+
+  const loadComposition = useCallback(async () => {
+    if (!id) return;
+    
+    try {
+      setIsLoading(true);
+      const comp = await medplum.readResource('Composition', id);
+      
+      const authorRef = comp.author?.[0]?.reference;
+      const profileRef = `Practitioner/${profile?.id}`;
+      
+      if (authorRef === profileRef) {
+        setComposition(comp);
+        if (comp.subject) {
+          const pat = await medplum.readReference(comp.subject);
+          setPatient(pat as Patient);
+        }
+        
+        const sections: { [key: string]: string } = {};
+        const timestamps: { [key: string]: string } = {};
+        comp.section?.forEach((section) => {
+          sections[section.title || ''] = section.text?.div?.replace(/<[^>]*>/g, '') || '';
+          timestamps[section.title || ''] = comp.date || new Date().toISOString();
+        });
+        setEditedSections(sections);
+        setSectionTimestamps(timestamps);
+      } else {
+        setError('You do not have permission to view this composition');
+      }
+    } catch (err) {
+      setError('Error loading composition. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
   }, [medplum, id, profile]);
+
+  useEffect(() => {
+    loadComposition();
+  }, [loadComposition]);
 
   const handleSignNote = async () => {
     if (!composition) return;
@@ -74,8 +99,19 @@ export function NoteView(): JSX.Element {
     try {
       const result = await medplum.updateResource(updatedComposition);
       setComposition(result as Composition);
+      showNotification({
+        title: 'Note Signed',
+        message: 'The note has been signed and finalized',
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
     } catch (err) {
       setError('Error signing note');
+      showNotification({
+        title: 'Error',
+        message: 'Failed to sign note',
+        color: 'red'
+      });
     }
   };
   
@@ -121,7 +157,7 @@ export function NoteView(): JSX.Element {
     setTimeout(() => setJustCopied(''), 2000);
   };
 
-  const handleTextChange = (sectionTitle: string, newText: string) => {
+  const handleTextChange = useCallback((sectionTitle: string, newText: string) => {
     setEditedSections(prev => ({
       ...prev,
       [sectionTitle]: newText
@@ -131,7 +167,19 @@ export function NoteView(): JSX.Element {
       next.add(sectionTitle);
       return next;
     });
-  };
+
+    // Clear existing timer
+    if (autosaveTimer) {
+      clearTimeout(autosaveTimer);
+    }
+
+    // Set new autosave timer
+    const timer = setTimeout(() => {
+      handleSaveSection(sectionTitle);
+    }, AUTOSAVE_DELAY);
+
+    setAutosaveTimer(timer);
+  }, [autosaveTimer]);
 
   const handleRegenerate = async () => {
     if (!composition || !editedSections['Transcript']) return;
@@ -214,6 +262,26 @@ Return the note as a JSON object with this exact format:
     }
   };
 
+  // Add a function to handle patient click
+  const handlePatientClick = () => {
+    if (patient?.id) {
+      navigate(`/patient/${patient.id}`);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Container size="md" mt="xl">
+        <Paper p="xl" radius="md" withBorder>
+          <Stack align="center" gap="md">
+            <Loader size="lg" />
+            <Text>Loading note...</Text>
+          </Stack>
+        </Paper>
+      </Container>
+    );
+  }
+
   if (error) {
     return (
       <Container size="md" mt="xl">
@@ -226,7 +294,16 @@ Return the note as a JSON object with this exact format:
             borderColor: theme.colors.red[3]
           })}
         >
-          <Title order={2} c="red">{error}</Title>
+          <Stack gap="md">
+            <Title order={2} c="red">{error}</Title>
+            <Button 
+              variant="light" 
+              color="blue" 
+              onClick={loadComposition}
+            >
+              Retry Loading
+            </Button>
+          </Stack>
         </Paper>
       </Container>
     );
@@ -235,162 +312,369 @@ Return the note as a JSON object with this exact format:
   return (
     <Container size="md" mt="xl">
       <Stack gap="lg">
-        <Paper p="xl" radius="md" withBorder>
-          <Box mb="md">
-            <Title order={2} c="blue.8">Clinical Notes</Title>
-            <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
-              Therapeutic Progress Documentation
-            </Text>
-          </Box>
-          
+        <Paper 
+          p="md" 
+          radius="md" 
+          withBorder
+          style={{
+            borderTop: '3px solid var(--mantine-color-blue-4)',
+            backgroundColor: 'var(--mantine-color-gray-0)'
+          }}
+        >
           <Stack gap="md">
-            {error && (
-              <Text c="red.6">{error}</Text>
-            )}
-            
-            <Stack gap="md">
-              {composition?.section?.map((section, index) => {
-                const sectionTitle = section.title || '';
-                const sectionText = editedSections[sectionTitle] || '';
-                const isModified = modifiedSections.has(sectionTitle);
-                const isTranscript = sectionTitle === 'Transcript';
-                
-                if (isTranscript && !isTranscriptVisible) {
-                  return (
-                    <Text
-                      key={index}
-                      size="lg"
-                      fw={500}
-                      mb="lg"
-                      style={{ cursor: 'pointer' }}
-                      onClick={() => setIsTranscriptVisible(true)}
+            {patient && (
+              <Group justify="space-between">
+                <Group gap="md">
+                  <Group gap="xs">
+                    <Title 
+                      order={2} 
+                      style={{
+                        fontFamily: 'var(--mantine-font-family)',
+                        color: 'var(--mantine-color-blue-9)',
+                        letterSpacing: '-0.3px'
+                      }}
                     >
-                      Show Transcript
-                    </Text>
-                  );
-                }
-
-                if (isTranscript) {
-                  return (
-                    <Paper
-                      key={index}
-                      withBorder
-                      p="md"
-                      radius="md"
-                      mb="lg"
-                      bg="white"
-                    >
-                      <Group justify="space-between" mb="md">
-                        <Title order={3}>{sectionTitle}</Title>
-                        <Group gap="xs">
-                          <Button
-                            onClick={() => handleCopySection(sectionText, sectionTitle)}
-                            variant={justCopied === sectionTitle ? "filled" : "light"}
-                            color={justCopied === sectionTitle ? "teal" : "blue"}
-                            size="sm"
-                            leftSection={justCopied === sectionTitle ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                          >
-                            {justCopied === sectionTitle ? "Copied!" : "Copy"}
-                          </Button>
-                          <Button
-                            onClick={() => setIsTranscriptVisible(false)}
-                            variant="subtle"
-                            size="sm"
-                          >
-                            Hide Transcript
-                          </Button>
-                        </Group>
-                      </Group>
-
-                      <Textarea
-                        value={sectionText}
-                        readOnly
-                        minRows={5}
-                        autosize
-                        mt="md"
-                      />
-                    </Paper>
-                  );
-                }
-
-                return (
-                  <Paper
-                    key={index}
-                    withBorder
-                    p="md"
-                    radius="md"
-                    mb="lg"
-                    bg="white"
-                  >
-                    <Group justify="space-between" mb="md">
-                      <Title order={3}>{sectionTitle}</Title>
-                      <Group gap="xs">
-                        <Tooltip label="Magic Edit">
-                          <ActionIcon
-                            onClick={() => {
-                              setCurrentSection(sectionTitle);
-                              setShowMagicModal(true);
-                            }}
-                            variant="light"
-                            color="violet"
-                            size="lg"
-                            disabled={!!composition?.attester?.[0]}
-                          >
-                            <IconWand size={20} />
-                          </ActionIcon>
-                        </Tooltip>
-                        <Button
-                          onClick={() => handleCopySection(sectionText, sectionTitle)}
-                          variant={justCopied === sectionTitle ? "filled" : "light"}
-                          color={justCopied === sectionTitle ? "teal" : "blue"}
-                          size="sm"
-                          leftSection={justCopied === sectionTitle ? <IconCheck size={16} /> : <IconCopy size={16} />}
-                        >
-                          {justCopied === sectionTitle ? "Copied!" : "Copy"}
-                        </Button>
-                        {isModified && (
-                          <Button
-                            onClick={() => handleSaveSection(sectionTitle)}
-                            variant="light"
-                            color="red"
-                            size="sm"
-                            leftSection={<IconEdit size={16} />}
-                          >
-                            Save Changes
-                          </Button>
-                        )}
-                        {sectionTitle === 'Psychotherapy Note' && !composition?.attester?.[0] && (
-                          <Button
-                            onClick={handleRegenerate}
-                            color="blue"
-                            size="sm"
-                            leftSection={<IconRefresh size={16} />}
-                          >
-                            Regenerate Note
-                          </Button>
-                        )}
-                      </Group>
+                      <Anchor 
+                        onClick={handlePatientClick}
+                        style={{ 
+                          textDecoration: 'none',
+                          fontSize: 'inherit',
+                          fontWeight: 'inherit',
+                          color: 'inherit',
+                          '&:hover': {
+                            textDecoration: 'underline'
+                          }
+                        }}
+                      >
+                        {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family}
+                      </Anchor>
+                    </Title>
+                    <Badge size="lg" variant="light" color="blue">Patient</Badge>
+                  </Group>
+                  {composition?.date && (
+                    <Group gap="xs">
+                      <Divider orientation="vertical" />
+                      <Text 
+                        fw={500} 
+                        size="sm" 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 4,
+                          color: 'var(--mantine-color-blue-8)',
+                        }}
+                      >
+                        <IconCalendar size={14} style={{ strokeWidth: 2.5 }} />
+                        {format(new Date(composition.date), 'MMM d, yyyy')}
+                        <Text span size="xs" c="dimmed" ml={4}>
+                          {format(new Date(composition.date), 'h:mm a')}
+                        </Text>
+                      </Text>
                     </Group>
-
-                    <Text size="sm" c="dimmed" mb="md" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      Last modified: {new Date(sectionTimestamps[sectionTitle] || composition?.date || '').toLocaleString()}
-                      {composition?.attester?.[0] && <IconLock size={16} />}
-                    </Text>
-
-                    <Textarea
-                      value={sectionText}
-                      onChange={(e) => handleTextChange(sectionTitle, e.target.value)}
-                      minRows={5}
-                      autosize
-                      mt="md"
-                      readOnly={!!composition?.attester?.[0]}
-                    />
-                  </Paper>
-                );
-              })}
-            </Stack>
+                  )}
+                </Group>
+                {composition?.attester?.[0] ? (
+                  <Button
+                    onClick={handleUnlock}
+                    variant="light"
+                    color="orange"
+                    size="sm"
+                    leftSection={<IconLock size={16} style={{ strokeWidth: 2.5 }} />}
+                    styles={(theme) => ({
+                      root: {
+                        transition: 'all 200ms ease',
+                        '&:hover': {
+                          backgroundColor: theme.colors.orange[1],
+                          transform: 'translateY(-1px)'
+                        }
+                      }
+                    })}
+                  >
+                    Unlock Note
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={handleSignNote}
+                    variant="light"
+                    color="blue"
+                    size="sm"
+                    leftSection={<IconBook size={16} style={{ strokeWidth: 2.5 }} />}
+                    styles={(theme) => ({
+                      root: {
+                        transition: 'all 200ms ease',
+                        '&:hover': {
+                          backgroundColor: theme.colors.blue[1],
+                          transform: 'translateY(-1px)'
+                        }
+                      }
+                    })}
+                  >
+                    Sign Note
+                  </Button>
+                )}
+              </Group>
+            )}
+            <Divider />
+            <Group justify="space-between" align="center">
+              <Group gap="xs">
+                <Title 
+                  order={3} 
+                  style={{
+                    fontFamily: 'var(--mantine-font-family)',
+                    color: 'var(--mantine-color-blue-8)',
+                    letterSpacing: '-0.3px'
+                  }}
+                >
+                  {composition?.title || 'Untitled Note'}
+                </Title>
+                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {composition?.attester?.[0] ? (
+                    <>
+                      <IconLock size={14} style={{ strokeWidth: 2.5 }} />
+                      Locked on {format(new Date(composition.attester[0].time || ''), 'MMM d, h:mm a')}
+                    </>
+                  ) : (
+                    <>
+                      <IconEdit size={14} style={{ strokeWidth: 2.5 }} />
+                      Last modified {format(new Date(composition?.date || ''), 'MMM d, h:mm a')}
+                    </>
+                  )}
+                </Text>
+                <Badge 
+                  size="md"
+                  variant="light"
+                  color={composition?.attester?.[0] ? "gray" : "yellow"}
+                  leftSection={composition?.attester?.[0] ? 
+                    <IconLock size={12} style={{ strokeWidth: 2.5 }} /> : 
+                    <IconEdit size={12} style={{ strokeWidth: 2.5 }} />
+                  }
+                  styles={(theme) => ({
+                    root: {
+                      textTransform: 'none',
+                      fontWeight: 500
+                    }
+                  })}
+                >
+                  {composition?.attester?.[0] ? 'Signed' : 'Draft'}
+                </Badge>
+              </Group>
+            </Group>
           </Stack>
         </Paper>
+
+        <Stack gap="md">
+          {composition?.section?.map((section, index) => {
+            const sectionTitle = section.title || '';
+            const sectionText = editedSections[sectionTitle] || '';
+            const isModified = modifiedSections.has(sectionTitle);
+            const isTranscript = TRANSCRIPT_TITLES.some(title => 
+              sectionTitle.toLowerCase().includes(title)
+            );
+            
+            if (isTranscript && !isTranscriptVisible) {
+              return (
+                <Text
+                  key={index}
+                  size="lg"
+                  fw={500}
+                  mb="lg"
+                  style={{ cursor: 'pointer' }}
+                  onClick={() => setIsTranscriptVisible(true)}
+                >
+                  Show Transcript
+                </Text>
+              );
+            }
+
+            if (isTranscript) {
+              return (
+                <Paper
+                  key={index}
+                  withBorder
+                  p="md"
+                  radius="md"
+                  mb="lg"
+                  bg="white"
+                >
+                  <Group justify="space-between" mb="md">
+                    <Title order={3} c="blue.8">
+                      {sectionTitle}
+                    </Title>
+                    <Group gap="xs">
+                      <Button
+                        onClick={() => handleCopySection(sectionText, sectionTitle)}
+                        variant={justCopied === sectionTitle ? "filled" : "light"}
+                        color={justCopied === sectionTitle ? "teal" : "blue"}
+                        size="xs"
+                        leftSection={justCopied === sectionTitle ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                        styles={(theme) => ({
+                          root: {
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              transform: 'translateY(-1px)'
+                            }
+                          }
+                        })}
+                      >
+                        {justCopied === sectionTitle ? "Copied!" : "Copy"}
+                      </Button>
+                      <Button
+                        onClick={() => setIsTranscriptVisible(false)}
+                        variant="subtle"
+                        size="xs"
+                        styles={(theme) => ({
+                          root: {
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              transform: 'translateY(-1px)'
+                            }
+                          }
+                        })}
+                      >
+                        Hide Transcript
+                      </Button>
+                    </Group>
+                  </Group>
+
+                  <Textarea
+                    value={sectionText}
+                    readOnly
+                    minRows={5}
+                    autosize
+                    styles={{
+                      input: {
+                        '&:focus': {
+                          outline: 'none',
+                          border: '2px solid var(--mantine-color-blue-filled)',
+                          boxShadow: '0 0 0 3px var(--mantine-color-blue-light)'
+                        }
+                      }
+                    }}
+                  />
+                </Paper>
+              );
+            }
+
+            return (
+              <Paper
+                key={index}
+                withBorder
+                p="md"
+                radius="md"
+                mb="lg"
+                bg="white"
+              >
+                <Group justify="space-between" mb="md">
+                  <Title order={3} c="blue.8">
+                    {sectionTitle}
+                  </Title>
+                  <Group gap={8}>
+                    <Tooltip label="Magic Edit">
+                      <ActionIcon
+                        onClick={() => {
+                          setCurrentSection(sectionTitle);
+                          setShowMagicModal(true);
+                        }}
+                        variant="light"
+                        color="violet"
+                        size="sm"
+                        disabled={!!composition?.attester?.[0]}
+                        styles={(theme) => ({
+                          root: {
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              transform: 'translateY(-1px)',
+                              backgroundColor: theme.colors.violet[1]
+                            }
+                          }
+                        })}
+                      >
+                        <IconWand size={14} />
+                      </ActionIcon>
+                    </Tooltip>
+                    <Button
+                      onClick={() => handleCopySection(sectionText, sectionTitle)}
+                      variant={justCopied === sectionTitle ? "filled" : "light"}
+                      color={justCopied === sectionTitle ? "teal" : "blue"}
+                      size="xs"
+                      leftSection={justCopied === sectionTitle ? <IconCheck size={14} /> : <IconCopy size={14} />}
+                      styles={(theme) => ({
+                        root: {
+                          transition: 'all 200ms ease',
+                          '&:hover': {
+                            transform: 'translateY(-1px)'
+                          }
+                        }
+                      })}
+                    >
+                      {justCopied === sectionTitle ? "Copied!" : "Copy"}
+                    </Button>
+                    {isModified && (
+                      <Button
+                        onClick={() => handleSaveSection(sectionTitle)}
+                        variant="light"
+                        color="blue"
+                        size="xs"
+                        leftSection={<IconEdit size={14} />}
+                        styles={(theme) => ({
+                          root: {
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              transform: 'translateY(-1px)'
+                            }
+                          }
+                        })}
+                      >
+                        Save Changes
+                      </Button>
+                    )}
+                    {sectionTitle === 'Psychotherapy Note' && !composition?.attester?.[0] && (
+                      <Button
+                        onClick={handleRegenerate}
+                        variant="light"
+                        color="blue"
+                        size="xs"
+                        leftSection={<IconRefresh size={14} />}
+                        styles={(theme) => ({
+                          root: {
+                            transition: 'all 200ms ease',
+                            '&:hover': {
+                              transform: 'translateY(-1px)'
+                            }
+                          }
+                        })}
+                      >
+                        Regenerate Note
+                      </Button>
+                    )}
+                  </Group>
+                </Group>
+
+                <Text size="sm" c="dimmed" mb="md" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  Last modified: {new Date(sectionTimestamps[sectionTitle] || composition?.date || '').toLocaleString()}
+                  {composition?.attester?.[0] && <IconLock size={14} />}
+                </Text>
+
+                <Textarea
+                  value={sectionText}
+                  onChange={(e) => handleTextChange(sectionTitle, e.target.value)}
+                  minRows={5}
+                  autosize
+                  readOnly={!!composition?.attester?.[0]}
+                  styles={{
+                    input: {
+                      '&:focus': {
+                        outline: 'none',
+                        border: '2px solid var(--mantine-color-blue-filled)',
+                        boxShadow: '0 0 0 3px var(--mantine-color-blue-light)'
+                      }
+                    }
+                  }}
+                />
+              </Paper>
+            );
+          })}
+        </Stack>
 
         <MagicEditModal
           opened={showMagicModal}

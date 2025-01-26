@@ -26,7 +26,7 @@ export function useCompositions() {
         const results = await medplum.searchResources('Composition', {
           author: `Practitioner/${profile.id}`,
           _sort: '-date',
-          _count: 100
+          _count: 15
         });
         
         if (mounted) {

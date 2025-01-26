@@ -87,9 +87,8 @@ export function usePatientNotes(patient: Patient): UsePatientNotesResult {
         const composition = entry.resource as Composition;
         const noteType = getDefaultNoteType(composition);
 
-        // Filter out transcript sections and process remaining sections
+        // Process all sections including transcripts
         const sections = (composition.section || [])
-          .filter(section => section.title?.toLowerCase() !== 'transcript')
           .map(section => {
             let content = '';
             if (section.text?.div) {

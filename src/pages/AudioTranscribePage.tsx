@@ -23,6 +23,9 @@ interface AudioTranscribePageProps {
 export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }: AudioTranscribePageProps): JSX.Element {
   const medplum = useMedplum();
   const { templates } = useTemplates();
+  const location = useLocation();
+  const navigate = useNavigate();
+  
   const [isRecording, setIsRecording] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [transcript, setTranscript] = useState<string>('');
@@ -33,14 +36,26 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   const [isPaused, setIsPaused] = useState(false);
   const [isBlinking, setIsBlinking] = useState(false);
   const [savedComposition, setSavedComposition] = useState<Composition>();
-  const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(
-    useLocation().state?.selectedPatient
-  );
-  const navigate = useNavigate();
-  const [isTelehealth, setIsTelehealth] = useState(true);
-  const [selectedTemplate, setSelectedTemplate] = useState<NoteTemplate | undefined>();
+  const [selectedPatient, setSelectedPatient] = useState<Patient | undefined>(undefined);
+  const [isTelehealth, setIsTelehealth] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<NoteTemplate | undefined>(undefined);
 
-  // Existing useEffect and function implementations remain exactly the same
+  // Set initial values from location state
+  useEffect(() => {
+    if (location.state?.selectedPatient) {
+      setSelectedPatient(location.state.selectedPatient);
+    }
+  }, [location.state]);
+
+  // Update selectedTemplate when templates load and we have a default template
+  useEffect(() => {
+    const defaultTemplateId = location.state?.defaultTemplate;
+    if (defaultTemplateId && templates.length > 0) {
+      const template = templates.find(t => t.id === defaultTemplateId);
+      setSelectedTemplate(template);
+    }
+  }, [location.state, templates]);
+
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording && !isPaused) {
@@ -182,7 +197,13 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
           reference: `Patient/${selectedPatient.id}`,
           display: getDisplayString(selectedPatient)
         },
-        section: []
+        section: [],
+        extension: selectedTemplate ? [
+          {
+            url: 'http://example.com/fhir/StructureDefinition/note-template',
+            valueString: selectedTemplate.id
+          }
+        ] : undefined
       };
 
       const savedComp = await medplum.createResource(initialComposition);
@@ -263,13 +284,16 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
         
         const updatedComposition: Composition = {
           ...savedComposition,
-          section: [{
-            title: 'Transcript',
-            text: {
-              status: 'generated' as const,
-              div: `<div xmlns="http://www.w3.org/1999/xhtml">${response.details.transcript}</div>`
+          section: [
+            ...(savedComposition.section || []),
+            {
+              title: 'Transcript',
+              text: {
+                status: 'generated' as const,
+                div: `<div xmlns="http://www.w3.org/1999/xhtml">${response.details.transcript}</div>`
+              }
             }
-          }]
+          ]
         };
 
         const updated = await medplum.updateResource(updatedComposition);
@@ -425,7 +449,7 @@ Important Documentation Requirements:
 
 Style and Format Preferences:
 - When referring to the person being supported, use "${referencePreference === 'name' ? 'their name' : referencePreference}"
-- ${quotePreference === 'include' ? 'Include relevant quotes from the session when appropriate to support clinical observations' : 'Do not include direct quotes from the session'}
+- ${quotePreference === 'include' ? 'Organically and seamlessly include brief relevant quotes from the session when appropriate to support clinical observations' : 'Do not include direct quotes from the session'}
 - Use specific, behavioral descriptions rather than general statements
 - Include clinical reasoning for interventions and recommendations
 - Please use the following sample note as a reference for the exact format we will be using for the note:
@@ -540,7 +564,6 @@ ${transcript}`;
         // Create the updated composition
         const updatedComposition = {
           ...savedComposition,
-          status: 'final' as const,
           extension: [
             ...(savedComposition.extension || []),
             {
@@ -554,7 +577,7 @@ ${transcript}`;
             ...compositionSections,
             // Add transcript section at the end
             {
-              title: 'Session Transcript',
+              title: 'Transcript',
               text: {
                 status: 'generated' as const,
                 div: `<div xmlns="http://www.w3.org/1999/xhtml"><p>${transcript}</p></div>`
@@ -664,34 +687,6 @@ ${transcript}`;
                     }}
                     style={{ maxWidth: '400px' }}
                   />
-                  {selectedTemplate && (
-                    <Paper p="sm" withBorder style={{ maxWidth: '800px' }}>
-                      <Stack gap="xs">
-                        <Text size="sm" fw={500} c="dimmed">Template Sample Format:</Text>
-                        <Box style={{ 
-                          backgroundColor: 'var(--mantine-color-gray-0)', 
-                          padding: 'var(--mantine-spacing-xs)',
-                          borderRadius: 'var(--mantine-radius-sm)',
-                          border: '1px solid var(--mantine-color-gray-3)'
-                        }}>
-                          {selectedTemplate.sections.map((section, index) => (
-                            <Box key={index} mb={index < selectedTemplate.sections.length - 1 ? 'md' : 0}>
-                              <Text size="sm" fw={600} c="blue.8" mb={6}>{section.title}</Text>
-                              {section.sampleContent ? (
-                                <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                                  {section.sampleContent}
-                                </Text>
-                              ) : (
-                                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
-                                  This section will be generated based on the session transcript
-                                </Text>
-                              )}
-                            </Box>
-                          ))}
-                        </Box>
-                      </Stack>
-                    </Paper>
-                  )}
                 </Stack>
               )}
             </Stack>

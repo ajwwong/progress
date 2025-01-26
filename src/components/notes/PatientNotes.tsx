@@ -1,26 +1,31 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, useCallback } from 'react';
 import { Paper, Stack, Group, Text, Button, Badge, ActionIcon, Menu, Loader, Box, Tooltip, Textarea, Title } from '@mantine/core';
-import { IconPlus, IconDots, IconTrash, IconCheck, IconWand, IconCopy, IconEdit, IconEye, IconCalendar } from '@tabler/icons-react';
-import { Patient } from '@medplum/fhirtypes';
-import { usePatientNotes } from '../../hooks/usePatientNotes';
+import { IconPlus, IconDots, IconTrash, IconCheck, IconWand, IconCopy, IconEdit, IconEye, IconCalendar, IconLock, IconBook } from '@tabler/icons-react';
+import { Patient, Composition } from '@medplum/fhirtypes';
+import { usePatientNotes, Note, NoteSection } from '../../hooks/usePatientNotes';
 import { notifications } from '@mantine/notifications';
-import { useMedplum } from '@medplum/react';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
 import { MagicEditModal } from './MagicEditModal';
+import { usePatientInfo } from '../../hooks/usePatientInfo';
 
 interface PatientNotesProps {
   patient: Patient;
 }
 
-const getSectionStyle = (theme: any) => ({
+const getSectionStyle = (theme: any): { borderLeft: string; paddingLeft: string | number } => ({
   borderLeft: `3px solid ${theme.colors.blue[3]}`,
   paddingLeft: theme.spacing.md
 });
 
+const AUTOSAVE_DELAY = 2000;
+
 export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const { notes, isLoading, error, createNote, updateNote, deleteNote } = usePatientNotes(patient);
+  const { formData: patientInfo } = usePatientInfo(patient);
   const [editedSections, setEditedSections] = useState<{ [key: string]: string }>({});
   const [modifiedSections, setModifiedSections] = useState<Set<string>>(new Set());
   const [expandedNotes, setExpandedNotes] = useState<Set<string>>(new Set());
@@ -30,11 +35,27 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
   const [showMagicModal, setShowMagicModal] = useState(false);
   const [editingSection, setEditingSection] = useState<{noteId: string, sectionTitle: string} | null>(null);
   const [contentHeights, setContentHeights] = useState<{ [key: string]: number }>({});
+  const [hiddenTranscripts, setHiddenTranscripts] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
+  const [autosaveTimer, setAutosaveTimer] = useState<NodeJS.Timeout>();
+  const [currentEditingNote, setCurrentEditingNote] = useState<string | null>(null);
   
   // Add a ref to store the current note content
-  const notesRef = useRef(notes);
+  const notesRef = useRef<Note[]>(notes);
   notesRef.current = notes;
+
+  // Initialize transcripts as hidden when notes load
+  useEffect(() => {
+    if (notes.length > 0) {
+      const notesWithTranscripts = notes.filter(note => 
+        note.sections?.some(section => 
+          section.title.toLowerCase().includes('transcript')
+        )
+      );
+      
+      setHiddenTranscripts(new Set(notesWithTranscripts.map(note => note.id)));
+    }
+  }, [notes]);
 
   // Group notes by year - memoize this computation
   const notesByYear = useMemo(() => 
@@ -47,7 +68,7 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
         }
         acc[year].push(note);
         return acc;
-      }, {} as { [key: number]: typeof notes })
+      }, {} as { [key: number]: Note[] })
   , [notes]);
 
   // Sort years in descending order - memoize this computation
@@ -57,7 +78,7 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
       .sort((a, b) => b - a)
   , [notesByYear]);
 
-  const handleTextChange = (sectionTitle: string, newText: string) => {
+  const handleTextChange = useCallback((noteId: string, sectionTitle: string, newText: string) => {
     setEditedSections(prev => ({
       ...prev,
       [sectionTitle]: newText
@@ -67,7 +88,18 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
       next.add(sectionTitle);
       return next;
     });
-  };
+
+    setCurrentEditingNote(noteId);
+  }, []);
+
+  // Remove autosave-related code
+  useEffect(() => {
+    return () => {
+      if (autosaveTimer) {
+        clearTimeout(autosaveTimer);
+      }
+    };
+  }, [autosaveTimer]);
 
   const handleSaveSection = async (noteId: string, sectionTitle: string) => {
     try {
@@ -127,7 +159,83 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
   };
 
   const handleStartRecording = () => {
-    navigate('/audio', { state: { selectedPatient: patient } });
+    navigate('/audio', { 
+      state: { 
+        selectedPatient: patient,
+        defaultTemplate: patientInfo.defaultTemplate 
+      } 
+    });
+  };
+
+  const handleSignNote = async (note: Note) => {
+    try {
+      // First read the current composition
+      const composition = await medplum.readResource('Composition', note.id);
+      
+      // Update the composition with new status and attester
+      const updatedComposition: Composition = {
+        ...composition,
+        status: 'final',
+        attester: [{
+          mode: 'legal',
+          time: new Date().toISOString(),
+          party: {
+            reference: `Practitioner/${profile?.id}`
+          }
+        }]
+      };
+
+      // Update the composition
+      await medplum.updateResource(updatedComposition);
+      
+      // Update the local note state
+      await updateNote(note.id, { status: 'final' });
+
+      notifications.show({
+        title: 'Note Signed',
+        message: 'The note has been signed and finalized',
+        color: 'green',
+        icon: <IconCheck size={16} />
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to sign note',
+        color: 'red'
+      });
+    }
+  };
+
+  const handleUnlock = async (note: Note) => {
+    try {
+      // First read the current composition
+      const composition = await medplum.readResource('Composition', note.id);
+      
+      // Update the composition with new status and remove attester
+      const updatedComposition: Composition = {
+        ...composition,
+        status: 'preliminary',
+        attester: undefined
+      };
+
+      // Update the composition
+      await medplum.updateResource(updatedComposition);
+      
+      // Update the local note state
+      await updateNote(note.id, { status: 'preliminary' });
+
+      notifications.show({
+        title: 'Note Unlocked',
+        message: 'The note has been unlocked for editing',
+        color: 'blue'
+      });
+    } catch (error) {
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to unlock note',
+        color: 'red'
+      });
+    }
   };
 
   if (isLoading) {
@@ -242,7 +350,12 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                       p="md" 
                       radius="md"
                       style={{ cursor: 'pointer' }}
-                      onClick={() => {
+                      onClick={(e) => {
+                        // Don't collapse if text is being selected
+                        if (window.getSelection()?.toString()) {
+                          return;
+                        }
+                        
                         setExpandedNotes(prev => {
                           const next = new Set(prev);
                           if (next.has(note.id)) {
@@ -278,11 +391,29 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                             <Text fw={600} size="md" c="dimmed">
                               {note.title || 'Untitled Note'}
                             </Text>
-                            <Tooltip label="Edit Note">
+                            <Badge 
+                              size="md"
+                              variant="light"
+                              color={note.status === 'final' ? "gray" : "yellow"}
+                              leftSection={note.status === 'final' ? 
+                                <IconLock size={12} style={{ strokeWidth: 2.5 }} /> : 
+                                <IconEdit size={12} style={{ strokeWidth: 2.5 }} />
+                              }
+                              styles={(theme) => ({
+                                root: {
+                                  textTransform: 'none',
+                                  fontWeight: 500
+                                }
+                              })}
+                            >
+                              {note.status === 'final' ? 'Signed' : 'Draft'}
+                            </Badge>
+                            <Tooltip label={note.status === 'final' ? "Note is locked" : "Edit Note"}>
                               <ActionIcon
                                 size="sm"
                                 variant="light"
                                 color="blue"
+                                disabled={note.status === 'final'}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (editModeNotes === note.id) {
@@ -299,11 +430,65 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                                     });
                                   }
                                 }}
+                                styles={(theme) => ({
+                                  root: {
+                                    '&[data-disabled]': {
+                                      backgroundColor: theme.colors.gray[1],
+                                      color: theme.colors.gray[5],
+                                      cursor: 'not-allowed'
+                                    }
+                                  }
+                                })}
                               >
                                 <IconEdit size={14} />
                               </ActionIcon>
                             </Tooltip>
                           </Group>
+                          {note.status === 'final' ? (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleUnlock(note);
+                              }}
+                              variant="subtle"
+                              color="gray"
+                              size="xs"
+                              leftSection={<IconLock size={14} style={{ strokeWidth: 2 }} />}
+                              styles={(theme) => ({
+                                root: {
+                                  transition: 'all 200ms ease',
+                                  '&:hover': {
+                                    backgroundColor: theme.colors.gray[1],
+                                    transform: 'translateY(-1px)'
+                                  }
+                                }
+                              })}
+                            >
+                              Unlock
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSignNote(note);
+                              }}
+                              variant="subtle"
+                              color="blue"
+                              size="xs"
+                              leftSection={<IconBook size={14} style={{ strokeWidth: 2 }} />}
+                              styles={(theme) => ({
+                                root: {
+                                  transition: 'all 200ms ease',
+                                  '&:hover': {
+                                    backgroundColor: theme.colors.blue[0],
+                                    transform: 'translateY(-1px)'
+                                  }
+                                }
+                              })}
+                            >
+                              Sign
+                            </Button>
+                          )}
                         </Group>
                         <Box>
                           <div style={{
@@ -319,125 +504,216 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                               <Stack gap="md">
                                 {note.sections
                                   .filter(section => section.content?.trim())
-                                  .map((section, index) => (
-                                    <Box key={index}>
-                                      <Group justify="apart" mb={6}>
-                                        <Text fw={500} size="sm" c="blue.7">
-                                          {section.title}
+                                  .map((section, index) => {
+                                    const isTranscript = section.title.toLowerCase().includes('transcript');
+                                    const isTranscriptHidden = hiddenTranscripts.has(note.id);
+
+                                    // Handle transcript visibility
+                                    if (isTranscript && isTranscriptHidden) {
+                                      return (
+                                        <Text
+                                          key={index}
+                                          size="sm"
+                                          fw={500}
+                                          c="blue"
+                                          style={{ cursor: 'pointer' }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setHiddenTranscripts(prev => {
+                                              const next = new Set(prev);
+                                              next.delete(note.id);
+                                              return next;
+                                            });
+                                          }}
+                                        >
+                                          Show Transcript
                                         </Text>
-                                        <Group gap={8}>
-                                          {section.title !== 'Transcript' && (
-                                            <Tooltip label="Magic Edit">
-                                              <ActionIcon
+                                      );
+                                    }
+
+                                    return (
+                                      <Box key={index}>
+                                        <Group justify="apart" mb={6}>
+                                          <Text fw={500} size="sm" c="blue.7">
+                                            {section.title}
+                                          </Text>
+                                          <Group gap={8}>
+                                            {section.title !== 'Transcript' && (
+                                              <Tooltip label="Magic Edit">
+                                                <ActionIcon
+                                                  onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setEditingSection({ noteId: note.id || '', sectionTitle: section.title });
+                                                    setShowMagicModal(true);
+                                                  }}
+                                                  variant="light"
+                                                  color="blue"
+                                                  size="sm"
+                                                >
+                                                  <IconWand size={14} />
+                                                </ActionIcon>
+                                              </Tooltip>
+                                            )}
+                                            <Button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                modifiedSections.has(section.title) 
+                                                  ? handleSaveSection(note.id, section.title)
+                                                  : handleCopySection(section.content, section.title);
+                                              }}
+                                              variant={modifiedSections.has(section.title) ? "filled" : "light"}
+                                              color={modifiedSections.has(section.title) ? "blue" : justCopied === section.title ? "teal" : "blue"}
+                                              size="xs"
+                                              leftSection={
+                                                modifiedSections.has(section.title) 
+                                                  ? <IconCheck size={14} /> 
+                                                  : justCopied === section.title 
+                                                    ? <IconCheck size={14} /> 
+                                                    : <IconCopy size={14} />
+                                              }
+                                            >
+                                              {modifiedSections.has(section.title) 
+                                                ? 'Save Changes' 
+                                                : justCopied === section.title 
+                                                  ? 'Copied!' 
+                                                  : 'Copy Text'}
+                                            </Button>
+                                            {isTranscript && (
+                                              <Button
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  setEditingSection({ noteId: note.id || '', sectionTitle: section.title });
-                                                  setShowMagicModal(true);
+                                                  setHiddenTranscripts(prev => {
+                                                    const next = new Set(prev);
+                                                    next.add(note.id);
+                                                    return next;
+                                                  });
                                                 }}
-                                                variant="light"
-                                                color="blue"
-                                                size="sm"
+                                                variant="subtle"
+                                                size="xs"
                                               >
-                                                <IconWand size={14} />
-                                              </ActionIcon>
-                                            </Tooltip>
-                                          )}
-                                          <Button
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              modifiedSections.has(section.title) 
-                                                ? handleSaveSection(note.id, section.title)
-                                                : handleCopySection(section.content, section.title);
-                                            }}
-                                            variant={modifiedSections.has(section.title) ? "filled" : "light"}
-                                            color={modifiedSections.has(section.title) ? "blue" : justCopied === section.title ? "teal" : "blue"}
-                                            size="xs"
-                                            leftSection={
-                                              modifiedSections.has(section.title) 
-                                                ? <IconCheck size={14} /> 
-                                                : justCopied === section.title 
-                                                  ? <IconCheck size={14} /> 
-                                                  : <IconCopy size={14} />
-                                            }
-                                          >
-                                            {modifiedSections.has(section.title) 
-                                              ? 'Save Changes' 
-                                              : justCopied === section.title 
-                                                ? 'Copied!' 
-                                                : 'Copy Text'}
-                                          </Button>
+                                                Hide Transcript
+                                              </Button>
+                                            )}
+                                          </Group>
                                         </Group>
-                                      </Group>
-                                      <Textarea
-                                        value={editedSections[section.title] || section.content}
-                                        onChange={(e) => handleTextChange(section.title, e.currentTarget.value)}
-                                        minRows={3}
-                                        autosize
-                                        onClick={(e) => e.stopPropagation()}
-                                        styles={(theme) => ({
-                                          root: {
-                                            // Ensure the textarea container doesn't interfere with hover effects
-                                            '&:hover .mantine-Textarea-input': {
-                                              borderColor: theme.colors.blue[4],
-                                              boxShadow: `0 0 0 1px ${theme.colors.blue[1]}`,
-                                              backgroundColor: theme.colors.gray[0],
-                                            }
-                                          },
-                                          input: {
-                                            backgroundColor: theme.white,
-                                            border: `1px solid ${theme.colors.gray[2]}`,
-                                            transition: 'all 200ms ease',
-                                            '&:hover': {
-                                              borderColor: theme.colors.blue[4],
-                                              boxShadow: `0 0 0 1px ${theme.colors.blue[1]}`,
-                                              backgroundColor: theme.colors.gray[0],
+                                        <Textarea
+                                          value={editedSections[section.title] || section.content}
+                                          onChange={(e) => handleTextChange(note.id, section.title, e.target.value)}
+                                          minRows={3}
+                                          autosize
+                                          readOnly={!editModeNotes}
+                                          onClick={(e) => e.stopPropagation()}
+                                          styles={(theme) => ({
+                                            root: {
+                                              // Ensure the textarea container doesn't interfere with hover effects
+                                              '&:hover .mantine-Textarea-input': {
+                                                borderColor: theme.colors.blue[4],
+                                                boxShadow: `0 0 0 1px ${theme.colors.blue[1]}`,
+                                                backgroundColor: theme.colors.gray[0],
+                                              }
                                             },
-                                            '&:focus': {
-                                              borderColor: theme.colors.blue[5],
-                                              boxShadow: `0 0 0 2px ${theme.colors.blue[1]}`,
+                                            input: {
                                               backgroundColor: theme.white,
+                                              border: `1px solid ${theme.colors.gray[2]}`,
+                                              transition: 'all 200ms ease',
+                                              '&:hover': {
+                                                borderColor: theme.colors.blue[4],
+                                                boxShadow: `0 0 0 1px ${theme.colors.blue[1]}`,
+                                                backgroundColor: theme.colors.gray[0],
+                                              },
+                                              '&:focus': {
+                                                borderColor: theme.colors.blue[5],
+                                                boxShadow: `0 0 0 2px ${theme.colors.blue[1]}`,
+                                                backgroundColor: theme.white,
+                                              },
+                                              '&:focus-within': {
+                                                borderColor: theme.colors.blue[5],
+                                                boxShadow: `0 0 0 2px ${theme.colors.blue[1]}`,
+                                                backgroundColor: theme.white,
+                                              }
                                             },
-                                            '&:focus-within': {
-                                              borderColor: theme.colors.blue[5],
-                                              boxShadow: `0 0 0 2px ${theme.colors.blue[1]}`,
-                                              backgroundColor: theme.white,
-                                            }
-                                          },
-                                        })}
-                                      />
-                                    </Box>
-                                  ))
+                                          })}
+                                        />
+                                      </Box>
+                                    );
+                                  })
                                 }
                               </Stack>
                             ) : (
                               <Stack gap="md">
                                 {note.sections
                                   .filter(section => section.content?.trim())
-                                  .map((section, index) => (
-                                    <Box key={index}>
-                                      <Text 
-                                        fw={500} 
-                                        size="sm" 
-                                        c="blue.7" 
-                                        mb={6}
-                                        style={{
-                                          borderBottom: '1px solid var(--mantine-color-blue-2)',
-                                          paddingBottom: '4px',
-                                        }}
-                                      >
-                                        {section.title}
-                                      </Text>
-                                      <Text 
-                                        size="sm" 
-                                        style={{ 
-                                          whiteSpace: 'pre-wrap',
-                                          lineHeight: 1.6
-                                        }}
-                                      >
-                                        {section.content}
-                                      </Text>
-                                    </Box>
-                                  ))
+                                  .map((section, index) => {
+                                    const isTranscript = section.title.toLowerCase().includes('transcript');
+                                    const isTranscriptHidden = hiddenTranscripts.has(note.id);
+
+                                    // Handle transcript visibility
+                                    if (isTranscript && isTranscriptHidden) {
+                                      return (
+                                        <Text
+                                          key={index}
+                                          size="sm"
+                                          fw={500}
+                                          c="blue"
+                                          style={{ cursor: 'pointer' }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            setHiddenTranscripts(prev => {
+                                              const next = new Set(prev);
+                                              next.delete(note.id);
+                                              return next;
+                                            });
+                                          }}
+                                        >
+                                          Show Transcript
+                                        </Text>
+                                      );
+                                    }
+
+                                    return (
+                                      <Box key={index}>
+                                        <Text 
+                                          fw={500} 
+                                          size="sm" 
+                                          c="blue.7" 
+                                          mb={6}
+                                          style={{
+                                            borderBottom: '1px solid var(--mantine-color-blue-2)',
+                                            paddingBottom: '4px',
+                                          }}
+                                        >
+                                          <Group justify="space-between" align="center">
+                                            {section.title}
+                                            {isTranscript && (
+                                              <Button
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setHiddenTranscripts(prev => {
+                                                    const next = new Set(prev);
+                                                    next.add(note.id);
+                                                    return next;
+                                                  });
+                                                }}
+                                                variant="subtle"
+                                                size="xs"
+                                              >
+                                                Hide Transcript
+                                              </Button>
+                                            )}
+                                          </Group>
+                                        </Text>
+                                        <Text 
+                                          size="sm" 
+                                          style={{ 
+                                            whiteSpace: 'pre-wrap',
+                                            lineHeight: 1.6
+                                          }}
+                                        >
+                                          {section.content}
+                                        </Text>
+                                      </Box>
+                                    );
+                                  })
                                 }
                               </Stack>
                             )}
@@ -468,7 +744,7 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
         onClose={() => setShowMagicModal(false)}
         onEdit={(editedText) => {
           if (editingSection) {
-            handleTextChange(editingSection.sectionTitle, editedText);
+            handleTextChange(editingSection.noteId, editingSection.sectionTitle, editedText);
           }
         }}
         currentContent={

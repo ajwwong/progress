@@ -3,6 +3,7 @@ import { IconEdit, IconCheck, IconX, IconPhone, IconMail, IconCalendar, IconTemp
 import { Patient } from '@medplum/fhirtypes';
 import { usePatientInfo } from '../../hooks/usePatientInfo';
 import { format } from 'date-fns';
+import { useTemplates } from '../templates/hooks/useTemplates';
 
 interface PatientInfoProps {
   patient: Patient;
@@ -18,12 +19,22 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
     saveChanges
   } = usePatientInfo(patient);
 
+  const { templates, loading } = useTemplates();
+
   const pronounOptions = [
     { value: 'he-him', label: 'He/Him' },
     { value: 'she-her', label: 'She/Her' },
     { value: 'they-them', label: 'They/Them' },
     { value: 'other', label: 'Other' }
   ];
+
+  // Convert templates to dropdown options
+  const templateOptions = templates
+    .filter(template => template.id) // Filter out templates without IDs
+    .map(template => ({
+      value: template.id!, // Non-null assertion since we filtered for templates with IDs
+      label: template.name || `Template ${template.id}`
+    }));
 
   if (isEditing) {
     return (
@@ -96,17 +107,16 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
               placeholder="Select default template"
               value={formData.defaultTemplate}
               onChange={(value) => updateField('defaultTemplate', value || '')}
-              data={[
-                { value: 'initial', label: 'Initial Assessment' },
-                { value: 'progress', label: 'Progress Note' },
-                { value: 'discharge', label: 'Discharge Summary' }
-              ]}
+              data={templateOptions}
             />
           </Box>
         </Stack>
       </Paper>
     );
   }
+
+  // Find the selected template name for display
+  const selectedTemplateName = templates.find(t => t.id === formData.defaultTemplate)?.name;
 
   return (
     <Paper withBorder p="xl">
@@ -163,11 +173,8 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
           <Text size="sm" fw={500} c="dimmed" mb={8}>Documentation Preferences</Text>
           <Group gap="xs" wrap="nowrap">
             <IconTemplate size={16} style={{ color: 'var(--mantine-color-gray-5)', flexShrink: 0 }} />
-            <Text size="sm" c={formData.defaultTemplate ? undefined : "dimmed"}>
-              {formData.defaultTemplate === 'initial' ? 'Initial Assessment' :
-               formData.defaultTemplate === 'progress' ? 'Progress Note' :
-               formData.defaultTemplate === 'discharge' ? 'Discharge Summary' :
-               'No default template'}
+            <Text size="sm" c={selectedTemplateName ? undefined : "dimmed"}>
+              {selectedTemplateName || 'No default template'}
             </Text>
           </Group>
         </Box>
