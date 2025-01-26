@@ -47,7 +47,39 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
     }
   }, [location.state]);
 
-  // Update selectedTemplate when templates load and we have a default template
+  // Load patient's default template when patient is selected or changes
+  useEffect(() => {
+    const loadDefaultTemplate = async () => {
+      console.log('Loading default template. Patient:', selectedPatient?.id);
+      console.log('Templates available:', templates.length);
+      
+      if (selectedPatient && selectedPatient.id && templates.length > 0) {
+        try {
+          // Get patient's documentation preferences
+          const patientResource = await medplum.readResource('Patient', selectedPatient.id);
+          console.log('Patient resource loaded:', patientResource);
+          
+          const defaultTemplateId = patientResource.extension?.find(
+            ext => ext.url === 'http://example.com/fhir/StructureDefinition/default-template'
+          )?.valueString;
+          
+          console.log('Found default template ID:', defaultTemplateId);
+
+          if (defaultTemplateId) {
+            const template = templates.find(t => t.id === defaultTemplateId);
+            console.log('Matching template found:', template?.name);
+            setSelectedTemplate(template);
+          }
+        } catch (err) {
+          console.error('Error loading patient default template:', err);
+        }
+      }
+    };
+
+    loadDefaultTemplate();
+  }, [selectedPatient, templates, medplum]);
+
+  // Update selectedTemplate when templates load and we have a default template from navigation
   useEffect(() => {
     const defaultTemplateId = location.state?.defaultTemplate;
     if (defaultTemplateId && templates.length > 0) {
@@ -666,12 +698,6 @@ ${transcript}`;
             <Stack gap="md">
               <PatientSelector 
                 onSelect={(patient: Patient) => setSelectedPatient(patient)}
-                onTemplateLoad={(templateId) => {
-                  if (templateId) {
-                    const template = templates.find(t => t.id === templateId);
-                    setSelectedTemplate(template);
-                  }
-                }}
                 initialPatient={selectedPatient}
                 context="audio"
               />

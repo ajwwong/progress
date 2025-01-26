@@ -1,10 +1,9 @@
-import { Paper, Stack, Group, Text, Button, TextInput, Select, ActionIcon, Box, Divider } from '@mantine/core';
+import { Paper, Stack, Group, Text, Button, TextInput, Select, ActionIcon, Box } from '@mantine/core';
 import { IconEdit, IconCheck, IconX, IconPhone, IconMail, IconCalendar, IconTemplate } from '@tabler/icons-react';
 import { Patient } from '@medplum/fhirtypes';
 import { usePatientInfo } from '../../hooks/usePatientInfo';
 import { format } from 'date-fns';
 import { useTemplates } from '../templates/hooks/useTemplates';
-import { DefaultTemplateSelector } from '../templates/components/DefaultTemplateSelector';
 
 interface PatientInfoProps {
   patient: Patient;
@@ -102,8 +101,15 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
             />
           </Group>
 
-          <Divider label="Documentation Preferences" labelPosition="center" />
-          <DefaultTemplateSelector patient={patient} />
+          <Box>
+            <Text size="sm" fw={500} c="dimmed" mb="xs">Documentation Preferences</Text>
+            <Select
+              placeholder="Select default template"
+              value={formData.defaultTemplate}
+              onChange={(value) => updateField('defaultTemplate', value || '')}
+              data={templateOptions}
+            />
+          </Box>
         </Stack>
       </Paper>
     );
@@ -114,11 +120,12 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
 
   return (
     <Paper withBorder p="xl">
-      <Stack gap="md">
-        <Group justify="space-between">
-          <Text fw={500} size="lg">Client Information</Text>
+      <Stack gap="lg">
+        <Group justify="space-between" mb="xs">
+          <Text fw={600} size="lg">Client Information</Text>
           <Button 
             variant="light" 
+            size="sm"
             leftSection={<IconEdit size={16} />}
             onClick={startEditing}
           >
@@ -126,44 +133,51 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
           </Button>
         </Group>
 
-        <Group>
-          <Text fw={500}>Name:</Text>
-          <Text>{formData.firstName} {formData.familyName}</Text>
-        </Group>
+        {/* Contact Information */}
+        <Box>
+          <Text size="sm" fw={500} c="dimmed" mb={8}>Contact Information</Text>
+          <Stack gap={8}>
+            <Group gap="xs" wrap="nowrap">
+              <IconPhone size={16} style={{ color: 'var(--mantine-color-gray-5)', flexShrink: 0 }} />
+              <Text size="sm" c={formData.phone ? undefined : "dimmed"} style={{ wordBreak: 'break-word' }}>
+                {formData.phone || 'No phone number'}
+              </Text>
+            </Group>
+            <Group gap="xs" wrap="nowrap">
+              <IconMail size={16} style={{ color: 'var(--mantine-color-gray-5)', flexShrink: 0 }} />
+              <Text size="sm" c={formData.email ? undefined : "dimmed"} style={{ wordBreak: 'break-word' }}>
+                {formData.email || 'No email address'}
+              </Text>
+            </Group>
+          </Stack>
+        </Box>
 
-        <Group>
-          <Text fw={500}>Phone:</Text>
-          <Group gap="xs">
-            <IconPhone size={16} />
-            <Text>{formData.phone || 'Not provided'}</Text>
-          </Group>
-        </Group>
+        {/* Demographics */}
+        <Box>
+          <Text size="sm" fw={500} c="dimmed" mb={8}>Demographics</Text>
+          <Stack gap={8}>
+            <Group gap="xs" wrap="nowrap">
+              <IconCalendar size={16} style={{ color: 'var(--mantine-color-gray-5)', flexShrink: 0 }} />
+              <Text size="sm" c={formData.birthDate ? undefined : "dimmed"}>
+                {formData.birthDate ? format(new Date(formData.birthDate), 'MMMM d, yyyy') : 'No birth date'}
+              </Text>
+            </Group>
+            <Text size="sm" c={formData.pronouns ? undefined : "dimmed"} ml={24}>
+              {pronounOptions.find(p => p.value === formData.pronouns)?.label || 'No pronouns specified'}
+            </Text>
+          </Stack>
+        </Box>
 
-        <Group>
-          <Text fw={500}>Email:</Text>
-          <Group gap="xs">
-            <IconMail size={16} />
-            <Text>{formData.email || 'Not provided'}</Text>
-          </Group>
-        </Group>
-
-        <Group>
-          <Text fw={500}>Date of Birth:</Text>
-          <Group gap="xs">
-            <IconCalendar size={16} />
-            <Text>
-              {formData.birthDate ? format(new Date(formData.birthDate), 'MMMM d, yyyy') : 'Not provided'}
+        {/* Documentation Preferences */}
+        <Box>
+          <Text size="sm" fw={500} c="dimmed" mb={8}>Documentation Preferences</Text>
+          <Group gap="xs" wrap="nowrap">
+            <IconTemplate size={16} style={{ color: 'var(--mantine-color-gray-5)', flexShrink: 0 }} />
+            <Text size="sm" c={selectedTemplateName ? undefined : "dimmed"}>
+              {selectedTemplateName || 'No default template'}
             </Text>
           </Group>
-        </Group>
-
-        <Group>
-          <Text fw={500}>Pronouns:</Text>
-          <Text>{formData.pronouns || 'Not specified'}</Text>
-        </Group>
-
-        <Divider label="Documentation Preferences" labelPosition="center" />
-        <DefaultTemplateSelector patient={patient} />
+        </Box>
       </Stack>
     </Paper>
   );
