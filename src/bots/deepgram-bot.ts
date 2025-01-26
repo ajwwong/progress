@@ -3,6 +3,16 @@ import { writeFileSync } from 'fs';
 import { Buffer } from 'node:buffer';
 import { createClient } from '@deepgram/sdk';
 
+interface AudioInput {
+  type: 'audio';
+  binaryId: string;
+}
+
+interface DeepgramError {
+  message: string;
+  stack?: string;
+}
+
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   try {
     // Get the API key from secrets
@@ -14,7 +24,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
     // Initialize Deepgram with the API key from secrets
     const deepgram = createClient(deepgramApiKey);
     
-    const input = event.input;
+    const input = event.input as AudioInput;
     
     if (input.type === 'audio' && input.binaryId) {
       console.log('Getting audio from Binary storage...');
@@ -54,10 +64,11 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       received: input
     };
   } catch (error) {
+    const err = error as DeepgramError;
     return {
       error: 'Failed to process',
-      details: error.message,
-      stack: error.stack
+      details: err.message,
+      stack: err.stack
     };
   }
-}
+} 

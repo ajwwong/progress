@@ -5,7 +5,8 @@ interface UseAudioRecordingReturn {
   isPaused: boolean;
   isBlinking: boolean;
   audioBlob: Blob | null;
-  startRecording: () => Promise<void>;
+  status: string;
+  startRecording: (isTelehealth: boolean) => Promise<void>;
   stopRecording: () => void;
   pauseRecording: () => void;
   resumeRecording: () => void;
@@ -18,6 +19,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
   const [isPaused, setIsPaused] = useState(false);
   const [isBlinking, setIsBlinking] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
+  const [status, setStatus] = useState('Ready');
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -31,10 +33,94 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     return () => clearInterval(interval);
   }, [isRecording, isPaused]);
 
-  const startRecording = async () => {
+  const startRecording = async (isTelehealth: boolean) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder.current = new MediaRecorder(stream);
+      setStatus('Starting recording...');
+      let audioStream: MediaStream;
+
+      if (isTelehealth) {
+        try {
+          // First get microphone audio
+          const micStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+
+          // Then try to get system audio
+          const displayStream = await navigator.mediaDevices.getDisplayMedia({
+            video: {
+              displaySurface: "browser"
+            },
+            audio: {
+              autoGainControl: false,
+              echoCancellation: false,
+              noiseSuppression: false,
+            }
+          });
+
+          // Create a new audio context
+          const audioContext = new AudioContext();
+
+          // Create sources for both streams
+          const micSource = audioContext.createMediaStreamSource(micStream);
+          const sysSource = audioContext.createMediaStreamSource(displayStream);
+
+          // Create a merger to combine both audio streams
+          const merger = audioContext.createChannelMerger(2);
+
+          // Connect both sources to the merger
+          micSource.connect(merger, 0, 0);
+          sysSource.connect(merger, 0, 1);
+
+          // Create a destination to get the combined stream
+          const dest = audioContext.createMediaStreamDestination();
+          merger.connect(dest);
+
+          // Create the final combined stream
+          audioStream = dest.stream;
+
+          // Clean up video tracks
+          displayStream.getVideoTracks().forEach(track => track.stop());
+
+          // Add cleanup function
+          const cleanup = () => {
+            audioContext.close();
+            displayStream.getTracks().forEach(track => track.stop());
+            micStream.getTracks().forEach(track => track.stop());
+          };
+
+          // Add cleanup to window unload
+          window.addEventListener('beforeunload', cleanup);
+
+        } catch (err) {
+          console.warn('Failed to capture system audio, falling back to microphone only:', err);
+          // Fallback to microphone only
+          audioStream = await navigator.mediaDevices.getUserMedia({
+            audio: {
+              echoCancellation: true,
+              noiseSuppression: true
+            }
+          });
+        }
+      } else {
+        // For in-person, just capture microphone with enhanced settings
+        audioStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            echoCancellation: true,
+            noiseSuppression: true
+          }
+        });
+      }
+
+      if (!audioStream || audioStream.getAudioTracks().length === 0) {
+        throw new Error('No audio input detected');
+      }
+
+      mediaRecorder.current = new MediaRecorder(audioStream, {
+        mimeType: 'audio/webm;codecs=opus'
+      });
       chunksRef.current = [];
 
       mediaRecorder.current.ondataavailable = (event) => {
@@ -46,12 +132,15 @@ export function useAudioRecording(): UseAudioRecordingReturn {
       mediaRecorder.current.onstop = async () => {
         const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
         setAudioBlob(blob);
+        setStatus('Recording saved');
       };
 
       mediaRecorder.current.start();
       setIsRecording(true);
+      setStatus('Recording...');
     } catch (err) {
       console.error('Error starting recording:', err);
+      setStatus('Error: Could not start recording');
       throw new Error('Could not start recording');
     }
   };
@@ -98,6 +187,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
       await audio.play();
     } catch (err) {
       console.error('Error playing audio:', err);
+      setStatus('Error: Could not play audio');
       throw new Error('Could not play audio');
     }
   };
@@ -107,6 +197,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     isPaused,
     isBlinking,
     audioBlob,
+    status,
     startRecording,
     stopRecording,
     pauseRecording,

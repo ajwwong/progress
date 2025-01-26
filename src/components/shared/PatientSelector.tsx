@@ -10,12 +10,14 @@ interface PatientSelectorProps {
   onSelect: (patient: Patient) => void;
   initialPatient?: Patient;
   context?: 'appointment' | 'audio' | 'notes';
+  disabled?: boolean;
 }
 
 export function PatientSelector({ 
   onSelect, 
   initialPatient,
-  context = 'appointment'
+  context = 'appointment',
+  disabled = false
 }: PatientSelectorProps) {
   const medplum = useMedplum();
   const [showNewForm, setShowNewForm] = useState(false);
@@ -87,14 +89,16 @@ export function PatientSelector({
 
   if (selectedPatient && !justCreated) {
     return (
-      <Paper p="sm" bg={context === 'audio' ? 'blue.1' : 'blue.0'}>
+      <Paper p="sm" bg={context === 'audio' ? 'blue.1' : 'blue.0'} style={{ opacity: disabled ? 0.6 : 1 }}>
         <Group>
           {getContextIcon()}
           <Stack gap={0}>
             <Text size="sm" fw={500}>{getContextText()}</Text>
             <Text size="sm">{getDisplayString(selectedPatient)}</Text>
             {context === 'audio' && (
-              <Text size="xs" c="dimmed">Ready to start recording</Text>
+              <Text size="xs" c="dimmed">
+                {disabled ? 'Recording in progress...' : 'Ready to start recording'}
+              </Text>
             )}
           </Stack>
         </Group>
@@ -126,6 +130,7 @@ export function PatientSelector({
             size="xs"
             leftSection={<IconPlus size={14} />}
             onClick={() => setShowNewForm(true)}
+            disabled={disabled}
           >
             New Patient
           </Button>
@@ -140,28 +145,28 @@ export function PatientSelector({
               value={firstName}
               onChange={(e) => setFirstName(e.currentTarget.value)}
               required
-              disabled={isSubmitting}
+              disabled={isSubmitting || disabled}
             />
             <TextInput
               label="Last Name"
               value={lastName}
               onChange={(e) => setLastName(e.currentTarget.value)}
               required
-              disabled={isSubmitting}
+              disabled={isSubmitting || disabled}
             />
           </Group>
           <Group justify="flex-end">
             <Button 
               variant="light" 
               onClick={() => setShowNewForm(false)}
-              disabled={isSubmitting}
+              disabled={isSubmitting || disabled}
             >
               Cancel
             </Button>
             <Button 
               onClick={handleCreatePatient}
               loading={isSubmitting}
-              disabled={!firstName.trim() || !lastName.trim()}
+              disabled={!firstName.trim() || !lastName.trim() || disabled}
             >
               Create Patient
             </Button>
@@ -195,6 +200,7 @@ export function PatientSelector({
           }}
           maxValues={1}
           required
+          disabled={disabled}
         />
       )}
     </Stack>

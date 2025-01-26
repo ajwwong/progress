@@ -1,10 +1,11 @@
-import { Box, Button, Group, Text, Stack, Paper } from '@mantine/core';
+import { Box, Button, Group, Text, Stack, Paper, Loader } from '@mantine/core';
 import { 
   IconPlayerRecord, 
   IconPlayerStop, 
   IconPlayerPlay, 
   IconFileText, 
-  IconNotes
+  IconNotes,
+  IconLoader
 } from '@tabler/icons-react';
 
 interface AudioControlsProps {
@@ -15,13 +16,15 @@ interface AudioControlsProps {
   hasAudioBlob: boolean;
   status: string;
   disabled?: boolean;
-  onStart: () => void;
-  onStop: () => void;
-  onPause: () => void;
-  onResume: () => void;
-  onCancel: () => void;
-  onPlay: () => void;
-  onTranscribe: () => void;
+  isTranscribing: boolean;
+  isGeneratingNote: boolean;
+  onStartRecording: () => void;
+  onStopRecording: () => void;
+  onPauseRecording: () => void;
+  onResumeRecording: () => void;
+  onCancelRecording: () => void;
+  onPlayAudio: () => void;
+  onTranscribeAudio: () => void;
   onGenerateNote: () => void;
 }
 
@@ -33,13 +36,15 @@ export function AudioControls({
   hasAudioBlob,
   status,
   disabled = false,
-  onStart,
-  onStop,
-  onPause,
-  onResume,
-  onCancel,
-  onPlay,
-  onTranscribe,
+  isTranscribing,
+  isGeneratingNote,
+  onStartRecording,
+  onStopRecording,
+  onPauseRecording,
+  onResumeRecording,
+  onCancelRecording,
+  onPlayAudio,
+  onTranscribeAudio,
   onGenerateNote,
 }: AudioControlsProps): JSX.Element {
   return (
@@ -78,7 +83,7 @@ export function AudioControls({
             size="md"
             color="blue"
             leftSection={<IconPlayerRecord size={20} />}
-            onClick={onStart}
+            onClick={onStartRecording}
             disabled={disabled}
           >
             Start Recording
@@ -88,20 +93,20 @@ export function AudioControls({
             <Button
               color="red"
               leftSection={<IconPlayerStop size={20} />}
-              onClick={onStop}
+              onClick={onStopRecording}
             >
               End Session
             </Button>
             <Button
               color="yellow"
-              onClick={isPaused ? onResume : onPause}
+              onClick={isPaused ? onResumeRecording : onPauseRecording}
             >
               {isPaused ? 'Resume' : 'Pause'}
             </Button>
             <Button
               variant="subtle"
               color="gray"
-              onClick={onCancel}
+              onClick={onCancelRecording}
             >
               Cancel
             </Button>
@@ -113,16 +118,19 @@ export function AudioControls({
             <Button
               color="green"
               leftSection={<IconPlayerPlay size={20} />}
-              onClick={onPlay}
+              onClick={onPlayAudio}
+              disabled={isTranscribing || isGeneratingNote}
             >
               Play Recording
             </Button>
             <Button
               color="teal"
-              leftSection={<IconFileText size={20} />}
-              onClick={onTranscribe}
+              leftSection={isTranscribing ? <Loader size="sm" /> : <IconFileText size={20} />}
+              onClick={onTranscribeAudio}
+              disabled={isTranscribing || isGeneratingNote}
+              loading={isTranscribing}
             >
-              Transcribe
+              {isTranscribing ? 'Transcribing...' : 'Transcribe'}
             </Button>
           </Group>
         )}
@@ -130,10 +138,12 @@ export function AudioControls({
         {hasTranscript && (
           <Button
             color="pink"
-            leftSection={<IconNotes size={20} />}
+            leftSection={isGeneratingNote ? <Loader size="sm" /> : <IconNotes size={20} />}
             onClick={onGenerateNote}
+            disabled={isTranscribing || isGeneratingNote}
+            loading={isGeneratingNote}
           >
-            Generate Note
+            {isGeneratingNote ? 'Generating Note...' : 'Generate Note'}
           </Button>
         )}
       </Stack>
