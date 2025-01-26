@@ -457,8 +457,55 @@ Return the note as a JSON object with this exact format:
                 >
                   {composition?.attester?.[0] ? 'Signed' : 'Draft'}
                 </Badge>
+                <Button
+                  onClick={() => {
+                    const allSections = composition?.section
+                      ?.filter(section => !TRANSCRIPT_TITLES.some(title => 
+                        (section.title || '').toLowerCase().includes(title)
+                      ))
+                      ?.map(section => 
+                        `${section.title}\n\n${editedSections[section.title || ''] || ''}`
+                      ).join('\n\n');
+                    if (allSections) {
+                      navigator.clipboard.writeText(allSections);
+                      setJustCopied('all');
+                      showNotification({
+                        title: 'Copied',
+                        message: 'All sections copied to clipboard',
+                        color: 'teal',
+                        icon: <IconCheck size={16} />
+                      });
+                      setTimeout(() => setJustCopied(''), 2000);
+                    }
+                  }}
+                  variant={justCopied === 'all' ? "filled" : "light"}
+                  color={justCopied === 'all' ? "teal" : "blue"}
+                  size="sm"
+                  leftSection={justCopied === 'all' ? 
+                    <IconCheck size={14} style={{ strokeWidth: 2.5 }} /> : 
+                    <IconCopy size={14} style={{ strokeWidth: 2.5 }} />
+                  }
+                  styles={(theme) => ({
+                    root: {
+                      transition: 'all 200ms ease',
+                      '&:hover': {
+                        backgroundColor: justCopied === 'all' ? theme.colors.teal[6] : theme.colors.blue[1],
+                        transform: 'translateY(-1px)'
+                      }
+                    }
+                  })}
+                >
+                  {justCopied === 'all' ? "Copied!" : "Copy All"}
+                </Button>
               </Group>
             </Group>
+            {!composition?.attester?.[0] && (
+              <Paper p="sm" bg="gray.0" style={{ borderLeft: '4px solid var(--mantine-color-yellow-5)' }}>
+                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+                  Disclaimer: This is an AI-generated document. Clinician validation and editing is necessary before use. Diagnostic codes such as ICD-10, DSM-5 and other suggestions are not a diagnosis and must be verified by the clinician.
+                </Text>
+              </Paper>
+            )}
           </Stack>
         </Paper>
 

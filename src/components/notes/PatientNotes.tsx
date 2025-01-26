@@ -383,7 +383,6 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                               fontSize: 'var(--mantine-font-size-sm)'
                             }}>
                               <IconCalendar size={14} />
-                              {format(new Date(note.date), 'MMM d')}
                               <Text span size="xs" c="dimmed" ml={4}>
                                 {format(new Date(note.date), 'h:mm a')}
                               </Text>
@@ -391,23 +390,48 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                             <Text fw={600} size="md" c="dimmed">
                               {note.title || 'Untitled Note'}
                             </Text>
-                            <Badge 
-                              size="md"
-                              variant="light"
-                              color={note.status === 'final' ? "gray" : "yellow"}
-                              leftSection={note.status === 'final' ? 
-                                <IconLock size={12} style={{ strokeWidth: 2.5 }} /> : 
-                                <IconEdit size={12} style={{ strokeWidth: 2.5 }} />
-                              }
-                              styles={(theme) => ({
-                                root: {
-                                  textTransform: 'none',
-                                  fontWeight: 500
-                                }
-                              })}
-                            >
-                              {note.status === 'final' ? 'Signed' : 'Draft'}
-                            </Badge>
+                            <Text c="dimmed" size="sm">
+                              {format(new Date(note.date), 'MMM d, yyyy')}
+                            </Text>
+                            {note.status === 'preliminary' ? (
+                              <Tooltip
+                                label="Disclaimer: This is an AI-generated document. Clinician validation and editing is necessary before use."
+                                multiline
+                                maw={300}
+                                position="top"
+                                withArrow
+                              >
+                                <Badge 
+                                  size="md" 
+                                  variant="light" 
+                                  color="yellow"
+                                  leftSection={<IconEdit size={12} style={{ strokeWidth: 2.5 }} />}
+                                  styles={(theme) => ({
+                                    root: {
+                                      textTransform: 'none',
+                                      fontWeight: 500
+                                    }
+                                  })}
+                                >
+                                  Draft
+                                </Badge>
+                              </Tooltip>
+                            ) : (
+                              <Badge 
+                                size="md" 
+                                variant="light" 
+                                color="gray"
+                                leftSection={<IconLock size={12} style={{ strokeWidth: 2.5 }} />}
+                                styles={(theme) => ({
+                                  root: {
+                                    textTransform: 'none',
+                                    fontWeight: 500
+                                  }
+                                })}
+                              >
+                                Signed
+                              </Badge>
+                            )}
                             <Tooltip label={note.status === 'final' ? "Note is locked" : "Edit Note"}>
                               <ActionIcon
                                 size="sm"

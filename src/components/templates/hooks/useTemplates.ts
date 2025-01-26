@@ -75,6 +75,7 @@ export function useTemplates() {
         )?.valueCode as NoteTemplate['type'] || 'progress',
         sections: q.item?.map(item => ({
           title: item.text || '',
+          content: item.initial?.[0]?.valueString || '',
           sampleContent: item.initial?.[0]?.valueString || ''
         })) || []
       }));
@@ -149,6 +150,67 @@ export function useTemplates() {
     }
   };
 
+  const getPatientDefaultTemplate = async (patientId: string): Promise<NoteTemplate | null> => {
+    try {
+      // Get patient's documentation preferences from their resource
+      const patient = await medplum.readResource('Patient', patientId);
+      const defaultTemplateId = patient.extension?.find(
+        e => e.url === 'http://progress.care/fhir/default-template'
+      )?.valueReference?.reference?.split('/')[1];
+
+      if (!defaultTemplateId) {
+        return null;
+      }
+
+      // Get the template questionnaire
+      const questionnaire = await medplum.readResource('Questionnaire', defaultTemplateId);
+      
+      return {
+        id: questionnaire.id || '',
+        name: questionnaire.title || '',
+        type: questionnaire.extension?.find(e => 
+          e.url === 'http://progress.care/fhir/template-type'
+        )?.valueCode as NoteTemplate['type'] || 'progress',
+        sections: questionnaire.item?.map(item => ({
+          title: item.text || '',
+          content: item.initial?.[0]?.valueString || '',
+          sampleContent: item.initial?.[0]?.valueString || ''
+        })) || []
+      };
+    } catch (error) {
+      console.error('Error loading patient default template:', error);
+      return null;
+    }
+  };
+
+  const setPatientDefaultTemplate = async (patientId: string, templateId: string): Promise<boolean> => {
+    try {
+      const patient = await medplum.readResource('Patient', patientId);
+      
+      // Update patient resource with the default template reference
+      const updatedPatient = {
+        ...patient,
+        extension: [
+          ...(patient.extension || []).filter(
+            e => e.url !== 'http://progress.care/fhir/default-template'
+          ),
+          {
+            url: 'http://progress.care/fhir/default-template',
+            valueReference: {
+              reference: `Questionnaire/${templateId}`
+            }
+          }
+        ]
+      };
+
+      await medplum.updateResource(updatedPatient);
+      return true;
+    } catch (error) {
+      console.error('Error setting patient default template:', error);
+      return false;
+    }
+  };
+
   useEffect(() => {
     loadTemplates();
   }, [medplum]);
@@ -159,6 +221,8 @@ export function useTemplates() {
     error,
     saveTemplate,
     deleteTemplate,
-    refresh: loadTemplates
+    refresh: loadTemplates,
+    getPatientDefaultTemplate,
+    setPatientDefaultTemplate
   };
 }

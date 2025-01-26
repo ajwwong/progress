@@ -666,6 +666,12 @@ ${transcript}`;
             <Stack gap="md">
               <PatientSelector 
                 onSelect={(patient: Patient) => setSelectedPatient(patient)}
+                onTemplateLoad={(templateId) => {
+                  if (templateId) {
+                    const template = templates.find(t => t.id === templateId);
+                    setSelectedTemplate(template);
+                  }
+                }}
                 initialPatient={selectedPatient}
                 context="audio"
               />
