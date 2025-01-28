@@ -338,13 +338,13 @@ Return the note as a JSON object with this exact format:
                         onClick={handlePatientClick}
                         style={{ 
                           textDecoration: 'none',
+                          cursor: 'pointer',
                           fontSize: 'inherit',
                           fontWeight: 'inherit',
-                          color: 'inherit',
-                          '&:hover': {
-                            textDecoration: 'underline'
-                          }
+                          color: 'inherit'
                         }}
+                        onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                        onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                       >
                         {patient.name?.[0]?.given?.join(' ')} {patient.name?.[0]?.family}
                       </Anchor>

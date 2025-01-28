@@ -24,7 +24,6 @@ interface AudioControlsProps {
   onResumeRecording: () => void;
   onCancelRecording: () => void;
   onPlayAudio: () => void;
-  onTranscribeAudio: () => void;
   onGenerateNote: () => void;
 }
 
@@ -44,7 +43,6 @@ export function AudioControls({
   onResumeRecording,
   onCancelRecording,
   onPlayAudio,
-  onTranscribeAudio,
   onGenerateNote,
 }: AudioControlsProps): JSX.Element {
   return (
@@ -98,17 +96,11 @@ export function AudioControls({
               End Session
             </Button>
             <Button
-              color="yellow"
+              color={isPaused ? 'blue' : 'gray'}
+              leftSection={<IconPlayerPlay size={20} />}
               onClick={isPaused ? onResumeRecording : onPauseRecording}
             >
               {isPaused ? 'Resume' : 'Pause'}
-            </Button>
-            <Button
-              variant="subtle"
-              color="gray"
-              onClick={onCancelRecording}
-            >
-              Cancel
             </Button>
           </Group>
         )}
@@ -116,34 +108,33 @@ export function AudioControls({
         {hasAudioBlob && !isRecording && (
           <Group grow>
             <Button
-              color="green"
+              variant="light"
               leftSection={<IconPlayerPlay size={20} />}
               onClick={onPlayAudio}
-              disabled={isTranscribing || isGeneratingNote}
             >
-              Play Recording
+              Play Audio
             </Button>
-            <Button
-              color="teal"
-              leftSection={isTranscribing ? <Loader size="sm" /> : <IconFileText size={20} />}
-              onClick={onTranscribeAudio}
-              disabled={isTranscribing || isGeneratingNote}
-              loading={isTranscribing}
-            >
-              {isTranscribing ? 'Transcribing...' : 'Transcribe'}
-            </Button>
+            {!hasTranscript && !isTranscribing && !isGeneratingNote && (
+              <Button
+                variant="light"
+                color="red"
+                leftSection={<IconPlayerStop size={20} />}
+                onClick={onCancelRecording}
+              >
+                Cancel
+              </Button>
+            )}
           </Group>
         )}
 
-        {hasTranscript && (
+        {hasTranscript && !isGeneratingNote && (
           <Button
-            color="pink"
-            leftSection={isGeneratingNote ? <Loader size="sm" /> : <IconNotes size={20} />}
+            variant="light"
+            leftSection={isGeneratingNote ? <IconLoader size={20} className="rotating" /> : <IconNotes size={20} />}
             onClick={onGenerateNote}
-            disabled={isTranscribing || isGeneratingNote}
             loading={isGeneratingNote}
           >
-            {isGeneratingNote ? 'Generating Note...' : 'Generate Note'}
+            Generate Note
           </Button>
         )}
       </Stack>

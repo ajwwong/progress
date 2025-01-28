@@ -1,6 +1,6 @@
 import { Patient, Reference } from '@medplum/fhirtypes';
 import { HumanNameDisplay, useResource } from '@medplum/react';
-import { Paper, Group, Text, Stack } from '@mantine/core';
+import { Paper, Group, Text, Stack, Title } from '@mantine/core';
 import { IconCalendar } from '@tabler/icons-react';
 import { format } from 'date-fns';
 
@@ -18,9 +18,9 @@ export function PatientHeader(props: PatientHeaderProps): JSX.Element | null {
     <Paper p="md" radius="md" withBorder>
       <Stack gap="xs">
         <Group gap="xs">
-          <Text size="xl" fw={600}>
+          <Title order={2}>
             {patient.name ? <HumanNameDisplay value={patient.name?.[0]} options={{ use: false }} /> : '[blank]'}
-          </Text>
+          </Title>
           {patient.birthDate && (
             <Group gap={4}>
               <IconCalendar size={16} style={{ color: 'var(--mantine-color-gray-6)' }} />

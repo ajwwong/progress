@@ -1,4 +1,4 @@
-import { Paper, Stack, Group, Text, Button, TextInput, Select, ActionIcon, Box } from '@mantine/core';
+import { Paper, Stack, Group, Text, Button, TextInput, Select, ActionIcon, Box, Title } from '@mantine/core';
 import { IconEdit, IconCheck, IconX, IconPhone, IconMail, IconCalendar, IconTemplate } from '@tabler/icons-react';
 import { Patient } from '@medplum/fhirtypes';
 import { usePatientInfo } from '../../hooks/usePatientInfo';
@@ -122,7 +122,7 @@ export function PatientInfo({ patient }: PatientInfoProps): JSX.Element {
     <Paper withBorder p="xl">
       <Stack gap="lg">
         <Group justify="space-between" mb="xs">
-          <Text fw={600} size="lg">Client Information</Text>
+          <Text fw={500} size="lg">Client Information</Text>
           <Button 
             variant="light" 
             size="sm"

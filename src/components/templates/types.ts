@@ -1,14 +1,19 @@
+import { Questionnaire } from '@medplum/fhirtypes';
+
 export interface NoteSection {
   title: string;
   content: string;
   sampleContent?: string;
 }
 
-export interface NoteTemplate {
+export interface NoteTemplate extends Questionnaire {
   id?: string;
-  name: string;
-  type: 'progress' | 'intake' | 'discharge' | 'treatment';
-  sections: NoteSection[];
+  name?: string;
+  type?: string;
+  sections: Array<{
+    title: string;
+    sampleContent?: string;
+  }>;
 }
 
 export const defaultSections: NoteSection[] = [

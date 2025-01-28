@@ -1,9 +1,10 @@
 import { Title, Stack, Group, Button, Paper, Grid, Menu, ActionIcon, Text, Badge, Select, TextInput } from '@mantine/core';
 import { Document, useMedplum } from '@medplum/react';
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { IconPlus, IconSearch, IconFilter, IconDownload, IconUpload, IconDots, IconCopy } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { Questionnaire } from '@medplum/fhirtypes';
+import { defaultTemplates, hasTemplate } from './defaultTemplates';
 
 export function NoteTemplatesPage(): JSX.Element {
   const navigate = useNavigate();
@@ -12,24 +13,56 @@ export function NoteTemplatesPage(): JSX.Element {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [templates, setTemplates] = useState<Questionnaire[]>([]);
   const [loading, setLoading] = useState(true);
+  const creationInProgress = useRef(false);
 
   // Load templates on mount
-  useMemo(async () => {
-    try {
-      const results = await medplum.searchResources('Questionnaire', {
-        _count: '100'
-      });
-      
-      // Filter for templates
-      const templateResults = results.filter(q => 
-        q.code?.some(c => c.code === 'note-template')
-      );
-      setTemplates(templateResults);
-    } catch (err) {
-      console.error('Error loading templates:', err);
-    } finally {
-      setLoading(false);
-    }
+  useEffect(() => {
+    const loadTemplates = async () => {
+      if (creationInProgress.current) {
+        return;
+      }
+
+      try {
+        creationInProgress.current = true;
+        // Get all templates first
+        const results = await medplum.searchResources('Questionnaire', {
+          _count: '100'
+        });
+        
+        // Filter for note templates
+        const templateResults = results.filter(q => 
+          q.code?.some(c => c.code === 'note-template')
+        );
+
+        // Create any missing default templates
+        const newTemplates = [];
+        for (const defaultTemplate of defaultTemplates) {
+          const identifier = defaultTemplate.identifier?.[0]?.value;
+          if (identifier && !hasTemplate(templateResults, identifier)) {
+            try {
+              const savedTemplate = await medplum.createResource({
+                ...defaultTemplate,
+                id: undefined
+              });
+              console.log(`Created default template: ${defaultTemplate.title}`);
+              newTemplates.push(savedTemplate);
+            } catch (err) {
+              console.error(`Error creating template ${defaultTemplate.title}:`, err);
+            }
+          }
+        }
+
+        setTemplates([...newTemplates, ...templateResults]);
+      } catch (err) {
+        console.error('Error loading templates:', err);
+        setTemplates([]);
+      } finally {
+        setLoading(false);
+        creationInProgress.current = false;
+      }
+    };
+
+    loadTemplates();
   }, [medplum]);
 
   const categories = ['all', 'progress', 'intake', 'discharge', 'treatment'];

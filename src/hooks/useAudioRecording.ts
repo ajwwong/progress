@@ -6,8 +6,9 @@ interface UseAudioRecordingReturn {
   isBlinking: boolean;
   audioBlob: Blob | null;
   status: string;
+  stream: MediaStream | null;
   startRecording: (isTelehealth: boolean) => Promise<void>;
-  stopRecording: () => void;
+  stopRecording: () => Promise<Blob>;
   pauseRecording: () => void;
   resumeRecording: () => void;
   cancelRecording: () => void;
@@ -20,6 +21,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
   const [isBlinking, setIsBlinking] = useState(false);
   const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [status, setStatus] = useState('Ready');
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
 
@@ -121,6 +123,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
       mediaRecorder.current = new MediaRecorder(audioStream, {
         mimeType: 'audio/webm;codecs=opus'
       });
+      setStream(audioStream);
       chunksRef.current = [];
 
       mediaRecorder.current.ondataavailable = (event) => {
@@ -139,6 +142,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
       setIsRecording(true);
       setStatus('Recording...');
     } catch (err) {
+      setStream(null);
       console.error('Error starting recording:', err);
       setStatus('Error: Could not start recording');
       throw new Error('Could not start recording');
@@ -146,12 +150,24 @@ export function useAudioRecording(): UseAudioRecordingReturn {
   };
 
   const stopRecording = () => {
-    if (mediaRecorder.current && isRecording) {
-      mediaRecorder.current.stop();
-      mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
-      setIsRecording(false);
-      setIsPaused(false);
-    }
+    return new Promise<Blob>((resolve, reject) => {
+      if (mediaRecorder.current && isRecording) {
+        const onStop = () => {
+          const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
+          setAudioBlob(blob);
+          setStatus('Recording saved');
+          resolve(blob);
+        };
+        mediaRecorder.current.onstop = onStop;
+        mediaRecorder.current.stop();
+        mediaRecorder.current.stream.getTracks().forEach(track => track.stop());
+        setStream(null);
+        setIsRecording(false);
+        setIsPaused(false);
+      } else {
+        reject(new Error('No active recording to stop'));
+      }
+    });
   };
 
   const pauseRecording = () => {
@@ -198,6 +214,7 @@ export function useAudioRecording(): UseAudioRecordingReturn {
     isBlinking,
     audioBlob,
     status,
+    stream,
     startRecording,
     stopRecording,
     pauseRecording,

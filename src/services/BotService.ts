@@ -83,49 +83,51 @@ export class BotService {
     }
   }
 
-  private parseNoteResponse(botResponse: any): any {
-    const responseText = typeof botResponse === 'string' 
-      ? botResponse 
-      : botResponse.text || botResponse.content?.[0]?.text;
-
-    if (!responseText) {
-      throw new Error('Empty response from bot');
-    }
-
-    // Try to extract JSON from the response
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      throw new Error('No JSON object found in response');
-    }
-
-    // Clean the JSON string
-    const cleanJson = jsonMatch[0]
-      .replace(/[\u0000-\u001F\u007F-\u009F]/g, '')
-      .replace(/\\[rn]/g, '\\n')
-      .replace(/\s+/g, ' ');
-    
+  parseNoteResponse(response: string | { text: string }): any {
+    console.log('Raw response from Claude:', response);
     try {
-      const parsedContent = JSON.parse(cleanJson);
+      // Extract the text content from the response
+      const responseText = typeof response === 'string' ? response : response.text;
       
-      if (!parsedContent?.sections) {
-        throw new Error('Invalid note format: missing sections array');
+      if (!responseText) {
+        throw new Error('Empty response from bot');
       }
 
-      return parsedContent;
-    } catch (parseErr) {
-      console.error('Error parsing bot response:', parseErr);
-      if (typeof botResponse === 'string' || botResponse.text) {
-        const text = (typeof botResponse === 'string' ? botResponse : botResponse.text) || '';
-        return {
-          sections: [
-            {
-              title: 'Progress Note',
-              content: text
-            }
-          ]
-        };
+      // Try to find JSON content between first { and last }
+      const jsonMatch = responseText.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('No JSON object found in response');
       }
-      throw new Error('Invalid response format from bot. Expected JSON.');
+      
+      const jsonStr = jsonMatch[0];
+      console.log('Extracted JSON string:', jsonStr);
+      
+      // Clean up the JSON string:
+      // 1. Remove any control characters
+      // 2. Fix any truncated content (ending with ...)
+      // 3. Ensure proper line breaks
+      const cleanJson = jsonStr
+        .replace(/[\u0000-\u001F\u007F-\u009F]/g, '') // Remove control characters
+        .replace(/…/g, '...') // Replace ellipsis
+        .replace(/\r\n|\r|\n/g, '\\n') // Convert actual line breaks to \n strings
+        .replace(/\s*\\n\s*/g, '\\n') // Normalize spacing around \n
+        .replace(/([.!?])\s*\\n/g, '$1\\n\\n') // Add paragraph breaks after sentences
+        .replace(/\s+/g, ' ') // Normalize other whitespace
+        .replace(/\\n\s+/g, '\\n') // Clean up spaces after \n
+        .replace(/\s+\\n/g, '\\n'); // Clean up spaces before \n
+      
+      console.log('Cleaned JSON string:', cleanJson);
+      
+      const parsed = JSON.parse(cleanJson);
+      if (!parsed.sections || !Array.isArray(parsed.sections)) {
+        throw new Error('Invalid response format: missing sections array');
+      }
+      
+      return parsed;
+    } catch (e) {
+      console.error('Error parsing response:', response);
+      console.error('Parse error:', e);
+      throw new Error(`Error parsing bot response: ${e instanceof Error ? e.message : 'Unknown error'}`);
     }
   }
 } 

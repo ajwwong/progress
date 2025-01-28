@@ -1,15 +1,19 @@
 import { useState } from 'react';
 import { useMedplum } from '@medplum/react';
-import { Composition, Patient, Practitioner } from '@medplum/fhirtypes';
+import { Composition, CompositionSection, Patient, Practitioner } from '@medplum/fhirtypes';
 import { NoteTemplate } from '../components/templates/types';
 import { useNoteTemplate } from './useNoteTemplate';
 import { BotService } from '../services/BotService';
 
 interface UseTranscriptionReturn {
   transcript: string;
-  psychNote: string;
+  psychNote: {
+    content: string;
+    prompt?: string;
+    rawResponse?: string;
+  };
   status: string;
-  transcribeAudio: (audioBlob: Blob, compositionId: string, onStart?: (time: string) => void) => Promise<void>;
+  transcribeAudio: (audioBlob: Blob, compositionId: string, onStart?: (time: string) => void) => Promise<string>;
   generateNote: (
     transcript: string,
     selectedPatient: Patient | undefined,
@@ -23,7 +27,7 @@ interface NoteSection {
   content: string;
 }
 
-interface NoteContent {
+interface NoteResponse {
   sections: NoteSection[];
 }
 
@@ -32,10 +36,10 @@ export function useTranscription(): UseTranscriptionReturn {
   const botService = new BotService(medplum);
   const { generatePrompt } = useNoteTemplate();
   const [transcript, setTranscript] = useState<string>('');
-  const [psychNote, setPsychNote] = useState<string>('');
+  const [psychNote, setPsychNote] = useState<{ content: string; prompt?: string; rawResponse?: string }>({ content: '' });
   const [status, setStatus] = useState('Ready');
 
-  const transcribeAudio = async (audioBlob: Blob, compositionId: string, onStart?: (time: string) => void): Promise<void> => {
+  const transcribeAudio = async (audioBlob: Blob, compositionId: string, onStart?: (time: string) => void): Promise<string> => {
     console.log('transcribeAudio called with blob size:', audioBlob.size);
     console.log('compositionId:', compositionId);
     
@@ -44,7 +48,7 @@ export function useTranscription(): UseTranscriptionReturn {
         hasAudioBlob: !!audioBlob, 
         hasCompositionId: !!compositionId 
       });
-      return;
+      throw new Error('Missing required data for transcription');
     }
 
     try {
@@ -83,34 +87,53 @@ export function useTranscription(): UseTranscriptionReturn {
 
       await medplum.updateResource(updatedComposition);
       setStatus('Transcription complete');
+      return transcriptText;
     } catch (err) {
       console.error('Detailed transcription error:', err);
       setStatus('Error: Transcription failed');
-
-      // Add dummy transcript if needed
-      const dummyTranscript = "This is where the transcription would go";
-      try {
-        const composition = await medplum.readResource('Composition', compositionId);
-        const updatedComposition: Composition = {
-          ...composition,
-          section: [
-            ...(composition.section || []).filter(s => s.title !== 'Transcript'),
-            {
-              title: 'Transcript',
-              text: {
-                status: 'generated',
-                div: `<div xmlns="http://www.w3.org/1999/xhtml">${dummyTranscript}</div>`
-              }
-            }
-          ]
-        };
-        await medplum.updateResource(updatedComposition);
-        setTranscript(dummyTranscript);
-        setStatus('Dummy transcript added');
-      } catch (updateErr) {
-        console.error('Error adding dummy transcript:', updateErr);
-      }
+      throw err;
     }
+  };
+
+  function convertToFHIR(noteContent: NoteResponse, template?: NoteTemplate): CompositionSection[] {
+    return noteContent.sections.map((section) => ({
+      title: section.title,
+      text: {
+        status: 'generated' as const,
+        div: `<div xmlns="http://www.w3.org/1999/xhtml" style="white-space: pre-wrap;">${
+          // Normalize multiple newlines to just two
+          section.content
+            .replace(/\\n\\n\\n+/g, '\n\n')  // Replace 3+ newlines with 2
+            .replace(/\\n/g, '\n')           // Replace remaining \n with actual newlines
+            .replace(/\n\n\n+/g, '\n\n')     // Clean up any resulting 3+ newlines
+            .trim()
+        }</div>`
+      }
+    }));
+  }
+
+  const processResponse = (response: string | NoteResponse): NoteResponse => {
+    let noteContent: NoteResponse;
+
+    if (typeof response === 'string') {
+      try {
+        // Simple JSON parse with minimal cleaning
+        const jsonStr = response.trim();
+        noteContent = JSON.parse(jsonStr) as NoteResponse;
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        throw new Error('Invalid JSON response');
+      }
+    } else {
+      noteContent = response;
+    }
+
+    // Basic validation
+    if (!noteContent.sections?.length) {
+      throw new Error('Response missing sections array');
+    }
+
+    return noteContent;
   };
 
   const generateNote = async (
@@ -128,34 +151,40 @@ export function useTranscription(): UseTranscriptionReturn {
       const practitioner = await medplum.readResource('Practitioner', composition.author?.[0]?.reference?.split('/')[1] || '');
       
       const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, practitioner);
-      const noteContent = await botService.generateNote(prompt);
+      const response = await botService.generateNote(prompt);
+      
+      // Simplified processing
+      const noteContent = processResponse(response);
+      
+      // Convert to FHIR format
+      const sections = convertToFHIR(noteContent, selectedTemplate);
 
-      setPsychNote(noteContent.sections.map((section: NoteSection) => 
-        `${section.title}:\n${section.content}`
-      ).join('\n\n'));
-
-      // Update the composition with the generated note
+      // Update composition
       const updatedComposition: Composition = {
         ...composition,
         section: [
-          ...noteContent.sections.map((section: NoteSection) => ({
-            title: section.title,
-            text: {
-              status: 'generated' as const,
-              div: `<div xmlns="http://www.w3.org/1999/xhtml">${section.content}</div>`
-            }
-          })),
-          // Preserve transcript section if it exists
+          ...sections,
           ...(composition.section || []).filter(s => s.title === 'Transcript')
         ]
       };
 
       await medplum.updateResource(updatedComposition);
-      setStatus('Note generated and saved');
       
+      // Format for display
+      const formattedContent = noteContent.sections
+        .map(section => `${section.title}:\n${section.content.replace(/\\n/g, '\n')}`)
+        .join('\n\n');
+
+      setPsychNote({
+        content: formattedContent,
+        prompt,
+        rawResponse: typeof response === 'string' ? response : JSON.stringify(response, null, 2)
+      });
+
+      setStatus('Note generated and saved');
     } catch (err) {
       console.error('Error generating note:', err);
-      setStatus(`Error: Could not generate note - ${err instanceof Error ? err.message : 'Unknown error'}`);
+      setStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
       throw err;
     }
   };
