@@ -193,7 +193,7 @@ export function PatientSelector({
             }}
           >
             <AsyncAutocomplete
-              placeholder="Enter patient name..."
+              placeholder="Search by patient name..."
               loadOptions={async (input, signal) => {
                 if (!input) return [];
                 return await medplum.searchResources('Patient', `name:contains=${input}`, { signal });
