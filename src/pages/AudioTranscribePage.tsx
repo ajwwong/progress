@@ -86,6 +86,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
   const [isGeneratingNote, setIsGeneratingNote] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
 
   // Set initial values from location state
   useEffect(() => {
@@ -399,17 +400,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
               initialPatient={selectedPatient}
               context="audio"
               disabled={isRecording || isTranscribing || isGeneratingNote}
-              styles={{
-                root: { maxWidth: '100%' },
-                input: {
-                  height: '45px',
-                  fontSize: '16px',
-                  backgroundColor: 'white',
-                  '&::placeholder': {
-                    color: '#999'
-                  }
-                }
-              }}
+              isHighlighted={isStartButtonHovered && !selectedPatient}
             />
 
             {selectedPatient && (
@@ -452,6 +443,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
                   color={isTelehealth ? 'teal' : 'blue.9'}
                   leftSection={isTelehealth ? <IconHeadphones size={20} /> : <IconMicrophone size={20} />}
                   onClick={handleStartRecording}
+                  onMouseEnter={() => setIsStartButtonHovered(true)}
+                  onMouseLeave={() => setIsStartButtonHovered(false)}
                   styles={{
                     inner: {
                       fontSize: '18px',

@@ -1,4 +1,4 @@
-import { Stack, Group, Text, Button, TextInput, Paper, Collapse } from '@mantine/core';
+import { Stack, Group, Text, Button, TextInput, Paper, Collapse, Box } from '@mantine/core';
 import { IconPlus, IconUserCheck, IconMicrophone } from '@tabler/icons-react';
 import { AsyncAutocomplete, ResourceAvatar, useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
@@ -11,13 +11,15 @@ interface PatientSelectorProps {
   initialPatient?: Patient;
   context?: 'appointment' | 'audio' | 'notes';
   disabled?: boolean;
+  isHighlighted?: boolean;
 }
 
 export function PatientSelector({ 
   onSelect, 
   initialPatient,
   context = 'appointment',
-  disabled = false
+  disabled = false,
+  isHighlighted = false
 }: PatientSelectorProps) {
   const medplum = useMedplum();
   const [showNewForm, setShowNewForm] = useState(false);
@@ -175,33 +177,50 @@ export function PatientSelector({
       </Collapse>
 
       {!showNewForm && (
-        <AsyncAutocomplete
-          placeholder="Search by patient name..."
-          loadOptions={async (input, signal) => {
-            if (!input) return [];
-            return await medplum.searchResources('Patient', `name:contains=${input}`, { signal });
+        <div
+          style={{
+            padding: '2px',
+            transition: 'all 0.2s ease',
+            transform: isHighlighted ? 'scale(1.02)' : 'none',
+            borderRadius: '4px'
           }}
-          toOption={(patient) => ({
-            value: patient.id as string,
-            label: getDisplayString(patient),
-            resource: patient,
-          })}
-          itemComponent={({ resource }: { resource: Patient }) => (
-            <Group wrap="nowrap">
-              <ResourceAvatar value={resource} />
-              <Text>{getDisplayString(resource)}</Text>
-            </Group>
-          )}
-          onChange={(patients) => {
-            if (patients?.[0]) {
-              onSelect(patients[0]);
-              setSelectedPatient(patients[0]);
-            }
-          }}
-          maxValues={1}
-          required
-          disabled={disabled}
-        />
+        >
+          <div
+            style={{
+              border: isHighlighted ? '2px solid var(--mantine-color-blue-5)' : '2px solid transparent',
+              borderRadius: '4px',
+              transition: 'all 0.2s ease'
+            }}
+          >
+            <AsyncAutocomplete
+              placeholder="Enter patient name..."
+              loadOptions={async (input, signal) => {
+                if (!input) return [];
+                return await medplum.searchResources('Patient', `name:contains=${input}`, { signal });
+              }}
+              toOption={(patient) => ({
+                value: patient.id as string,
+                label: getDisplayString(patient),
+                resource: patient,
+              })}
+              itemComponent={({ resource }: { resource: Patient }) => (
+                <Group wrap="nowrap">
+                  <ResourceAvatar value={resource} />
+                  <Text>{getDisplayString(resource)}</Text>
+                </Group>
+              )}
+              onChange={(patients) => {
+                if (patients?.[0]) {
+                  onSelect(patients[0]);
+                  setSelectedPatient(patients[0]);
+                }
+              }}
+              maxValues={1}
+              required
+              disabled={disabled}
+            />
+          </div>
+        </div>
       )}
     </Stack>
   );
