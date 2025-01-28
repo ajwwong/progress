@@ -1,4 +1,5 @@
 import { MedplumClient } from '@medplum/core';
+import { Bot } from '@medplum/fhirtypes';
 
 interface TranscriptionResponse {
   message: string;
@@ -17,8 +18,8 @@ interface BotOptions {
 }
 
 export class BotService {
-  private static readonly TRANSCRIPTION_BOT_ID = '1255675e-266d-4ab9-bc69-a850c6ca4875';
-  private static readonly NOTE_GENERATION_BOT_ID = '5731008c-42a6-4fdc-8969-2560667b4f1d';
+  private static readonly TRANSCRIPTION_BOT_ID = '@https://progressnotes.app/bots:audio-transcribe';
+  private static readonly NOTE_GENERATION_BOT_ID = '@https://progressnotes.app:ask-claude';
 
   constructor(private medplum: MedplumClient) {}
 
@@ -32,7 +33,10 @@ export class BotService {
 
       // Call transcription bot
       const response = await this.medplum.executeBot(
-        BotService.TRANSCRIPTION_BOT_ID,
+        {
+          system: 'https://progressnotes.app/bots',
+          value: 'audio-transcribe'
+        },
         {
           type: 'audio',
           binaryId: binary.id
@@ -63,7 +67,10 @@ export class BotService {
       };
 
       const botResponse = await this.medplum.executeBot(
-        BotService.NOTE_GENERATION_BOT_ID,
+        {
+          system: 'https://progressnotes.app',
+          value: 'ask-claude'
+        },
         {
           prompt,
           ...defaultOptions,

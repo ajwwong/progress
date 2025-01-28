@@ -248,187 +248,201 @@ export function PatientDirectoryPage(): JSX.Element {
     <Container size="xl">
       <Box p="md">
         <Stack spacing="xl">
-          <Group position="apart" mb="lg">
-            <Title order={2}>Patients</Title>
-          <Button
-            variant="filled"
-            color="blue"
-            size="md"
-            leftSection={<IconPlus size={16} />}
-            onClick={() => setIsPatientModalOpen(true)}
-          >
-            Add Patient
-          </Button>
-        </Group>
-
-        <Group align="flex-end" spacing="md">
-          <TextInput
-            placeholder="Search patients by name..."
-            size="md"
-            radius="md"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.currentTarget.value)}
-            leftSection={<IconSearch size={16} style={{ color: 'var(--mantine-color-gray-5)' }} />}
-            disabled={isLoading}
-            style={{ flex: 1 }}
-          />
-          <Select
-            placeholder="Status"
-            data={[
-              { value: 'all', label: 'All Patients' },
-              { value: 'active', label: 'Active' }
-            ]}
-            value={clientStatus}
-            onChange={setClientStatus}
-            size="md"
-            radius="md"
-            style={{ width: 200 }}
-          />
-         
-        </Group>
-
-        {/* Patient List */}
-        <Paper withBorder>
-          <Table highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th style={{ width: '25%' }}>Name</Table.Th>
-                <Table.Th style={{ width: '15%' }}>Status</Table.Th>
-                <Table.Th style={{ width: '30%' }}>Contact Info</Table.Th>
-                <Table.Th style={{ width: '10%' }}>Manage</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              {patients.map((patient) => (
-                <Table.Tr key={patient.id}>
-                  <Table.Td>
-                  <Anchor
-    href="#"
-    onClick={(e) => {
-      e.preventDefault();
-      navigate(`/patient/${patient.id}`);
-    }}
-    sx={(theme) => ({
-      fontWeight: 500,
-    })}
-  >
-    <ResourceName value={patient} />
-  </Anchor>
-                  </Table.Td>
-                  <Table.Td>
-                    <Button 
-                      size="xs" 
-                      variant="light" 
-                      color={patient.active ? "green" : "gray"}
-                    >
-                      {patient.active ? "Active" : "Inactive"}
-                    </Button>
-                  </Table.Td>
-                  <Table.Td>
-                    <Stack spacing={4}>
-                      {patient.telecom?.filter(t => t.system && t.value).map((t, i) => (
-                        <Group key={i} spacing={6}>
-                          {t.system === 'phone' && <IconPhone size={14} />}
-                          {t.system === 'email' && <IconMail size={14} />}
-                          <Text size="sm">{t.value}</Text>
-                        </Group>
-                      ))}
-                    </Stack>
-                  </Table.Td>
-                  <Table.Td>
-                    <Menu position="bottom-end">
-                      <Menu.Target>
-                        <ActionIcon 
-                          variant="subtle" 
-                          color="gray"
-                          size="sm"
-                          radius="xl"
-                        >
-                          <IconDotsVertical size={16} />
-                        </ActionIcon>
-                      </Menu.Target>
-                      <Menu.Dropdown>
-                        <Menu.Item
-                          onClick={() => navigate(`/patient/${patient.id}`)}
-                        >
-                          View Profile
-                        </Menu.Item>
-                        <Menu.Item
-                          onClick={() => handleTogglePatientStatus(patient.id as string, patient.active === true)}
-                        >
-                          {patient.active ? 'Make Inactive' : 'Make Active'}
-                        </Menu.Item>
-                        <Menu.Item
-                          color="red"
-                          onClick={() => {
-                            setPatientToDelete(patient.id as string);
-                            setDeleteModalOpen(true);
-                          }}
-                        >
-                          Delete
-                        </Menu.Item>
-                      </Menu.Dropdown>
-                    </Menu>
-                  </Table.Td>
-                </Table.Tr>
-              ))}
-            </Table.Tbody>
-          </Table>
-        </Paper>
-      </Stack>
-
-
-      <PatientModal
-        opened={isPatientModalOpen}
-        onClose={() => setIsPatientModalOpen(false)}
-        onSuccess={handlePatientCreated}
-      />
-
-      <Modal
-        opened={deleteModalOpen}
-        onClose={() => {
-          setDeleteModalOpen(false);
-          setPatientToDelete(null);
-          setDeleteConfirmName('');
-        }}
-        title={<Text size="lg" fw={500} c="red">Delete Patient</Text>}
-        centered
-      >
-        <Stack spacing="md">
-          <Text>
-            Are you sure you want to delete this patient? This action cannot be undone.
-          </Text>
-          <Text size="sm">
-            Please type "DELETE" to confirm:
-          </Text>
-          <TextInput
-            value={deleteConfirmName}
-            onChange={(e) => setDeleteConfirmName(e.currentTarget.value)}
-            placeholder='Type "DELETE" here'
-          />
-          <Group justify="flex-end">
-            <Button
-              variant="light"
-              onClick={() => {
-                setDeleteModalOpen(false);
-                setPatientToDelete(null);
-                setDeleteConfirmName('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              color="red"
-              loading={isLoading}
-              onClick={handleDeletePatient}
-              disabled={deleteConfirmName !== 'DELETE'}
-            >
-              Delete Patient
-            </Button>
+          <Group justify="space-between" mb="lg">
+            <Group gap="sm">
+              <Title order={2}>Patients</Title>
+              <Button
+                variant="filled"
+                color="blue"
+                size="md"
+                radius="md"
+                leftSection={<IconPlus size={18} />}
+                onClick={() => setIsPatientModalOpen(true)}
+                styles={(theme) => ({
+                  root: {
+                    fontWeight: 600,
+                    boxShadow: theme.shadows.xs,
+                    transition: 'all 150ms ease',
+                    '&:hover': {
+                      transform: 'translateY(-1px)',
+                      boxShadow: theme.shadows.sm,
+                    }
+                  }
+                })}
+              >
+                Add Patient
+              </Button>
+            </Group>
           </Group>
+
+          <Group align="flex-end" spacing="md">
+            <TextInput
+              placeholder="Search patients by name..."
+              size="md"
+              radius="md"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.currentTarget.value)}
+              leftSection={<IconSearch size={16} style={{ color: 'var(--mantine-color-gray-5)' }} />}
+              disabled={isLoading}
+              style={{ flex: 1 }}
+            />
+            <Select
+              placeholder="Status"
+              data={[
+                { value: 'all', label: 'All Patients' },
+                { value: 'active', label: 'Active' }
+              ]}
+              value={clientStatus}
+              onChange={setClientStatus}
+              size="md"
+              radius="md"
+              style={{ width: 200 }}
+            />
+           
+          </Group>
+
+          {/* Patient List */}
+          <Paper withBorder>
+            <Table highlightOnHover>
+              <Table.Thead>
+                <Table.Tr>
+                  <Table.Th style={{ width: '25%' }}>Name</Table.Th>
+                  <Table.Th style={{ width: '15%' }}>Status</Table.Th>
+                  <Table.Th style={{ width: '30%' }}>Contact Info</Table.Th>
+                  <Table.Th style={{ width: '10%' }}>Manage</Table.Th>
+                </Table.Tr>
+              </Table.Thead>
+              <Table.Tbody>
+                {patients.map((patient) => (
+                  <Table.Tr key={patient.id}>
+                    <Table.Td>
+                    <Anchor
+      href="#"
+      onClick={(e) => {
+        e.preventDefault();
+        navigate(`/patient/${patient.id}`);
+      }}
+      sx={(theme) => ({
+        fontWeight: 500,
+      })}
+    >
+      <ResourceName value={patient} />
+    </Anchor>
+                    </Table.Td>
+                    <Table.Td>
+                      <Button 
+                        size="xs" 
+                        variant="light" 
+                        color={patient.active ? "green" : "gray"}
+                      >
+                        {patient.active ? "Active" : "Inactive"}
+                      </Button>
+                    </Table.Td>
+                    <Table.Td>
+                      <Stack spacing={4}>
+                        {patient.telecom?.filter(t => t.system && t.value).map((t, i) => (
+                          <Group key={i} spacing={6}>
+                            {t.system === 'phone' && <IconPhone size={14} />}
+                            {t.system === 'email' && <IconMail size={14} />}
+                            <Text size="sm">{t.value}</Text>
+                          </Group>
+                        ))}
+                      </Stack>
+                    </Table.Td>
+                    <Table.Td>
+                      <Menu position="bottom-end">
+                        <Menu.Target>
+                          <ActionIcon 
+                            variant="subtle" 
+                            color="gray"
+                            size="sm"
+                            radius="xl"
+                          >
+                            <IconDotsVertical size={16} />
+                          </ActionIcon>
+                        </Menu.Target>
+                        <Menu.Dropdown>
+                          <Menu.Item
+                            onClick={() => navigate(`/patient/${patient.id}`)}
+                          >
+                            View Profile
+                          </Menu.Item>
+                          <Menu.Item
+                            onClick={() => handleTogglePatientStatus(patient.id as string, patient.active === true)}
+                          >
+                            {patient.active ? 'Make Inactive' : 'Make Active'}
+                          </Menu.Item>
+                          <Menu.Item
+                            color="red"
+                            onClick={() => {
+                              setPatientToDelete(patient.id as string);
+                              setDeleteModalOpen(true);
+                            }}
+                          >
+                            Delete
+                          </Menu.Item>
+                        </Menu.Dropdown>
+                      </Menu>
+                    </Table.Td>
+                  </Table.Tr>
+                ))}
+              </Table.Tbody>
+            </Table>
+          </Paper>
         </Stack>
-      </Modal>
-    </Box>
-    </Container>
-  );
-}
+
+
+        <PatientModal
+          opened={isPatientModalOpen}
+          onClose={() => setIsPatientModalOpen(false)}
+          onSuccess={handlePatientCreated}
+        />
+
+        <Modal
+          opened={deleteModalOpen}
+          onClose={() => {
+            setDeleteModalOpen(false);
+            setPatientToDelete(null);
+            setDeleteConfirmName('');
+          }}
+          title={<Text size="lg" fw={500} c="red">Delete Patient</Text>}
+          centered
+        >
+          <Stack spacing="md">
+            <Text>
+              Are you sure you want to delete this patient? This action cannot be undone.
+            </Text>
+            <Text size="sm">
+              Please type "DELETE" to confirm:
+            </Text>
+            <TextInput
+              value={deleteConfirmName}
+              onChange={(e) => setDeleteConfirmName(e.currentTarget.value)}
+              placeholder='Type "DELETE" here'
+            />
+            <Group justify="flex-end">
+              <Button
+                variant="light"
+                onClick={() => {
+                  setDeleteModalOpen(false);
+                  setPatientToDelete(null);
+                  setDeleteConfirmName('');
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                color="red"
+                loading={isLoading}
+                onClick={handleDeletePatient}
+                disabled={deleteConfirmName !== 'DELETE'}
+              >
+                Delete Patient
+              </Button>
+            </Group>
+          </Stack>
+        </Modal>
+      </Box>
+      </Container>
+    );
+  }
