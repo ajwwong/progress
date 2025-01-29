@@ -9,6 +9,7 @@ import { showNotification } from '@mantine/notifications';
 import { MagicEditModal } from '../components/notes/MagicEditModal';
 import { useDisclosure } from '@mantine/hooks';
 import { format } from 'date-fns';
+import { useCompositions } from '../hooks/useCompositions';
 
 // Autosave debounce time in milliseconds
 const AUTOSAVE_DELAY = 2000;
@@ -21,6 +22,7 @@ export function NoteView(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
   const profile = useMedplumProfile();
+  const { triggerUpdate } = useCompositions();
   const [composition, setComposition] = useState<Composition>();
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(true);
@@ -79,6 +81,49 @@ export function NoteView(): JSX.Element {
   useEffect(() => {
     loadComposition();
   }, [loadComposition]);
+
+  useEffect(() => {
+    const markAsViewed = async () => {
+      if (!id) return;
+      
+      try {
+        const composition = await medplum.readResource('Composition', id);
+        const extensions = composition.extension || [];
+        const existingIndex = extensions.findIndex(ext => 
+          ext.url === 'http://example.com/fhir/StructureDefinition/note-viewed'
+        );
+        
+        // Only update if not already viewed
+        if (existingIndex === -1) {
+          extensions.push({
+            url: 'http://example.com/fhir/StructureDefinition/note-viewed',
+            valueBoolean: true
+          });
+          
+          // Update on server
+          const updatedComposition = await medplum.updateResource({
+            ...composition,
+            extension: extensions
+          });
+          
+          // Update local state
+          setComposition(updatedComposition);
+          
+          // Trigger update to refresh sidebar UI
+          triggerUpdate();
+          
+          // Broadcast the update to any listeners
+          window.dispatchEvent(new CustomEvent('composition-viewed', { 
+            detail: { composition: updatedComposition } 
+          }));
+        }
+      } catch (err) {
+        console.error('Error marking composition as viewed:', err);
+      }
+    };
+
+    markAsViewed();
+  }, [id, medplum, triggerUpdate]);
 
   const handleSignNote = async () => {
     if (!composition) return;

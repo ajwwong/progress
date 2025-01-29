@@ -533,25 +533,53 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                                     const isTranscriptHidden = hiddenTranscripts.has(note.id);
 
                                     // Handle transcript visibility
-                                    if (isTranscript && isTranscriptHidden) {
+                                    if (isTranscript) {
                                       return (
-                                        <Text
-                                          key={index}
-                                          size="sm"
-                                          fw={500}
-                                          c="blue"
-                                          style={{ cursor: 'pointer' }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setHiddenTranscripts(prev => {
-                                              const next = new Set(prev);
-                                              next.delete(note.id);
-                                              return next;
-                                            });
-                                          }}
-                                        >
-                                          Show Transcript
-                                        </Text>
+                                        <Box key={index}>
+                                          <Text 
+                                            fw={500} 
+                                            size="sm" 
+                                            c="blue.7" 
+                                            mb={isTranscriptHidden ? 0 : 6}
+                                            style={{
+                                              borderBottom: isTranscriptHidden ? 'none' : '1px solid var(--mantine-color-blue-2)',
+                                              paddingBottom: '4px',
+                                              cursor: 'pointer',
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setHiddenTranscripts(prev => {
+                                                const next = new Set(prev);
+                                                if (isTranscriptHidden) {
+                                                  next.delete(note.id);
+                                                } else {
+                                                  next.add(note.id);
+                                                }
+                                                return next;
+                                              });
+                                            }}
+                                          >
+                                            <Group justify="space-between" align="center">
+                                              {isTranscriptHidden ? "Show Transcript" : section.title}
+                                              {!isTranscriptHidden && (
+                                                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+                                                  Click to hide
+                                                </Text>
+                                              )}
+                                            </Group>
+                                          </Text>
+                                          {!isTranscriptHidden && (
+                                            <Text 
+                                              size="sm" 
+                                              style={{ 
+                                                whiteSpace: 'pre-wrap',
+                                                lineHeight: 1.6
+                                              }}
+                                            >
+                                              {section.content}
+                                            </Text>
+                                          )}
+                                        </Box>
                                       );
                                     }
 
@@ -602,22 +630,6 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                                                   ? 'Copied!' 
                                                   : 'Copy Text'}
                                             </Button>
-                                            {isTranscript && (
-                                              <Button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setHiddenTranscripts(prev => {
-                                                    const next = new Set(prev);
-                                                    next.add(note.id);
-                                                    return next;
-                                                  });
-                                                }}
-                                                variant="subtle"
-                                                size="xs"
-                                              >
-                                                Hide Transcript
-                                              </Button>
-                                            )}
                                           </Group>
                                         </Group>
                                         <Textarea
@@ -672,25 +684,53 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                                     const isTranscriptHidden = hiddenTranscripts.has(note.id);
 
                                     // Handle transcript visibility
-                                    if (isTranscript && isTranscriptHidden) {
+                                    if (isTranscript) {
                                       return (
-                                        <Text
-                                          key={index}
-                                          size="sm"
-                                          fw={500}
-                                          c="blue"
-                                          style={{ cursor: 'pointer' }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            setHiddenTranscripts(prev => {
-                                              const next = new Set(prev);
-                                              next.delete(note.id);
-                                              return next;
-                                            });
-                                          }}
-                                        >
-                                          Show Transcript
-                                        </Text>
+                                        <Box key={index}>
+                                          <Text 
+                                            fw={500} 
+                                            size="sm" 
+                                            c="blue.7" 
+                                            mb={isTranscriptHidden ? 0 : 6}
+                                            style={{
+                                              borderBottom: isTranscriptHidden ? 'none' : '1px solid var(--mantine-color-blue-2)',
+                                              paddingBottom: '4px',
+                                              cursor: 'pointer',
+                                            }}
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setHiddenTranscripts(prev => {
+                                                const next = new Set(prev);
+                                                if (isTranscriptHidden) {
+                                                  next.delete(note.id);
+                                                } else {
+                                                  next.add(note.id);
+                                                }
+                                                return next;
+                                              });
+                                            }}
+                                          >
+                                            <Group justify="space-between" align="center">
+                                              {isTranscriptHidden ? "Show Transcript" : section.title}
+                                              {!isTranscriptHidden && (
+                                                <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+                                                  Click to hide
+                                                </Text>
+                                              )}
+                                            </Group>
+                                          </Text>
+                                          {!isTranscriptHidden && (
+                                            <Text 
+                                              size="sm" 
+                                              style={{ 
+                                                whiteSpace: 'pre-wrap',
+                                                lineHeight: 1.6
+                                              }}
+                                            >
+                                              {section.content}
+                                            </Text>
+                                          )}
+                                        </Box>
                                       );
                                     }
 
@@ -708,22 +748,6 @@ export function PatientNotes({ patient }: PatientNotesProps): JSX.Element {
                                         >
                                           <Group justify="space-between" align="center">
                                             {section.title}
-                                            {isTranscript && (
-                                              <Button
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  setHiddenTranscripts(prev => {
-                                                    const next = new Set(prev);
-                                                    next.add(note.id);
-                                                    return next;
-                                                  });
-                                                }}
-                                                variant="subtle"
-                                                size="xs"
-                                              >
-                                                Hide Transcript
-                                              </Button>
-                                            )}
                                           </Group>
                                         </Text>
                                         <Text 

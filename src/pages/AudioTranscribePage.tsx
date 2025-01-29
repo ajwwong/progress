@@ -17,8 +17,11 @@ import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
 
 interface AudioTranscribePageProps {
-  onTranscriptionStart?: (time: string) => void;
+  onTranscriptionStart?: (compositionId: string) => void;
   onCompositionSaved?: () => void;
+  onTranscriptionEnd?: () => void;
+  onGeneratingStart?: (compositionId: string) => void;
+  onGeneratingEnd?: (compositionId: string) => void;
 }
 
 interface AudioControlsProps {
@@ -46,7 +49,7 @@ const sessionTypeData: SegmentedControlItem[] = [
   { value: 'telehealth', label: 'Headphones' }
 ];
 
-export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }: AudioTranscribePageProps): JSX.Element {
+export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, onTranscriptionEnd, onGeneratingStart, onGeneratingEnd }: AudioTranscribePageProps): JSX.Element {
   const medplum = useMedplum();
   const { templates } = useTemplates();
   const location = useLocation();
@@ -206,8 +209,12 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
         setUploadProgress(prev => Math.min(prev + 10, 90));
       }, 500);
 
+      if (savedComposition?.id) {
+        onTranscriptionStart?.(savedComposition.id);
+      }
+
       console.log('Calling transcribeAudio...');
-      const transcriptText = await transcribeAudio(blob, savedComposition.id, onTranscriptionStart);
+      const transcriptText = await transcribeAudio(blob, savedComposition.id);
       console.log('transcribeAudio completed successfully, transcript length:', transcriptText.length);
       
       clearInterval(progressInterval);
@@ -219,6 +226,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
         color: 'green'
       });
 
+      onTranscriptionEnd?.();
       return transcriptText;
     } catch (err) {
       console.error('Detailed transcription error:', err);
@@ -258,6 +266,9 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
     }
     
     setIsGeneratingNote(true);
+    if (savedComposition?.id) {
+      onGeneratingStart?.(savedComposition.id);
+    }
     try {
       console.log('Starting note generation...');
       await generateNote(transcript, selectedPatient, selectedTemplate, savedComposition.id);
@@ -277,6 +288,9 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       });
     } finally {
       setIsGeneratingNote(false);
+      if (savedComposition?.id) {
+        onGeneratingEnd?.(savedComposition.id);
+      }
     }
   };
 
@@ -332,14 +346,25 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved }
       
       // Generate note using the transcript we just got
       console.log('Generating note...');
-      await generateNote(transcriptText, selectedPatient, selectedTemplate, savedComposition!.id);
-      console.log('Note generation complete');
-      
-      showNotification({
-        title: 'Success',
-        message: 'Session ended and note generated successfully',
-        color: 'green'
-      });
+      setIsGeneratingNote(true);
+      if (savedComposition?.id) {
+        onGeneratingStart?.(savedComposition.id);
+      }
+      try {
+        await generateNote(transcriptText, selectedPatient, selectedTemplate, savedComposition!.id);
+        console.log('Note generation complete');
+        
+        showNotification({
+          title: 'Success',
+          message: 'Session ended and note generated successfully',
+          color: 'green'
+        });
+      } finally {
+        setIsGeneratingNote(false);
+        if (savedComposition?.id) {
+          onGeneratingEnd?.(savedComposition.id);
+        }
+      }
     } catch (error) {
       console.error('Error in workflow:', error);
       showNotification({
