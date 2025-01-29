@@ -11,20 +11,20 @@ export function RegisterPage(): JSX.Element {
   // If user is already authenticated, redirect to dashboard
   useEffect(() => {
     if (profile) {
-      navigate('/dashboard');
+      navigate('/calendar');
     }
   }, [profile, navigate]);
 
   const handleRegistrationSuccess = () => {
     // After successful registration, redirect to onboarding
-    navigate('/onboarding');
+    navigate('/calendar');
   };
 
   return (
     <SimpleGrid cols={2}>
       <Box pt={100} pb={200}>
         <RegisterForm
-          type="project"
+          type="patient"
           projectId={MEDPLUM_PROJECT_ID}
           googleClientId={MEDPLUM_GOOGLE_CLIENT_ID}
           recaptchaSiteKey={MEDPLUM_RECAPTCHA_SITE_KEY}

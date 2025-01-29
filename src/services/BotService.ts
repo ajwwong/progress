@@ -20,11 +20,27 @@ interface BotOptions {
 export class BotService {
   private static readonly TRANSCRIPTION_BOT_ID = '@https://progressnotes.app/bots:audio-transcribe';
   private static readonly NOTE_GENERATION_BOT_ID = '@https://progressnotes.app:ask-claude';
+  private isLocalhost: boolean;
 
-  constructor(private medplum: MedplumClient) {}
+  constructor(private medplum: MedplumClient) {
+    // Check if we're running against localhost
+    this.isLocalhost = medplum.getBaseUrl().includes('localhost');
+  }
+
+  private checkBotAvailability(): void {
+    if (!this.isLocalhost) {
+      throw new Error(
+        'Bots are only available when running against a local Medplum server. ' +
+        'If you\'re seeing this message, you\'re likely running against app.medplum.com. ' +
+        'To use bots, please run your own Medplum server locally and update the baseUrl in main.tsx to point to http://localhost:8103'
+      );
+    }
+  }
 
   async transcribeAudio(audioData: Uint8Array, contentType: string): Promise<string> {
     try {
+      this.checkBotAvailability();
+
       // Upload audio as binary
       const binary = await this.medplum.createBinary({
         data: audioData,
@@ -50,6 +66,9 @@ export class BotService {
 
       return response.details.transcript;
     } catch (err) {
+      if (err instanceof Error && err.message.includes('Bots are only available')) {
+        throw err;
+      }
       console.error('Transcription error:', err);
       throw new Error(`Transcription failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
@@ -57,6 +76,8 @@ export class BotService {
 
   async generateNote(prompt: string, options: BotOptions = {}): Promise<any> {
     try {
+      this.checkBotAvailability();
+
       const defaultOptions: BotOptions = {
         stream: true,
         maxTokens: 4000,
@@ -85,6 +106,9 @@ export class BotService {
 
       return this.parseNoteResponse(botResponse);
     } catch (err) {
+      if (err instanceof Error && err.message.includes('Bots are only available')) {
+        throw err;
+      }
       console.error('Note generation error:', err);
       throw new Error(`Note generation failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }

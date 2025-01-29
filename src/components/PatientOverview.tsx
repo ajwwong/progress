@@ -16,6 +16,7 @@ import { useParams } from 'react-router-dom';
 import { Patient, Composition } from '@medplum/fhirtypes';
 import { calculateAgeString } from '@medplum/core';
 import { useState, useEffect } from 'react';
+import { notifications } from '@mantine/notifications';
 
 interface FormData {
   phone: string;
@@ -76,6 +77,97 @@ export function PatientOverview(): JSX.Element {
         .finally(() => setLoading(false));
     }
   }, [medplum, id]);
+
+  const handleBasicClone = async () => {
+    try {
+      // Check if we're running against localhost
+      const isLocalhost = medplum.getBaseUrl().includes('localhost');
+      if (!isLocalhost) {
+        notifications.show({
+          title: 'Bot Not Available',
+          message: 'Basic Clone is only available when running against a local Medplum server. ' +
+                  'You are currently running against app.medplum.com. ' +
+                  'To use this feature, please run your own Medplum server locally.',
+          color: 'yellow'
+        });
+        return;
+      }
+
+      console.log('Executing basic-clone bot...');
+      const result = await medplum.executeBot(
+        'ec2096af-861b-4c84-994f-7ef11b6546d8',
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'input',
+              resource: patient
+            },
+            {
+              name: 'resourceTypes',
+              valueString: '*'
+            }
+          ]
+        }
+      );
+      console.log('Bot execution result:', result);
+      
+      // Check if the result indicates an error
+      if (result.status === 'error') {
+        console.error('Bot execution debug log:', result.debugLog);
+        console.error('Bot execution error details:', result.details);
+        throw new Error(result.message || 'Clone operation failed');
+      }
+
+      notifications.show({
+        title: 'Success',
+        message: 'Basic clone completed successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Error executing bot:', err);
+      
+      // Handle bot execution result error
+      if (err && typeof err === 'object' && 'status' in err && err.status === 'error') {
+        const botError = err as { status: string; message: string; details: any; debugLog: string[] };
+        console.error('Bot execution debug log:', botError.debugLog);
+        console.error('Bot execution details:', botError.details);
+        notifications.show({
+          title: 'Error',
+          message: `Clone failed: ${botError.message}. Check console for details.`,
+          color: 'red'
+        });
+        return;
+      }
+
+      // Handle HTTP response error
+      const error = err as { response?: Response };
+      if (error.response) {
+        const text = await error.response.text();
+        console.error('Error response:', text);
+        try {
+          const outcome = JSON.parse(text) as OperationOutcome;
+          notifications.show({
+            title: 'Error',
+            message: outcome.issue?.[0]?.diagnostics || 'Failed to execute basic clone',
+            color: 'red'
+          });
+        } catch {
+          notifications.show({
+            title: 'Error',
+            message: text || 'Failed to execute basic clone',
+            color: 'red'
+          });
+        }
+      } else {
+        notifications.show({
+          title: 'Error',
+          message: err instanceof Error ? err.message : 'Failed to execute basic clone',
+          color: 'red'
+        });
+      }
+    }
+  };
 
   if (!patient) {
     return <Text>Loading...</Text>;
