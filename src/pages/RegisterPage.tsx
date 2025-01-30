@@ -24,7 +24,7 @@ export function RegisterPage(): JSX.Element {
     <SimpleGrid cols={2}>
       <Box pt={100} pb={200}>
         <RegisterForm
-          type="patient"
+          type="project"
           projectId={MEDPLUM_PROJECT_ID}
           googleClientId={MEDPLUM_GOOGLE_CLIENT_ID}
           recaptchaSiteKey={MEDPLUM_RECAPTCHA_SITE_KEY}

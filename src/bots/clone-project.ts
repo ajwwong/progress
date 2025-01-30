@@ -18,13 +18,15 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Project>):
     console.log(`Processing project ID: ${newProjectId}, User ID: ${userId}`);
 
     // Template/source project to clone FROM
-    const sourceProjectId = 'a604466b-9c49-41a7-b1d0-4b5518765b1a';  // Your template project ID
-    console.log('Using template project:', sourceProjectId);
+    const sourceProjectId = event.secrets['TEMPLATE_PROJECT_ID']?.valueString;
+    if (!sourceProjectId) {
+      throw new Error('Template project ID not configured in secrets');
+    }
 
     const superAdminClient = new MedplumClient({
-      baseUrl: 'http://localhost:8103/',
-      clientId: 'f8828fae-82a6-4958-89a9-d0239f149f58',
-      clientSecret: 'c6045752c2ffebd06e2df7614dedaacac887dc8c2bb27210072dca37ccd89788'
+      baseUrl: event.baseUrl,
+      clientId: event.secrets['MEDPLUM_CLIENT_ID']?.valueString,
+      clientSecret: event.secrets['MEDPLUM_CLIENT_SECRET']?.valueString
     });
 
     debugLog.push('MedplumClient created');
