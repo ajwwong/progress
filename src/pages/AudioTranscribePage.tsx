@@ -283,8 +283,10 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
     }
     try {
       console.log('Starting note generation...');
-      await generateNote(transcript, selectedPatient, selectedTemplate, savedComposition.id);
+      const transcriptText = await generateNote(transcript, selectedPatient, selectedTemplate, savedComposition.id);
       console.log('Note generation completed successfully');
+      
+      await incrementUsage();
       
       showNotification({
         title: 'Success',

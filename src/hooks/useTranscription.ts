@@ -4,6 +4,7 @@ import { Composition, CompositionSection, Patient, Practitioner } from '@medplum
 import { NoteTemplate } from '../components/templates/types';
 import { useNoteTemplate } from './useNoteTemplate';
 import { BotService } from '../services/BotService';
+import { usePractitionerUsage } from './usePractitionerUsage';
 
 interface UseTranscriptionReturn {
   transcript: string;
@@ -35,6 +36,7 @@ export function useTranscription(): UseTranscriptionReturn {
   const medplum = useMedplum();
   const botService = new BotService(medplum);
   const { generatePrompt } = useNoteTemplate();
+  const { incrementUsage } = usePractitionerUsage();
   const [transcript, setTranscript] = useState<string>('');
   const [psychNote, setPsychNote] = useState<{ content: string; prompt?: string; rawResponse?: string }>({ content: '' });
   const [status, setStatus] = useState('Ready');
@@ -181,6 +183,8 @@ export function useTranscription(): UseTranscriptionReturn {
         rawResponse: typeof response === 'string' ? response : JSON.stringify(response, null, 2)
       });
 
+      await incrementUsage();
+      
       setStatus('Note generated and saved');
     } catch (err) {
       console.error('Error generating note:', err);
