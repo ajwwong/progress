@@ -1,4 +1,4 @@
-import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider, Switch, Select, Loader, Progress, SegmentedControl, SegmentedControlItem } from '@mantine/core';
+import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider, Switch, Select, Loader, Progress, SegmentedControl, SegmentedControlItem, Tooltip } from '@mantine/core';
 import { IconPlayerRecord, IconPlayerStop, IconPlayerPlay, IconFileText, IconNotes, IconPlayerPause, IconPlus, IconCheck, IconX, IconLoader, IconMicrophone, IconHeadphones } from '@tabler/icons-react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum, AsyncAutocomplete, ResourceAvatar } from '@medplum/react';
@@ -15,6 +15,7 @@ import { useActiveComposition } from '../hooks/useActiveComposition';
 import { useTemplates } from '../components/templates/hooks/useTemplates';
 import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
+import { usePractitionerUsage } from '../hooks/usePractitionerUsage';
 
 interface AudioTranscribePageProps {
   onTranscriptionStart?: (compositionId: string) => void;
@@ -90,6 +91,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
+  const { usageData, incrementUsage, canUseSession } = usePractitionerUsage();
 
   // Set initial values from location state
   useEffect(() => {
@@ -140,6 +142,16 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   }, [location.state, templates]);
 
   const handleStartRecording = async () => {
+    if (!canUseSession) {
+      showNotification({
+        title: 'Session Limit Reached',
+        message: 'You have used all your free sessions this month. Upgrade to Pro for unlimited sessions.',
+        color: 'yellow',
+        icon: <IconX size={16} />,
+      });
+      return;
+    }
+
     console.log('handleStartRecording called', {
       hasSelectedPatient: !!selectedPatient,
       isTelehealth
@@ -354,6 +366,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
         await generateNote(transcriptText, selectedPatient, selectedTemplate, savedComposition!.id);
         console.log('Note generation complete');
         
+        await incrementUsage();
+        
         showNotification({
           title: 'Success',
           message: 'Session ended and note generated successfully',
@@ -380,6 +394,41 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
 
   return (
     <Container size="sm" mt="xl">
+      {!usageData.isPro && (
+        <Group 
+          position="right" 
+          mb="md"
+          spacing="xs"
+          style={{ opacity: 0.75 }}
+        >
+          <Tooltip 
+            label={`${usageData.sessionsUsed} of ${usageData.sessionsLimit} sessions used this month`}
+            position="bottom"
+            withArrow
+          >
+            <Text size="sm" c="dimmed" style={{ fontSize: '13px' }}>
+              {usageData.sessionsLimit - usageData.sessionsUsed} sessions remaining
+            </Text>
+          </Tooltip>
+          <Button
+            variant="subtle"
+            size="xs"
+            color="blue"
+            onClick={() => navigate('/settings', { 
+              state: { defaultTab: 'billing' }  // Matches exactly with the tab value in PractitionerPage
+            })}
+            px={8}
+            style={{ 
+              fontSize: '13px',
+              height: '22px',
+              padding: '0 8px'
+            }}
+          >
+            Upgrade
+          </Button>
+        </Group>
+      )}
+
       <Modal 
         opened={showCancelModal} 
         onClose={() => setShowCancelModal(false)}

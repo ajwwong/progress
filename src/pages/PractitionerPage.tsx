@@ -1,12 +1,14 @@
-import { Container, Stack, Tabs, TextInput, Title, Text, Button, Group, Select, PasswordInput, Switch, MultiSelect, SegmentedControl, Paper, Badge, Radio } from '@mantine/core';
+import { Container, Stack, Tabs, TextInput, Title, Text, Button, Group, Select, PasswordInput, Switch, MultiSelect, SegmentedControl, Paper, Badge, Radio, List, ThemeIcon } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff, IconDownload, IconHistory, IconSettings, IconAlertCircle, IconCreditCard } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconDownload, IconHistory, IconSettings, IconAlertCircle, IconCreditCard, IconCheck } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
 import { Practitioner, Invoice } from '@medplum/fhirtypes';
 import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
+import { useLocation } from 'react-router-dom';
+import { usePractitionerUsage } from '../hooks/usePractitionerUsage';
 
 export function PractitionerPage(): JSX.Element {
   const medplum = useMedplum();
@@ -21,13 +23,17 @@ export function PractitionerPage(): JSX.Element {
   const [elements, setElements] = useState<StripeElements | null>(null);
   const [subscriptionActive, setSubscriptionActive] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const stripePromise = loadStripe('your_publishable_key');
+  const stripePromise = loadStripe('pk_test_51QbTYlIhrZKLmPhepqAOfCYqEnOgCMXRbyJAxn5BBqECnJE3kupGQspkOj9h2hOkY8VbqLP0N4xwEnI6ixwpEfPK00qe2kNrOw');
   const [referencePreference, setReferencePreference] = useState<string>('patient');
   const [quotePreference, setQuotePreference] = useState<string>('exclude');
   const [selectedInterventions, setSelectedInterventions] = useState<string[]>([]);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const location = useLocation();
+  const defaultTab = location.state?.defaultTab || 'profile';
+  const [activeTab, setActiveTab] = useState(defaultTab);
+  const { usageData, upgradeToPro } = usePractitionerUsage();
 
   useEffect(() => {
     if (profile) {
@@ -91,6 +97,13 @@ export function PractitionerPage(): JSX.Element {
       }
     };
   }, []);
+
+  useEffect(() => {
+    // Update active tab when location state changes
+    if (location.state?.defaultTab) {
+      setActiveTab(location.state.defaultTab);
+    }
+  }, [location.state]);
 
   const handleProfileUpdate = async () => {
     if (!profile) return;
@@ -184,7 +197,9 @@ export function PractitionerPage(): JSX.Element {
         'application/json'
       );
 
+      await upgradeToPro();
       setSubscriptionActive(true);
+      
       showNotification({
         title: 'Success',
         message: 'Your subscription has been activated',
@@ -247,7 +262,7 @@ export function PractitionerPage(): JSX.Element {
 
   return (
     <Container size="md" py="xl">
-      <Tabs defaultValue="profile">
+      <Tabs value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
           <Tabs.Tab value="profile">Profile</Tabs.Tab>
           <Tabs.Tab value="note-preferences">Note Preferences</Tabs.Tab>
@@ -377,107 +392,215 @@ export function PractitionerPage(): JSX.Element {
 
         <Tabs.Panel value="billing" pt="xl">
           <Stack gap="xl">
-            <Title order={2}>Billing</Title>
-            <Text c="dimmed">Manage your subscription and payment methods</Text>
+            <div>
+              <Title order={2}>Billing</Title>
+              <Text c="dimmed" mt={4}>Choose the plan that works best for you</Text>
+            </div>
 
-            {/* Subscription Section */}
-            <Paper withBorder p="xl">
-              <Stack gap="lg">
-                <Group justify="apart">
+            {/* Plan Comparison */}
+            <Group grow align="stretch">
+              <Paper 
+                withBorder 
+                p="xl" 
+                style={{ 
+                  opacity: usageData.isPro ? 0.6 : 1,
+                  transition: 'all 0.2s ease',
+                  position: 'relative',
+                  height: '100%'
+                }}
+              >
+                <Stack justify="space-between" h="100%">
                   <div>
-                    <Text size="lg" fw={500}>Transcription Service Subscription</Text>
-                    <Text size="sm" c="dimmed">Monthly access to AI transcription services</Text>
+                    <Badge color="gray" variant="light" size="lg" mb="md">Free Plan</Badge>
+                    <Group align="flex-end" spacing="xs" mb="md">
+                      <Text size="xl" fw={700}>$0</Text>
+                      <Text size="sm" c="dimmed" mb={4}>/month</Text>
+                    </Group>
+                    <Text c="dimmed" mb="xl">Perfect for getting started</Text>
+                    <List
+                      spacing="sm"
+                      center
+                      icon={
+                        <ThemeIcon color="gray" size={20} radius="xl">
+                          <IconCheck size={12} />
+                        </ThemeIcon>
+                      }
+                    >
+                      <List.Item>10 sessions per month</List.Item>
+                      <List.Item>Basic transcription</List.Item>
+                      <List.Item>Note generation</List.Item>
+                      <List.Item>30-day storage</List.Item>
+                    </List>
                   </div>
-                  <Badge color={subscriptionActive ? 'green' : 'gray'}>
-                    {subscriptionActive ? 'Active' : 'Inactive'}
-                  </Badge>
-                </Group>
+                  {!usageData.isPro && (
+                    <Text size="sm" c="dimmed" ta="center">
+                      {usageData.sessionsLimit - usageData.sessionsUsed} sessions remaining this month
+                    </Text>
+                  )}
+                </Stack>
+              </Paper>
 
-                <Text fw={500}>Price: $49.99/month</Text>
-
-                <div>
-                  <Text size="sm" fw={500} mb={8}>Card Information</Text>
-                  <div 
-                    id="card-element" 
+              <Paper 
+                withBorder 
+                p="xl"
+                style={{ 
+                  position: 'relative',
+                  transform: 'scale(1.02)',
+                  border: usageData.isPro ? '2px solid var(--mantine-color-blue-6)' : undefined,
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.08)',
+                  height: '100%',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                {usageData.isPro && (
+                  <Badge 
+                    color="blue"
+                    variant="filled"
                     style={{ 
-                      padding: '10px',
-                      border: '1px solid #ced4da',
-                      borderRadius: '4px'
+                      position: 'absolute',
+                      top: -12,
+                      right: 20
                     }}
-                  />
-                </div>
-
-                {error && (
-                  <Text color="red" size="sm">
-                    {error}
-                  </Text>
+                  >
+                    Current Plan
+                  </Badge>
                 )}
+                <Stack justify="space-between" h="100%">
+                  <div>
+                    <Badge color="blue" variant="light" size="lg" mb="md">Pro Plan</Badge>
+                    <Group align="flex-end" spacing="xs" mb="md">
+                      <Text size="xl" fw={700}>$49.99</Text>
+                      <Text size="sm" c="dimmed" mb={4}>/month</Text>
+                    </Group>
+                    <Text c="dimmed" mb="xl">For professionals who need more</Text>
+                    <List
+                      spacing="sm"
+                      center
+                      icon={
+                        <ThemeIcon color="blue" size={20} radius="xl">
+                          <IconCheck size={12} />
+                        </ThemeIcon>
+                      }
+                    >
+                      <List.Item>Unlimited sessions</List.Item>
+                      <List.Item>Advanced transcription</List.Item>
+                      <List.Item>Priority support</List.Item>
+                      <List.Item>Extended storage</List.Item>
+                      <List.Item>Custom templates</List.Item>
+                      <List.Item>Priority processing</List.Item>
+                    </List>
+                  </div>
+                  {!usageData.isPro && (
+                    <Button
+                      fullWidth
+                      size="md"
+                      onClick={handleSubscribe}
+                      loading={loading}
+                      leftSection={<IconCreditCard size={16} />}
+                    >
+                      Upgrade Now
+                    </Button>
+                  )}
+                </Stack>
+              </Paper>
+            </Group>
 
-                <Button
-                  leftSection={<IconCreditCard size={16} />}
-                  loading={loading}
-                  onClick={handleSubscribe}
-                  disabled={subscriptionActive}
-                >
-                  {subscriptionActive ? 'Subscription Active' : 'Subscribe Now'}
-                </Button>
-              </Stack>
-            </Paper>
+            {/* Only show payment section if not pro */}
+            {!usageData.isPro && (
+              <Paper withBorder p="xl" mt="xl">
+                <Stack gap="lg">
+                  <div>
+                    <Text size="lg" fw={500}>Payment Information</Text>
+                    <Text size="sm" c="dimmed">Your subscription will start immediately after payment</Text>
+                  </div>
+
+                  <div>
+                    <Text size="sm" fw={500} mb={8}>Card Details</Text>
+                    <div 
+                      id="card-element" 
+                      style={{ 
+                        padding: '12px',
+                        border: '1px solid var(--mantine-color-gray-3)',
+                        borderRadius: '8px',
+                        backgroundColor: 'var(--mantine-color-gray-0)'
+                      }}
+                    />
+                  </div>
+
+                  {error && (
+                    <Text color="red" size="sm">
+                      {error}
+                    </Text>
+                  )}
+                </Stack>
+              </Paper>
+            )}
 
             {/* Payment History Section */}
             <Paper withBorder p="xl">
               <Stack gap="lg">
                 <Title order={3}>Payment History</Title>
                 
-                {invoices.map((invoice) => (
-                  <Paper key={invoice.id} p="md" withBorder>
-                    <Group justify="apart">
-                      <Stack gap={4}>
-                        <Text fw={500}>
-                          {new Date(invoice.date || '').toLocaleDateString('en-US', {
-                            month: 'long',
-                            day: 'numeric',
-                            year: 'numeric'
-                          })}
-                        </Text>
-                        <Text size="sm" c="dimmed">Invoice #{invoice.id}</Text>
-                      </Stack>
-                      <Group>
-                        <Text fw={500}>${invoice.totalGross?.value?.toFixed(2)}</Text>
-                        <Badge color="green">Paid</Badge>
-                        <Button
-                          variant="light"
-                          size="sm"
-                          leftSection={<IconDownload size={16} />}
-                          onClick={() => {
-                            const paymentIntentId = invoice.identifier?.find(
-                              id => id.system === 'https://stripe.com/payment_intent'
-                            )?.value;
+                {invoices.length > 0 ? (
+                  invoices.map((invoice) => (
+                    <Paper 
+                      key={invoice.id} 
+                      p="md" 
+                      withBorder
+                      style={{
+                        transition: 'transform 0.2s ease',
+                        '&:hover': {
+                          transform: 'translateY(-2px)'
+                        }
+                      }}
+                    >
+                      <Group justify="apart">
+                        <Stack gap={4}>
+                          <Text fw={500}>
+                            {new Date(invoice.date || '').toLocaleDateString('en-US', {
+                              month: 'long',
+                              day: 'numeric',
+                              year: 'numeric'
+                            })}
+                          </Text>
+                          <Text size="sm" c="dimmed">Invoice #{invoice.id}</Text>
+                        </Stack>
+                        <Group>
+                          <Text fw={500}>${invoice.totalGross?.value?.toFixed(2)}</Text>
+                          <Badge color="green">Paid</Badge>
+                          <Button
+                            variant="subtle"
+                            size="sm"
+                            leftSection={<IconDownload size={16} />}
+                            onClick={() => {
+                              const paymentIntentId = invoice.identifier?.find(
+                                id => id.system === 'https://stripe.com/payment_intent'
+                              )?.value;
 
-                            if (paymentIntentId) {
-                              medplum.executeBot(
-                                'stripe-invoice-download-bot-id',
-                                { paymentIntentId },
-                                'application/json'
-                              ).then(response => {
-                                if (response.url) {
-                                  window.open(response.url, '_blank');
-                                }
-                              });
-                            }
-                          }}
-                        >
-                          Download
-                        </Button>
+                              if (paymentIntentId) {
+                                medplum.executeBot(
+                                  'stripe-invoice-download-bot-id',
+                                  { paymentIntentId },
+                                  'application/json'
+                                ).then(response => {
+                                  if (response.url) {
+                                    window.open(response.url, '_blank');
+                                  }
+                                });
+                              }
+                            }}
+                          >
+                            Download
+                          </Button>
+                        </Group>
                       </Group>
-                    </Group>
-                  </Paper>
-                ))}
-                
-                {invoices.length === 0 && (
-                  <Text c="dimmed" ta="center" py="xl">
-                    No payment history available
-                  </Text>
+                    </Paper>
+                  ))
+                ) : (
+                  <Stack align="center" py="xl" spacing="xs">
+                    <IconHistory size={32} style={{ color: 'var(--mantine-color-gray-5)' }} />
+                    <Text c="dimmed">No payment history available</Text>
+                  </Stack>
                 )}
               </Stack>
             </Paper>

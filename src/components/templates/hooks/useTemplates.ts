@@ -3,6 +3,75 @@ import { useMedplum } from '@medplum/react';
 import { Questionnaire } from '@medplum/fhirtypes';
 import { NoteTemplate } from '../types';
 
+const DEFAULT_TEMPLATES: Questionnaire[] = [
+  {
+    resourceType: "Questionnaire",
+    id: "default-therapy-followup",
+    title: "Follow up therapy",
+    status: "active",
+    code: [{
+      system: 'http://progress.care/fhir',
+      code: 'note-template',
+      display: 'Note Template'
+    }],
+    item: [
+      {
+        linkId: "subjectiveHistory",
+        text: "Subjective & History",
+        type: "text",
+        initial: [{
+          valueString: ''
+        }]
+      },
+      {
+        linkId: "mentalStatusExam",
+        text: "Mental Status Exam",
+        type: "text",
+        initial: [{
+          valueString: ''
+        }]
+      },
+      {
+        linkId: "assessmentPlan",
+        text: "Assessment & Plan",
+        type: "text",
+        initial: [{
+          valueString: ''
+        }]
+      }
+    ]
+  },
+  {
+    resourceType: "Questionnaire",
+    id: "default-therapy-intake",
+    title: "Intake Session",
+    status: "active",
+    code: [{
+      system: 'http://progress.care/fhir',
+      code: 'note-template',
+      display: 'Note Template'
+    }],
+    item: [
+      {
+        linkId: "presentingProblem",
+        text: "Presenting Problem",
+        type: "text",
+        initial: [{
+          valueString: ''
+        }]
+      },
+      {
+        linkId: "historyAndBackground",
+        text: "History & Background",
+        type: "text",
+        initial: [{
+          valueString: ''
+        }]
+      }
+    ]
+  }
+];
+
 // Default template based on the provided example
 const defaultTemplate: NoteTemplate = {
   id: '1',
@@ -63,9 +132,9 @@ export function useTemplates() {
       });
       
       // Filter for templates
-      const templateResults = results.filter(q => 
+      const templateResults = [...DEFAULT_TEMPLATES, ...results.filter(q => 
         q.code?.some(c => c.code === 'note-template')
-      );
+      )];
 
       const loadedTemplates = templateResults.map(q => ({
         id: q.id || '',
