@@ -16,6 +16,7 @@ import { useTemplates } from '../components/templates/hooks/useTemplates';
 import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
 import { usePractitionerUsage } from '../hooks/usePractitionerUsage';
+import { useAudioDevices } from '../hooks/useAudioDevices';
 
 interface AudioTranscribePageProps {
   onTranscriptionStart?: (compositionId: string) => void;
@@ -92,6 +93,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
   const { usageData, incrementUsage, canUseSession } = usePractitionerUsage();
+  const { audioDevices, selectedDevice, setSelectedDevice } = useAudioDevices();
 
   // Set initial values from location state
   useEffect(() => {
@@ -626,11 +628,56 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
             </Box>
 
             {isRecording && (
-              <AudioMeter 
-                stream={stream} 
-                isRecording={isRecording}
-                isPaused={isPaused}
-              />
+              <>
+                <AudioMeter 
+                  stream={stream} 
+                  isRecording={isRecording}
+                  isPaused={isPaused}
+                />
+                <Group align="center" spacing="xs" style={{ maxWidth: '100%', margin: '0 auto' }}>
+                  <Text size="sm" style={{ color: '#9e9e9e', fontSize: '14px' }}>Microphone</Text>
+                  <Select
+                    placeholder="Select a microphone"
+                    data={audioDevices.map(device => ({
+                      value: device.deviceId,
+                      label: device.label || `Microphone ${device.deviceId}`
+                    }))}
+                    value={selectedDevice}
+                    onChange={setSelectedDevice}
+                    styles={{
+                      input: {
+                        height: '45px',
+                        fontSize: '14px',
+                        borderRadius: '8px',
+                        border: '1px solid #e0e0e0',
+                        boxShadow: 'none',
+                        transition: 'border-color 0.2s ease',
+                        color: '#757575',
+                        '&::placeholder': {
+                          color: '#bdbdbd',
+                        },
+                        '&:focus': {
+                          borderColor: '#cfd8dc',
+                          boxShadow: '0 0 0 2px rgba(207, 216, 220, 0.3)',
+                        }
+                      },
+                      dropdown: {
+                        borderRadius: '8px',
+                        boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
+                      },
+                      item: {
+                        '&[data-selected]': {
+                          backgroundColor: '#cfd8dc',
+                          color: 'black',
+                        },
+                        '&[data-hovered]': {
+                          backgroundColor: '#f5f5f5',
+                        }
+                      }
+                    }}
+                  />
+                </Group>
+              </>
             )}
           </Stack>
 

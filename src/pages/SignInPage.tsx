@@ -9,6 +9,7 @@ export function SignInPage(): JSX.Element {
       // Configure according to your settings
       //googleClientId="921088377005-3j1sa10vr6hj86jgmdfh2l53v3mp7lfi.apps.googleusercontent.com" // use this one to run against prod
       googleClientId="397236612778-c0b5tnjv98frbo1tfuuha5vkme3cmq4s.apps.googleusercontent.com" // use this one for localhost
+      projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
       onSuccess={() => navigate('/')}
     >
       <Logo size={32} />
