@@ -15,7 +15,7 @@ import { useActiveComposition } from '../hooks/useActiveComposition';
 import { useTemplates } from '../components/templates/hooks/useTemplates';
 import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
-import { usePractitionerUsage } from '../hooks/usePractitionerUsage';
+import { useProfileUsage } from '../hooks/useProfileUsage';
 import { useAudioDevices } from '../hooks/useAudioDevices';
 
 interface AudioTranscribePageProps {
@@ -92,7 +92,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
-  const { usageData, incrementUsage, canUseSession } = usePractitionerUsage();
+  const { usageData, incrementUsage, canUseSession } = useProfileUsage();
   const { audioDevices, selectedDevice, setSelectedDevice } = useAudioDevices();
 
   // Set initial values from location state
@@ -419,7 +419,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
             size="xs"
             color="blue"
             onClick={() => navigate('/settings', { 
-              state: { defaultTab: 'billing' }  // Matches exactly with the tab value in PractitionerPage
+              state: { defaultTab: 'billing' }  // Matches exactly with the tab value in ProfilePage
             })}
             px={8}
             style={{ 

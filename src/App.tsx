@@ -25,7 +25,7 @@ import { PatientDirectoryPage } from './features/patients/pages/PatientDirectory
 import { ClientRoutes } from './routes/ClientRoutes';
 import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
-import { PractitionerPage } from './pages/PractitionerPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { PatientRecentComposition } from './components/PatientRecentComposition';
 import { TemplateRoutes } from './components/templates/TemplateRoutes';
 import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
@@ -71,6 +71,18 @@ export function App(): JSX.Element | null {
     window.addEventListener('composition-viewed', handleCompositionViewed);
     return () => window.removeEventListener('composition-viewed', handleCompositionViewed);
   }, []);
+
+  // Add token refresh effect
+  useEffect(() => {
+    if (!medplum) return;
+    
+    // Refresh token every 45 minutes (giving 15 min buffer before 1 hour expiration)
+    const refreshInterval = setInterval(() => {
+      medplum.refreshIfExpired(900); // 900 seconds (15 minutes) grace period
+    }, 45 * 60 * 1000);
+
+    return () => clearInterval(refreshInterval);
+  }, [medplum]);
 
   const isNoteCompleted = (composition: any) => {
     return composition.extension?.some((ext: any) => 
@@ -407,8 +419,8 @@ export function App(): JSX.Element | null {
                 <Route path="/templates/*" element={<TemplateRoutes />} />
                 <Route path="/portal/*" element={<ClientRoutes />} />
                 <Route path="/billing" element={<BillingDashboard />} />
-                <Route path="/settings" element={<PractitionerPage />} />
-                <Route path="/Practitioner/:id" element={<PractitionerPage />} />
+                <Route path="/settings" element={<ProfilePage />} />
+                <Route path="/Practitioner/:id" element={<ProfilePage />} />
               </Routes>
             </Suspense>
           </ErrorBoundary>

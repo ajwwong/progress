@@ -1,6 +1,6 @@
 import { Stack, Group, Text, Button, TextInput, Paper, Collapse, Box } from '@mantine/core';
 import { IconPlus, IconUserCheck, IconMicrophone } from '@tabler/icons-react';
-import { AsyncAutocomplete, ResourceAvatar, useMedplum } from '@medplum/react';
+import { AsyncAutocomplete, ResourceAvatar, useMedplum, useMedplumProfile } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
 import { useState, useEffect } from 'react';
@@ -22,6 +22,7 @@ export function PatientSelector({
   isHighlighted = false
 }: PatientSelectorProps) {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const [showNewForm, setShowNewForm] = useState(false);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -196,7 +197,13 @@ export function PatientSelector({
               placeholder="Search by patient name..."
               loadOptions={async (input, signal) => {
                 if (!input) return [];
-                return await medplum.searchResources('Patient', `name:contains=${input}`, { signal });
+                let searchParams = [`name:contains=${input}`];
+                
+                if (profile?.resourceType === 'Patient') {
+                  searchParams.push(`_id:not=${profile.id}`);
+                }
+                
+                return await medplum.searchResources('Patient', searchParams.join('&'), { signal });
               }}
               toOption={(patient) => ({
                 value: patient.id as string,

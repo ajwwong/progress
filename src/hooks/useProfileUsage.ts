@@ -1,5 +1,5 @@
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { Practitioner } from '@medplum/fhirtypes';
+import { Resource } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
 
 const FREE_SESSIONS_PER_MONTH = 10;
@@ -13,9 +13,9 @@ export interface UsageData {
   lastResetDate: string;
 }
 
-export function usePractitionerUsage() {
+export function useProfileUsage() {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Practitioner;
+  const profile = useMedplumProfile() as Resource;
   const [usageData, setUsageData] = useState<UsageData>({
     sessionsUsed: 0,
     sessionsLimit: FREE_SESSIONS_PER_MONTH,
@@ -58,7 +58,7 @@ export function usePractitionerUsage() {
   const updateUsage = async (newCount: number, resetDate: string, isPro: boolean) => {
     if (!profile) return;
 
-    const updatedPractitioner: Practitioner = {
+    const updatedProfile = {
       ...profile,
       extension: [
         ...(profile.extension || []).filter(e => 
@@ -84,7 +84,7 @@ export function usePractitionerUsage() {
       ]
     };
 
-    await medplum.updateResource(updatedPractitioner);
+    await medplum.updateResource(updatedProfile);
     await loadUsageData();
   };
 

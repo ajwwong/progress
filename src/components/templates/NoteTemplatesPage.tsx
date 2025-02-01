@@ -18,13 +18,8 @@ export function NoteTemplatesPage(): JSX.Element {
   // Load templates on mount
   useEffect(() => {
     const loadTemplates = async () => {
-      if (creationInProgress.current) {
-        return;
-      }
-
       try {
-        creationInProgress.current = true;
-        // Get all templates first
+        // Get all templates
         const results = await medplum.searchResources('Questionnaire', {
           _count: '100'
         });
@@ -34,31 +29,12 @@ export function NoteTemplatesPage(): JSX.Element {
           q.code?.some(c => c.code === 'note-template')
         );
 
-        // Create any missing default templates
-        const newTemplates = [];
-        for (const defaultTemplate of defaultTemplates) {
-          const identifier = defaultTemplate.identifier?.[0]?.value;
-          if (identifier && !hasTemplate(templateResults, identifier)) {
-            try {
-              const savedTemplate = await medplum.createResource({
-                ...defaultTemplate,
-                id: undefined
-              });
-              console.log(`Created default template: ${defaultTemplate.title}`);
-              newTemplates.push(savedTemplate);
-            } catch (err) {
-              console.error(`Error creating template ${defaultTemplate.title}:`, err);
-            }
-          }
-        }
-
-        setTemplates([...newTemplates, ...templateResults]);
+        setTemplates(templateResults);
       } catch (err) {
         console.error('Error loading templates:', err);
         setTemplates([]);
       } finally {
         setLoading(false);
-        creationInProgress.current = false;
       }
     };
 

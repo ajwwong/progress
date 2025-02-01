@@ -8,25 +8,20 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 
 const defaultItems: QuestionnaireItem[] = [
   {
-    linkId: 'clinical-observations',
-    text: 'Clinical Observations',
+    linkId: 'subjective-history',
+    text: 'Subjective & History',
     type: 'text',
     initial: [{ valueString: '' }]
-  },{
+  },
+  {
     linkId: 'mental-status',
     text: 'Mental Status Exam',
     type: 'text',
     initial: [{ valueString: '' }]
   },
   {
-    linkId: 'treatment-progress',
-    text: 'Treatment Progress',
-    type: 'text',
-    initial: [{ valueString: '' }]
-  },
-  {
-    linkId: 'plan',
-    text: 'Plan & Recommendations',
+    linkId: 'assessment-plan',
+    text: 'Assessment & Plan',
     type: 'text',
     initial: [{ valueString: '' }]
   }

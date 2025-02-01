@@ -4,7 +4,8 @@ import { Composition, CompositionSection, Patient, Practitioner } from '@medplum
 import { NoteTemplate } from '../components/templates/types';
 import { useNoteTemplate } from './useNoteTemplate';
 import { BotService } from '../services/BotService';
-import { usePractitionerUsage } from './usePractitionerUsage';
+import { useProfileUsage } from './useProfileUsage';
+import { useMedplumProfile } from '@medplum/react';
 
 interface UseTranscriptionReturn {
   transcript: string;
@@ -34,9 +35,10 @@ interface NoteResponse {
 
 export function useTranscription(): UseTranscriptionReturn {
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const botService = new BotService(medplum);
   const { generatePrompt } = useNoteTemplate();
-  const { incrementUsage } = usePractitionerUsage();
+  const { incrementUsage } = useProfileUsage();
   const [transcript, setTranscript] = useState<string>('');
   const [psychNote, setPsychNote] = useState<{ content: string; prompt?: string; rawResponse?: string }>({ content: '' });
   const [status, setStatus] = useState('Ready');
@@ -150,9 +152,11 @@ export function useTranscription(): UseTranscriptionReturn {
     
     try {
       const composition = await medplum.readResource('Composition', compositionId);
-      const practitioner = await medplum.readResource('Practitioner', composition.author?.[0]?.reference?.split('/')[1] || '');
+      if (!profile) {
+        throw new Error('No profile found');
+      }
       
-      const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, practitioner);
+      const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, profile);
       const response = await botService.generateNote(prompt);
       
       // Simplified processing

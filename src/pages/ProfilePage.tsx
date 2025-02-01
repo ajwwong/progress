@@ -4,15 +4,15 @@ import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff, IconDownload, IconHistory, IconSettings, IconAlertCircle, IconCreditCard, IconCheck } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
-import { Practitioner, Invoice } from '@medplum/fhirtypes';
+import { Resource, Invoice } from '@medplum/fhirtypes';
 import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
-import { useLocation } from 'react-router-dom';
-import { usePractitionerUsage } from '../hooks/usePractitionerUsage';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useProfileUsage } from '../hooks/useProfileUsage';
 
-export function PractitionerPage(): JSX.Element {
+export function ProfilePage(): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Practitioner | undefined;
+  const profile = useMedplumProfile() as Resource;
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -33,7 +33,8 @@ export function PractitionerPage(): JSX.Element {
   const location = useLocation();
   const defaultTab = location.state?.defaultTab || 'profile';
   const [activeTab, setActiveTab] = useState(defaultTab);
-  const { usageData, upgradeToPro } = usePractitionerUsage();
+  const { usageData, upgradeToPro } = useProfileUsage();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (profile) {
@@ -272,8 +273,12 @@ export function PractitionerPage(): JSX.Element {
 
         <Tabs.Panel value="profile" pt="xl">
           <Stack gap="xl">
-            <Title order={2}>Profile Settings</Title>
-            <Text c="dimmed">Manage your account information.</Text>
+            <Group position="apart">
+              <div>
+                <Title order={2}>Profile Settings</Title>
+                <Text c="dimmed">Manage your account information.</Text>
+              </div>
+            </Group>
 
             {profileLoading ? (
               <Text>Loading profile...</Text>
@@ -611,7 +616,7 @@ export function PractitionerPage(): JSX.Element {
           <form onSubmit={handlePasswordChange}>
             <Stack gap="xl">
               <Title order={2}>Change Password</Title>
-              <Text c="dimmed">Update your account password.</Text>
+              <Text c="dimmed">Update your account password</Text>
 
               <PasswordInput
                 label="Current Password"

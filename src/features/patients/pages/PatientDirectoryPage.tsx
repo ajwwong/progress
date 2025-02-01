@@ -1,6 +1,6 @@
 import { Group, Title, Text, Anchor,Button, Stack, Box, ActionIcon, TextInput, Modal, Paper, Menu, Table, Select, Container } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
-import { ResourceName, useMedplum, useMedplumNavigate } from '@medplum/react';
+import { ResourceName, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
 import { IconSearch, IconPhone, IconMail, IconDotsVertical, IconPlus } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { notifications } from '@mantine/notifications';
@@ -35,6 +35,7 @@ export function PatientDirectoryPage(): JSX.Element {
   const [totalPages, setTotalPages] = useState(1);
   const patientsPerPage = 100;
   const medplum = useMedplum();
+  const profile = useMedplumProfile();
   const navigate = useMedplumNavigate();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isPatientModalOpen, setIsPatientModalOpen] = useState(false);
@@ -88,6 +89,10 @@ export function PatientDirectoryPage(): JSX.Element {
         if (clientStatus === 'active') {
           searchParams.push('active=true');
         }
+      }
+      
+      if (profile?.resourceType === 'Patient') {
+        searchParams.push(`_id:not=${profile.id}`);
       }
       
       searchParams.push(`_sort=family`);
