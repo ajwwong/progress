@@ -27,7 +27,7 @@
     "@mantine/notifications": "7.13.4",
     "@medplum/core": "3.2.26",
     "@medplum/eslint-config": "3.2.18",
-    "@medplum/fhirtypes": "3.2.26",
+    "@medplum/fhirtypes": "3.2.30",
     "@medplum/react": "3.2.26",
     "@tabler/icons-react": "3.17.0",
     "@types/node": "^20.0.0",
@@ -46,7 +46,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.32.1",
     "@medplum/core": "3.2.26",
-    "@medplum/fhirtypes": "3.2.26",
+    "@medplum/fhirtypes": "3.2.30",
     "@medplum/mock": "3.2.26",
     "@medplum/react": "3.2.26",
     "stripe": "^17.4.0"
