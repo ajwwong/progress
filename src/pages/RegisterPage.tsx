@@ -16,7 +16,7 @@ export function RegisterPage(): JSX.Element {
   }, [profile, navigate]);
 
   const handleRegistrationSuccess = () => {
-    navigate('/onboarding');
+    navigate('/dashboard');
   };
 
   return (

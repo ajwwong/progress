@@ -17,6 +17,7 @@ import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
 import { useProfileUsage } from '../hooks/useProfileUsage';
 import { useAudioDevices } from '../hooks/useAudioDevices';
+import { useOnboarding } from '../hooks/useOnboarding';
 
 interface OnboardingPageProps {
   onTranscriptionStart?: (compositionId: string) => void;
@@ -84,7 +85,7 @@ export function OnboardingPage({
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
   const [isTelehealth] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
+  const { hasCompletedOnboarding, completeOnboarding } = useOnboarding();
   const [showDialog, setShowDialog] = useState(false);
 
   const {
@@ -231,25 +232,6 @@ export function OnboardingPage({
     }
   }, [location.state, templates]);
 
-  // Add this effect to check onboarding status on mount
-  useEffect(() => {
-    const checkOnboardingStatus = async () => {
-      try {
-        const profile = await medplum.getProfile();
-        const onboardingComplete = profile.extension?.find(
-          ext => ext.url === 'https://progress.care/fhir/onboarding-complete'
-        )?.valueBoolean;
-        
-        // Remove the navigation, just keep track of the status
-        setHasCompletedOnboarding(!!onboardingComplete);
-      } catch (error) {
-        console.error('Error checking onboarding status:', error);
-      }
-    };
-
-    checkOnboardingStatus();
-  }, [medplum]);
-
   const handleStartSession = async () => {
     try {
       if (!selectedPatient) {
@@ -351,7 +333,7 @@ export function OnboardingPage({
         onCompositionSaved?.();
         
         // Mark onboarding as complete
-        await markOnboardingComplete();
+        await handleCompleteOnboarding();
         
         setOnboardingStep(3);
       } finally {
@@ -370,33 +352,16 @@ export function OnboardingPage({
     }
   };
 
-  // Add this function to mark onboarding as complete
-  const markOnboardingComplete = async () => {
+  const handleCompleteOnboarding = async () => {
     try {
-      const profile = await medplum.getProfile();
-      const updatedProfile = await medplum.updateResource({
-        ...profile,
-        extension: [
-          ...(profile.extension?.filter(e => 
-            e.url !== 'https://progress.care/fhir/onboarding-complete'
-          ) || []),
-          {
-            url: 'https://progress.care/fhir/onboarding-complete',
-            valueBoolean: true
-          }
-        ]
-      });
-
-      setHasCompletedOnboarding(true);
+      await completeOnboarding();
       showNotification({
         title: '🎉 Congratulations!',
         message: 'You\'ve completed onboarding! Click on your newly created note in the left sidebar to see your progress note.',
         color: 'green',
-        autoClose: false // Keep notification visible so user can read instructions
+        autoClose: false
       });
-
     } catch (error) {
-      console.error('Error marking onboarding as complete:', error);
       showNotification({
         title: 'Error',
         message: 'Failed to save onboarding status',
