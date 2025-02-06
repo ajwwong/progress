@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from 'react';
 import { IconPlus, IconSearch, IconFilter, IconDownload, IconUpload, IconDots, IconCopy } from '@tabler/icons-react';
 import { useNavigate } from 'react-router-dom';
 import { Questionnaire } from '@medplum/fhirtypes';
-import { defaultTemplates, hasTemplate } from './defaultTemplates';
 
 export function NoteTemplatesPage(): JSX.Element {
   const navigate = useNavigate();

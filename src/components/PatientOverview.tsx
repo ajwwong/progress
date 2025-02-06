@@ -24,6 +24,7 @@ interface FormData {
   birthDate: string;
   pronouns: string;
   defaultTemplate: string;
+  gender: string;
 }
 
 export function PatientOverview(): JSX.Element {
@@ -33,11 +34,13 @@ export function PatientOverview(): JSX.Element {
   const [latestNote, setLatestNote] = useState<Composition>();
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     birthDate: '',
     gender: '',
     phone: '',
     email: '',
+    defaultTemplate: '',
+    pronouns: ''
   });
 
   useEffect(() => {
@@ -51,6 +54,8 @@ export function PatientOverview(): JSX.Element {
             gender: p.gender || '',
             phone: p.telecom?.find(t => t.system === 'phone')?.value || '',
             email: p.telecom?.find(t => t.system === 'email')?.value || '',
+            defaultTemplate: '',
+            pronouns: ''
           });
         })
         .catch(console.error);
@@ -69,7 +74,7 @@ export function PatientOverview(): JSX.Element {
             contentDiv.innerHTML = results[0].section[0].text.div;
             // Get the text content
             const textContent = contentDiv.textContent || 'No content available';
-            results[0].section[0].text = { div: textContent };
+            results[0].section[0].text = { div: textContent, status: 'generated' };
           }
           setLatestNote(results[0]);
         })
@@ -78,128 +83,37 @@ export function PatientOverview(): JSX.Element {
     }
   }, [medplum, id]);
 
-  const handleBasicClone = async () => {
-    try {
-      // Check if we're running against localhost
-      const isLocalhost = medplum.getBaseUrl().includes('localhost');
-      if (!isLocalhost) {
-        notifications.show({
-          title: 'Bot Not Available',
-          message: 'Basic Clone is only available when running against a local Medplum server. ' +
-                  'You are currently running against app.medplum.com. ' +
-                  'To use this feature, please run your own Medplum server locally.',
-          color: 'yellow'
-        });
-        return;
-      }
-
-      console.log('Executing basic-clone bot...');
-      const result = await medplum.executeBot(
-        'ec2096af-861b-4c84-994f-7ef11b6546d8',
-        {
-          resourceType: 'Parameters',
-          parameter: [
-            {
-              name: 'input',
-              resource: patient
-            },
-            {
-              name: 'resourceTypes',
-              valueString: '*'
-            }
-          ]
-        }
-      );
-      console.log('Bot execution result:', result);
-      
-      // Check if the result indicates an error
-      if (result.status === 'error') {
-        console.error('Bot execution debug log:', result.debugLog);
-        console.error('Bot execution error details:', result.details);
-        throw new Error(result.message || 'Clone operation failed');
-      }
-
-      notifications.show({
-        title: 'Success',
-        message: 'Basic clone completed successfully',
-        color: 'green'
-      });
-    } catch (err) {
-      console.error('Error executing bot:', err);
-      
-      // Handle bot execution result error
-      if (err && typeof err === 'object' && 'status' in err && err.status === 'error') {
-        const botError = err as { status: string; message: string; details: any; debugLog: string[] };
-        console.error('Bot execution debug log:', botError.debugLog);
-        console.error('Bot execution details:', botError.details);
-        notifications.show({
-          title: 'Error',
-          message: `Clone failed: ${botError.message}. Check console for details.`,
-          color: 'red'
-        });
-        return;
-      }
-
-      // Handle HTTP response error
-      const error = err as { response?: Response };
-      if (error.response) {
-        const text = await error.response.text();
-        console.error('Error response:', text);
-        try {
-          const outcome = JSON.parse(text) as OperationOutcome;
-          notifications.show({
-            title: 'Error',
-            message: outcome.issue?.[0]?.diagnostics || 'Failed to execute basic clone',
-            color: 'red'
-          });
-        } catch {
-          notifications.show({
-            title: 'Error',
-            message: text || 'Failed to execute basic clone',
-            color: 'red'
-          });
-        }
-      } else {
-        notifications.show({
-          title: 'Error',
-          message: err instanceof Error ? err.message : 'Failed to execute basic clone',
-          color: 'red'
-        });
-      }
-    }
-  };
-
   if (!patient) {
     return <Text>Loading...</Text>;
   }
 
   return (
     <Document>
-      <Stack spacing="xl">
-
-
+      <Stack gap="xl">
         {/* Client Information Panel */}
         <Paper p="xl" radius="md" withBorder>
-          <Group position="apart" mb="xl">
+          <Group justify="space-between" mb="xl">
             <Title order={3}>Client Information</Title>
-            <Button 
-              variant="subtle" 
-              size="sm"
-              leftIcon={isEditing ? <IconCheck size={16} /> : <IconEdit size={16} />}
-              onClick={() => setIsEditing(!isEditing)}
-            >
-              {isEditing ? 'Save' : 'Edit'}
-            </Button>
+            <Group>
+              <Button 
+                variant="subtle" 
+                size="sm"
+                leftSection={isEditing ? <IconCheck size={16} /> : <IconEdit size={16} />}
+                onClick={() => setIsEditing(!isEditing)}
+              >
+                {isEditing ? 'Save' : 'Edit'}
+              </Button>
+            </Group>
           </Group>
 
-          <Stack spacing="xl">
+          <Stack gap="xl">
             {/* Contact Information Section */}
             <Box>
-              <Text size="sm" weight={500} color="dimmed" mb="md">Contact Information</Text>
+              <Text fw={500} c="dimmed" size="sm" mb="md">Contact Information</Text>
               <SimpleGrid cols={2} spacing="lg">
                 <TextInput
                   label="Phone"
-                  icon={<IconPhone size={16} />}
+                  leftSection={<IconPhone size={16} />}
                   placeholder="(555) 555-5555"
                   value={formData.phone}
                   onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
@@ -207,7 +121,7 @@ export function PatientOverview(): JSX.Element {
                 />
                 <TextInput
                   label="Email"
-                  icon={<IconMail size={16} />}
+                  leftSection={<IconMail size={16} />}
                   placeholder="client@example.com"
                   value={formData.email}
                   onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
@@ -218,7 +132,7 @@ export function PatientOverview(): JSX.Element {
 
             {/* Note Template Section */}
             <Box>
-              <Text size="sm" weight={500} color="dimmed" mb="md">Documentation Preferences</Text>
+              <Text fw={500} c="dimmed" size="sm" mb="md">Documentation Preferences</Text>
               <Select
                 label="Default Note Template"
                 placeholder="Select default template"
@@ -235,7 +149,7 @@ export function PatientOverview(): JSX.Element {
 
             {/* Demographics Section */}
             <Box>
-              <Text size="sm" weight={500} color="dimmed" mb="md">Demographics</Text>
+              <Text fw={500} c="dimmed" size="sm" mb="md">Demographics</Text>
               <SimpleGrid cols={2} spacing="lg">
                 <TextInput
                   label="Date of Birth"

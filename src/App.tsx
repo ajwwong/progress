@@ -31,6 +31,12 @@ import { TemplateRoutes } from './components/templates/TemplateRoutes';
 import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
+import { RegisterPage as ProviderRegisterPage } from './pages/ProviderRegisterPage';
+import { OrganizationInvitePage } from './pages/OrganizationInvitePage';
+import { NewEncounter } from './pages/NewEncounter';
+import { NewPractitioner } from './pages/NewPractitioner';
+import { InvitePage } from './pages/InvitePage';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 export const CalendarContext = createContext<{
   showNewAppointmentModal: boolean;
@@ -301,7 +307,25 @@ export function App(): JSX.Element | null {
       <Notifications position="top-right" />
       <CalendarContext.Provider value={{ showNewAppointmentModal, setShowNewAppointmentModal }}>
         <AppShell
-          logo={<Logo size={24} />}
+          logo={
+            <Group gap="sm">
+              <img src={'/favicon-32x32droplet.ico'} width={32} height={32} alt="Your Logo" />
+              <Text 
+                size="xl"
+                fw={500} 
+                style={{ 
+                  fontFamily: 'var(--mantine-font-family)',
+                  color: 'var(--mantine-color-blue-8)',
+                  letterSpacing: '-0.3px',
+                  fontSize: 'var(--mantine-font-size-xl)'
+                }}
+              >
+                Progress Notes
+              </Text>
+            </Group>
+          }
+          //resourceTypeSearchDisabled={true}
+
           menus={[
             {
               title: 'My Links',
@@ -396,13 +420,21 @@ export function App(): JSX.Element | null {
                 <Route path="/calendar" element={<CalendarPage />} />
                 <Route path="/patient" element={<PatientDirectoryPage />} />
                 <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
-                <Route path="/audio" element={<AudioTranscribePage 
-                  onTranscriptionStart={handleTranscriptionStart}
-                  onCompositionSaved={triggerUpdate}
-                  onTranscriptionEnd={handleTranscriptionEnd}
-                  onGeneratingStart={handleGeneratingStart}
-                  onGeneratingEnd={handleGeneratingEnd}
-                />} />
+                <Route 
+                  path="/audio" 
+                  element={
+                    <>
+                      {localStorage.setItem('navbarOpen', 'true')}
+                      <AudioTranscribePage 
+                        onTranscriptionStart={handleTranscriptionStart}
+                        onCompositionSaved={triggerUpdate}
+                        onTranscriptionEnd={handleTranscriptionEnd}
+                        onGeneratingStart={handleGeneratingStart}
+                        onGeneratingEnd={handleGeneratingEnd}
+                      />
+                    </>
+                  } 
+                />
                 <Route path="/Patient/:id" element={<PatientPage />}>
                   <Route index element={<PatientProfile />} />
                   <Route path="overview" element={<PatientOverview />} />
@@ -421,6 +453,26 @@ export function App(): JSX.Element | null {
                 <Route path="/billing" element={<BillingDashboard />} />
                 <Route path="/settings" element={<ProfilePage />} />
                 <Route path="/Practitioner/:id" element={<ProfilePage />} />
+                <Route path="/provider-register" element={<ProviderRegisterPage />} />
+                <Route path="/organization-invite" element={<OrganizationInvitePage />} />
+                <Route path="/new-encounter" element={<NewEncounter />} />
+                <Route path="/new-practitioner" element={<NewPractitioner />} />
+                <Route path="/invite" element={<InvitePage />} />
+                <Route 
+                  path="/onboarding" 
+                  element={
+                    <>
+                      {localStorage.setItem('navbarOpen', 'true')}
+                      <OnboardingPage 
+                        onTranscriptionStart={handleTranscriptionStart}
+                        onCompositionSaved={triggerUpdate}
+                        onTranscriptionEnd={handleTranscriptionEnd}
+                        onGeneratingStart={handleGeneratingStart}
+                        onGeneratingEnd={handleGeneratingEnd}
+                      />
+                    </>
+                  } 
+                />
               </Routes>
             </Suspense>
           </ErrorBoundary>

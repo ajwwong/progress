@@ -13,7 +13,13 @@ export function LandingPage(): JSX.Element {
         </Text>
         <Group>
           <Button component={Link} to="/register" variant="filled" color="blue">
+            Register as Patient
+          </Button>
+          <Button component={Link} to="/provider-register" variant="filled" color="green">
             Register as Provider
+          </Button>
+          <Button component={Link} to="/organization-invite" variant="filled" color="violet">
+            Invite Organization
           </Button>
           <Button component={Link} to="/signin" variant="light">
             Sign in

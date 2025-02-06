@@ -4,14 +4,19 @@ import { useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
-import { ProjectMembership } from '@medplum/fhirtypes';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { ProfileResource } from '@medplum/fhirtypes';
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<ProjectMembership | undefined>();
+  const defaultRole = location.state?.defaultRole || 'Practitioner';
+  const profile = medplum.getProfile() as ProfileResource;
+  
+  // Get project ID from the profile's project membership
+  const projectId = profile.meta?.project;
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -20,28 +25,30 @@ export function InvitePage(): JSX.Element {
     const formData = new FormData(e.currentTarget);
     
     try {
-      const response = await medplum.post('admin/invite', {
-        resourceType: formData.get('resourceType'),
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        email: formData.get('email'),
-        sendEmail: formData.get('sendEmail') === 'on',
-        admin: formData.get('isAdmin') === 'on'
+      if (!projectId) {
+        throw new Error('Project ID not found');
+      }
+
+      await medplum.post(`admin/projects/${projectId}/invite`, {
+        resourceType: formData.get('resourceType') as string,
+        firstName: formData.get('firstName') as string,
+        lastName: formData.get('lastName') as string,
+        email: formData.get('email') as string,
+        sendEmail: formData.get('sendEmail') === 'on'
       });
 
-      setResult(response);
       showNotification({
         title: 'Success',
         message: 'Invitation sent successfully',
         color: 'green',
         icon: <IconCircleCheck />
       });
-      
-      navigate('/settings');
-    } catch (err) {
+
+      navigate(-1);
+    } catch (error) {
       showNotification({
         title: 'Error',
-        message: normalizeErrorString(err),
+        message: normalizeErrorString(error),
         color: 'red',
         icon: <IconCircleOff />
       });
@@ -61,7 +68,7 @@ export function InvitePage(): JSX.Element {
             <NativeSelect
               name="resourceType"
               label="Role"
-              defaultValue="Practitioner"
+              defaultValue={defaultRole}
               data={['Practitioner', 'Patient', 'RelatedPerson']}
               required
             />
@@ -92,15 +99,10 @@ export function InvitePage(): JSX.Element {
               defaultChecked 
             />
 
-            <Checkbox 
-              name="isAdmin" 
-              label="Grant admin privileges" 
-            />
-
             <Group justify="flex-end">
               <Button 
                 variant="subtle" 
-                onClick={() => navigate('/settings')}
+                onClick={() => navigate(-1)}
               >
                 Cancel
               </Button>

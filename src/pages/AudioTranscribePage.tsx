@@ -682,7 +682,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
           </Stack>
 
           <Stack gap="sm">
-            <AudioControls
+           {/* <AudioControls
               isRecording={isRecording}
               isPaused={isPaused}
               isBlinking={isBlinking}
@@ -698,7 +698,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
               onCancelRecording={cancelRecording}
               onPlayAudio={playAudio}
               onGenerateNote={handleGenerateNote}
-            />
+            />*/}
           </Stack>
 
           {(isTranscribing || isGeneratingNote) && (
@@ -721,13 +721,13 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
             </Paper>
           )}
 
-          <TranscriptionView 
+          {/*<TranscriptionView 
             transcript={transcript}
             psychNote={psychNote}
-          />
+          />*/}
 
           {/* Display prompt for debugging */}
-          {psychNote?.prompt && (
+          {/*{psychNote?.prompt && (
             <Paper p="md" withBorder bg="gray.0">
               <Stack gap="xs">
                 <Title order={4}>Debug: Prompt sent to Claude</Title>
@@ -746,10 +746,10 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 </Box>
               </Stack>
             </Paper>
-          )}
+          )}*/}
 
           {/* Display raw response for debugging */}
-          {psychNote?.rawResponse && (
+          {/*  {psychNote?.rawResponse && (
             <Paper p="md" withBorder bg="gray.0">
               <Stack gap="xs">
                 <Title order={4}>Debug: Raw Response from Claude</Title>
@@ -768,7 +768,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 </Box>
               </Stack>
             </Paper>
-          )}
+          )}*/}
         </Stack>
       </Paper>
     </Container>

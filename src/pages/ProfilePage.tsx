@@ -2,9 +2,9 @@ import { Container, Stack, Tabs, TextInput, Title, Text, Button, Group, Select, 
 import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
-import { IconCircleCheck, IconCircleOff, IconDownload, IconHistory, IconSettings, IconAlertCircle, IconCreditCard, IconCheck } from '@tabler/icons-react';
+import { IconCircleCheck, IconCircleOff, IconDownload, IconHistory, IconSettings, IconAlertCircle, IconCreditCard, IconCheck, IconCopy, IconPlus } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
-import { Resource, Invoice } from '@medplum/fhirtypes';
+import { Resource, Invoice, OperationOutcome } from '@medplum/fhirtypes';
 import { loadStripe } from '@stripe/stripe-js';
 import type { Stripe, StripeElements } from '@stripe/stripe-js';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -24,7 +24,7 @@ export function ProfilePage(): JSX.Element {
   const [subscriptionActive, setSubscriptionActive] = useState(false);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const stripePromise = loadStripe('pk_test_51QbTYlIhrZKLmPhepqAOfCYqEnOgCMXRbyJAxn5BBqECnJE3kupGQspkOj9h2hOkY8VbqLP0N4xwEnI6ixwpEfPK00qe2kNrOw');
-  const [referencePreference, setReferencePreference] = useState<string>('patient');
+  const [referencePreference, setReferencePreference] = useState<string>('client');
   const [quotePreference, setQuotePreference] = useState<string>('exclude');
   const [selectedInterventions, setSelectedInterventions] = useState<string[]>([]);
   const [firstName, setFirstName] = useState('');
@@ -41,7 +41,10 @@ export function ProfilePage(): JSX.Element {
       setFirstName(profile.name?.[0]?.given?.[0] || '');
       setLastName(profile.name?.[0]?.family || '');
       setEmail(profile.telecom?.find(t => t.system === 'email')?.value || '');
-      setReferencePreference(profile.extension?.find(e => e.url === 'https://progress.care/fhir/reference-preference')?.valueString || 'patient');
+      const referenceExt = profile.extension?.find(
+        e => e.url === 'https://progress.care/fhir/reference-preference'
+      );
+      setReferencePreference(referenceExt?.valueString || 'client');
       setQuotePreference(profile.extension?.find(e => e.url === 'https://progress.care/fhir/quote-preference')?.valueString || 'exclude');
       const interventionsExt = profile.extension?.find(e => e.url === 'https://progress.care/fhir/interventions');
       if (interventionsExt?.valueString) {
@@ -261,14 +264,127 @@ export function ProfilePage(): JSX.Element {
     setLoading(false);
   };
 
+  const handleBasicClone = async () => {
+    try {
+      // Check if we're running against localhost
+      const isLocalhost = medplum.getBaseUrl().includes('localhost');
+      if (!isLocalhost) {
+        showNotification({
+          title: 'Bot Not Available',
+          message: 'Clone Project is only available when running against a local Medplum server. ' +
+                  'You are currently running against app.medplum.com. ' +
+                  'To use this feature, please run your own Medplum server locally.',
+          color: 'yellow'
+        });
+        return;
+      }
+
+      console.log('Executing clone-project bot...');
+      const result = await medplum.executeBot(
+        {
+          system: 'https://progressnotes.app',
+          value: 'clone-project'
+        },
+        {
+          resourceType: 'Parameters',
+          parameter: [
+            {
+              name: 'input',
+              resource: {
+                resourceType: 'Project',
+                owner: { 
+                  reference: profile.reference || `User/${profile.id}`,
+                  display: profile.email
+                }
+              }
+            }
+          ]
+        }
+      );
+      console.log('Bot execution result:', result);
+      
+      // Check if the result indicates an error
+      if (result.status === 'error') {
+        console.error('Bot execution debug log:');
+        result.debugLog?.forEach((log, i) => console.log(`${i + 1}. ${log}`));
+        console.error('Bot execution error details:', result.details);
+        throw new Error(result.message || 'Clone operation failed');
+      }
+
+      // Log success details
+      console.log('Bot execution debug log:');
+      result.debugLog?.forEach((log, i) => console.log(`${i + 1}. ${log}`));
+
+      showNotification({
+        title: 'Success',
+        message: 'Project cloned successfully. Check console for details.',
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Error executing bot:', err);
+      
+      // Handle bot execution result error
+      if (err && typeof err === 'object' && 'status' in err && err.status === 'error') {
+        const botError = err as { status: string; message: string; details: any; debugLog: string[] };
+        console.error('Bot execution debug log:', botError.debugLog);
+        console.error('Bot execution details:', botError.details);
+        showNotification({
+          title: 'Error',
+          message: `Clone failed: ${botError.message}. Check console for details.`,
+          color: 'red'
+        });
+        return;
+      }
+
+      // Handle HTTP response error
+      const error = err as { response?: Response };
+      if (error.response) {
+        const text = await error.response.text();
+        console.error('Error response:', text);
+        try {
+          const outcome = JSON.parse(text) as OperationOutcome;
+          showNotification({
+            title: 'Error',
+            message: outcome.issue?.[0]?.diagnostics || 'Failed to execute basic clone',
+            color: 'red'
+          });
+        } catch {
+          showNotification({
+            title: 'Error',
+            message: text || 'Failed to execute basic clone',
+            color: 'red'
+          });
+        }
+      } else {
+        showNotification({
+          title: 'Error',
+          message: err instanceof Error ? err.message : 'Failed to execute basic clone',
+          color: 'red'
+        });
+      }
+    }
+  };
+
+  const handleNewEncounter = () => {
+    navigate('/new-encounter');
+  };
+
+  const handleNewPractitioner = () => {
+    navigate('/new-practitioner');
+  };
+
+  const handleInvitePatient = () => {
+    navigate('/invite', { state: { defaultRole: 'Patient' } });
+  };
+
   return (
     <Container size="md" py="xl">
       <Tabs value={activeTab} onChange={setActiveTab}>
         <Tabs.List>
-          <Tabs.Tab value="profile">Profile</Tabs.Tab>
-          <Tabs.Tab value="note-preferences">Note Preferences</Tabs.Tab>
-          <Tabs.Tab value="billing">Billing</Tabs.Tab>
-          <Tabs.Tab value="change-password">Change Password</Tabs.Tab>
+          <Tabs.Tab value="profile" icon={<IconSettings size={14} />}>Profile</Tabs.Tab>
+          <Tabs.Tab value="note-preferences" icon={<IconAlertCircle size={14} />}>Note Preferences</Tabs.Tab>
+          <Tabs.Tab value="billing" icon={<IconCreditCard size={14} />}>Billing</Tabs.Tab>
+          <Tabs.Tab value="change-password" icon={<IconAlertCircle size={14} />}>Change Password</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="profile" pt="xl">
@@ -278,6 +394,39 @@ export function ProfilePage(): JSX.Element {
                 <Title order={2}>Profile Settings</Title>
                 <Text c="dimmed">Manage your account information.</Text>
               </div>
+              <Group position="right">
+                <Button 
+                  variant="filled"
+                  color="blue"
+                  leftIcon={<IconPlus size={16} />}
+                  onClick={handleNewEncounter}
+                >
+                  New Encounter
+                </Button>
+                <Button 
+                  variant="filled"
+                  color="green"
+                  leftIcon={<IconPlus size={16} />}
+                  onClick={handleNewPractitioner}
+                >
+                  New Practitioner
+                </Button>
+                <Button 
+                  variant="filled"
+                  color="violet"
+                  leftIcon={<IconPlus size={16} />}
+                  onClick={handleInvitePatient}
+                >
+                  Invite Patient
+                </Button>
+                <Button 
+                  variant="subtle"
+                  leftIcon={<IconCopy size={16} />}
+                  onClick={handleBasicClone}
+                >
+                  Clone Project
+                </Button>
+              </Group>
             </Group>
 
             {profileLoading ? (

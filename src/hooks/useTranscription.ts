@@ -146,26 +146,40 @@ export function useTranscription(): UseTranscriptionReturn {
     selectedTemplate: NoteTemplate | undefined,
     compositionId: string
   ): Promise<void> => {
-    if (!transcript || !compositionId) return;
+    console.log('generateNote called with:', {
+      transcriptLength: transcript?.length,
+      patientId: selectedPatient?.id,
+      templateId: selectedTemplate?.id,
+      compositionId
+    });
+
+    if (!transcript || !compositionId) {
+      console.log('Missing required data:', { hasTranscript: !!transcript, hasCompositionId: !!compositionId });
+      return;
+    }
     
     setStatus('Initiating note generation...');
     
     try {
       const composition = await medplum.readResource('Composition', compositionId);
+      console.log('Retrieved composition for update:', composition);
+      
       if (!profile) {
         throw new Error('No profile found');
       }
       
       const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, profile);
+      console.log('Generated prompt:', prompt);
+      
       const response = await botService.generateNote(prompt);
+      console.log('Raw bot response:', response);
       
-      // Simplified processing
       const noteContent = processResponse(response);
+      console.log('Processed note content:', noteContent);
       
-      // Convert to FHIR format
       const sections = convertToFHIR(noteContent, selectedTemplate);
+      console.log('Converted FHIR sections:', sections);
 
-      // Update composition
       const updatedComposition: Composition = {
         ...composition,
         section: [
@@ -173,8 +187,10 @@ export function useTranscription(): UseTranscriptionReturn {
           ...(composition.section || []).filter(s => s.title === 'Transcript')
         ]
       };
+      console.log('About to update composition with:', updatedComposition);
 
-      await medplum.updateResource(updatedComposition);
+      const savedComposition = await medplum.updateResource(updatedComposition);
+      console.log('Composition updated successfully:', savedComposition);
       
       // Format for display
       const formattedContent = noteContent.sections
@@ -191,8 +207,7 @@ export function useTranscription(): UseTranscriptionReturn {
       
       setStatus('Note generated and saved');
     } catch (err) {
-      console.error('Error generating note:', err);
-      setStatus(`Error: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      console.error('Detailed error in generateNote:', err);
       throw err;
     }
   };

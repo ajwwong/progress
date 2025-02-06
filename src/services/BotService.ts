@@ -15,6 +15,7 @@ interface BotOptions {
     type: string;
   };
   temperature?: number;
+  referencePreference?: string;
 }
 
 export class BotService {
@@ -78,6 +79,13 @@ export class BotService {
     try {
       this.checkBotAvailability();
 
+      // Get user's reference preference, default to 'client' if not set
+      const profile = await this.medplum.getProfile();
+      const referenceExt = profile.extension?.find(
+        e => e.url === 'https://progress.care/fhir/reference-preference'
+      );
+      const referencePreference = referenceExt?.valueString || 'client';
+
       const defaultOptions: BotOptions = {
         stream: true,
         maxTokens: 4000,
@@ -85,6 +93,7 @@ export class BotService {
           type: "json"
         },
         temperature: 0.1,
+        referencePreference: referencePreference
       };
 
       const botResponse = await this.medplum.executeBot(
