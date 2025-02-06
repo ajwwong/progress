@@ -16,8 +16,7 @@ export function RegisterPage(): JSX.Element {
   }, [profile, navigate]);
 
   const handleRegistrationSuccess = () => {
-    // After successful registration, redirect to onboarding
-    navigate('/calendar');
+    navigate('/dashboard');
   };
 
   return (
