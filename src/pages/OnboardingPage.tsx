@@ -18,6 +18,7 @@ import { AudioMeter } from '../components/audio/AudioMeter';
 import { useProfileUsage } from '../hooks/useProfileUsage';
 import { useAudioDevices } from '../hooks/useAudioDevices';
 import { useOnboarding } from '../hooks/useOnboarding';
+import { OnboardingStep } from '../hooks/onboardingSteps';
 
 interface OnboardingPageProps {
   onTranscriptionStart?: (compositionId: string) => void;
@@ -85,7 +86,7 @@ export function OnboardingPage({
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
   const [isTelehealth] = useState(false);
   const [onboardingStep, setOnboardingStep] = useState(0);
-  const { hasCompletedOnboarding, completeOnboarding } = useOnboarding();
+  const { hasCompletedOnboarding, completeOnboarding, updateOnboardingStep } = useOnboarding();
   const [showDialog, setShowDialog] = useState(false);
 
   const {
@@ -354,17 +355,19 @@ export function OnboardingPage({
 
   const handleCompleteOnboarding = async () => {
     try {
-      await completeOnboarding();
+      await updateOnboardingStep(OnboardingStep.TRANSCRIPTION_TUTORIAL);
       showNotification({
-        title: '🎉 Congratulations!',
-        message: 'You\'ve completed onboarding! Click on your newly created note in the left sidebar to see your progress note.',
+        title: '🎉 Tutorial Complete!',
+        message: 'You\'ve completed the transcription tutorial! You can now use this feature in your practice.',
         color: 'green',
         autoClose: false
       });
+      navigate('/dashboard');
     } catch (error) {
+      console.error('Error completing onboarding:', error);
       showNotification({
         title: 'Error',
-        message: 'Failed to save onboarding status',
+        message: 'Failed to update onboarding progress',
         color: 'red'
       });
     }

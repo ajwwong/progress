@@ -28,59 +28,27 @@ export function OrganizationInvitePage(): JSX.Element {
     setLoading(true);
     
     const formData = new FormData(e.currentTarget);
-    console.log('Form data collected:', {
-      organization: formData.get('organization'),
-      firstName: formData.get('firstName'),
-      lastName: formData.get('lastName'),
-      email: formData.get('email')
-    });
     
     try {
-      console.log('Starting organization registration process...');
-      console.log('Environment variables:', {
-        projectId: import.meta.env.VITE_MEDPLUM_PROJECT_ID,
-        baseUrl: import.meta.env.VITE_MEDPLUM_BASE_URL
-      });
-      
       // Start client login to get access token
-      console.log('Attempting client login...');
       await registrationClient.startClientLogin();
-      console.log('Client login successful');
-      
-      // Add after client login success
-      console.log('Verifying access policy exists...');
-      try {
-        const accessPolicy = await registrationClient.readResource('AccessPolicy', import.meta.env.VITE_MEDPLUM_ACCESS_POLICY_ID || '69d2ae8e-82a6-443a-a741-fb6cecf4ed76');
-        console.log('Access Policy exists:', accessPolicy);
-      } catch (err) {
-        console.error('Access policy not found:', err);
-        console.error('Access policy error details:', {
-          message: err.message,
-          response: err.response?.data,
-          status: err.response?.status
-        });
-      }
       
       // Create organization using the registration client
-      console.log('Creating organization with name:', formData.get('organization'));
       const organization = await registrationClient.createResource({
         resourceType: 'Organization',
         name: formData.get('organization')
       });
-      console.log('Organization created successfully:', JSON.stringify(organization, null, 2));
-      console.log('Organization ID:', organization.id);
 
-      // Modify the invite request structure
-      const inviteRequest = {
+      // Invite user as practitioner
+      const response = await registrationClient.post(`admin/projects/${import.meta.env.VITE_MEDPLUM_PROJECT_ID}/invite`, {
         resourceType: 'Practitioner',
         firstName: formData.get('firstName'),
         lastName: formData.get('lastName'),
-        email: formData.get('email'),  // Use the form email instead of hardcoded
-        sendEmail: true,
+        email: formData.get('email'),
         membership: {
           access: [{
             policy: {
-              reference: `AccessPolicy/${import.meta.env.VITE_MEDPLUM_ACCESS_POLICY_ID}`
+              reference: "AccessPolicy/multi-tenant-org-policy"
             },
             parameter: [{
               name: "current_organization",
@@ -89,33 +57,8 @@ export function OrganizationInvitePage(): JSX.Element {
               }
             }]
           }]
-        },
-        upsert: true
-      };
-
-      // Add validation logging
-      console.log('Access Policy Reference:', `AccessPolicy/${import.meta.env.VITE_MEDPLUM_ACCESS_POLICY_ID || '69d2ae8e-82a6-443a-a741-fb6cecf4ed76'}`);
-      console.log('Organization Reference:', `Organization/${organization.id}`);
-      console.log('Project Reference:', `Project/${import.meta.env.VITE_MEDPLUM_PROJECT_ID}`);
-
-      // Invite user as practitioner
-      try {
-        const response = await registrationClient.post(
-          `admin/projects/${import.meta.env.VITE_MEDPLUM_PROJECT_ID}/invite`, 
-          inviteRequest
-        );
-        console.log('Invite request successful:', JSON.stringify(response, null, 2));
-      } catch (error) {
-        console.error('Invite request failed with error:', error);
-        console.error('Detailed error information:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          message: error.message,
-          stack: error.stack
-        });
-        throw error;
-      }
+        }
+      });
 
       showNotification({
         title: 'Success',
@@ -124,15 +67,8 @@ export function OrganizationInvitePage(): JSX.Element {
         icon: <IconCircleCheck />
       });
       
-      navigate('/');
+      navigate('/registration-success');
     } catch (err) {
-      console.error('Registration process failed:', err);
-      console.error('Error details:', {
-        message: err.message,
-        response: err.response?.data,
-        status: err.response?.status
-      });
-      
       showNotification({
         title: 'Error',
         message: normalizeErrorString(err),

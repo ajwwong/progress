@@ -75,22 +75,20 @@ export function OrganizationInvitePage(): JSX.Element {
         resourceType: 'Practitioner',
         firstName: formData.get('firstName'),
         lastName: formData.get('lastName'),
-        email: formData.get('email'),  // Use the form email instead of hardcoded
-        sendEmail: true,
-        membership: {
-          access: [{
-            policy: {
-              reference: `AccessPolicy/${import.meta.env.VITE_MEDPLUM_ACCESS_POLICY_ID}`
-            },
-            parameter: [{
-              name: "current_organization",
-              valueReference: {
-                reference: `Organization/${organization.id}`
-              }
-            }]
+        email: formData.get('email'),
+       // sendEmail: true,
+        // Use the top-level access property instead of nesting in membership
+        access: [{
+          policy: {
+            reference: `AccessPolicy/${import.meta.env.VITE_MEDPLUM_ACCESS_POLICY_ID || '69d2ae8e-82a6-443a-a741-fb6cecf4ed76'}`
+          },
+          parameter: [{
+            name: "current_organization",
+            valueReference: {
+              reference: `Organization/${organization.id}`
+            }
           }]
-        },
-        upsert: true
+        }]
       };
 
       // Add validation logging
