@@ -1,7 +1,7 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconSettings, IconAlertTriangle, IconMailOpened } from '@tabler/icons-react';
 import { Suspense, useState, useEffect } from 'react';
-import { Route, Routes, Link } from 'react-router-dom';
+import { Route, Routes, Link, useLocation } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
 import { PatientOverview } from './components/PatientOverview';
 import { Timeline } from './components/Timeline';
@@ -32,11 +32,16 @@ import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
 import { RegisterPage as ProviderRegisterPage } from './pages/ProviderRegisterPage';
-import { OrganizationInvitePage } from './pages/OrganizationInvitePage';
+import { OrganizationInvitePage } from './pages/onboarding/OrganizationInvitePage';
 import { NewEncounter } from './pages/NewEncounter';
 import { NewPractitioner } from './pages/NewPractitioner';
 import { InvitePage } from './pages/InvitePage';
-import { OnboardingPage } from './pages/OnboardingPage';
+import { OnboardingPage } from './pages/onboarding/OnboardingTranscriptionPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { PreRegisterPage } from './pages/PreRegisterPage';
+import { OrganizationSetupPage } from './pages/onboarding/OrganizationSetupPage';
+import { MedplumProvider } from '@medplum/react';
+import { OnboardingLogoff } from './pages/onboarding/OnboardingLogoff';
 
 export const CalendarContext = createContext<{
   showNewAppointmentModal: boolean;
@@ -55,6 +60,8 @@ export function App(): JSX.Element | null {
   const [transcribingCompositionId, setTranscribingCompositionId] = useState<string | null>(null);
   const [generatingCompositionId, setGeneratingCompositionId] = useState<string | null>(null);
   const [localCompositions, setLocalCompositions] = useState<any[]>([]);
+  const location = useLocation();
+  const hideAppShell = location.pathname === '/onboarding/organization' || location.pathname === '/register';
 
   // Initialize localCompositions when compositions load
   useEffect(() => {
@@ -302,182 +309,198 @@ export function App(): JSX.Element | null {
     });
   };
 
+  const calendarContextValue = { showNewAppointmentModal, setShowNewAppointmentModal };
+
   return (
     <>
       <Notifications position="top-right" />
-      <CalendarContext.Provider value={{ showNewAppointmentModal, setShowNewAppointmentModal }}>
-        <AppShell
-          logo={
-            <Group gap="sm">
-              <img src={'/favicon-32x32droplet.ico'} width={32} height={32} alt="Your Logo" />
-              <Text 
-                size="xl"
-                fw={500} 
-                style={{ 
-                  fontFamily: 'var(--mantine-font-family)',
-                  color: 'var(--mantine-color-blue-8)',
-                  letterSpacing: '-0.3px',
-                  fontSize: 'var(--mantine-font-size-xl)'
-                }}
-              >
-                Progress Notes
-              </Text>
-            </Group>
-          }
-          //resourceTypeSearchDisabled={true}
+      <MedplumProvider medplum={medplum}>
+        <CalendarContext.Provider value={calendarContextValue}>
+          {!hideAppShell ? (
+            <AppShell
+              logo={
+                <Group gap="sm">
+                  <img src={'/favicon-32x32droplet.ico'} width={32} height={32} alt="Your Logo" />
+                  <Text 
+                    size="xl"
+                    fw={500} 
+                    style={{ 
+                      fontFamily: 'var(--mantine-font-family)',
+                      color: 'var(--mantine-color-blue-8)',
+                      letterSpacing: '-0.3px',
+                      fontSize: 'var(--mantine-font-size-xl)'
+                    }}
+                  >
+                     Practice Harbor
+                  </Text>
+                </Group>
+              }
+              //resourceTypeSearchDisabled={true}
 
-          menus={[
-            {
-              title: 'My Links',
-              links: [
-                { icon: <IconCalendar />, label: 'Calendar', href: '/calendar' },
-                { icon: <IconUser />, label: 'Patients', href: '/patient' },
-                { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/audio' },
-                { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
-                { icon: <IconSettings />, label: 'Settings', href: '/settings' }
-              ],
-            },
-            {
-              title: 'Recent Compositions',
-              links: isLoading ? [] : localCompositions
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .slice(0, 12)
-                .map(comp => ({
-                icon: (
-                  <div style={{ width: 16, height: 16, position: 'relative', marginRight: 12 }}>
-                    {!isActivelyProcessing(comp) && !wasInterrupted(comp) && (
-                      isViewed(comp) ? (
-                        <IconMailOpened 
-                          size={16} 
-                          style={{ 
-                            position: 'absolute',
-                            color: 'var(--mantine-color-gray-5)'
-                          }} 
-                        />
-                      ) : (
-                        <IconFileText 
-                          size={16} 
-                          style={{ 
-                            position: 'absolute',
-                            color: isNoteCompleted(comp) 
-                              ? 'var(--mantine-color-green-6)' 
-                              : undefined
-                          }} 
-                        />
-                      )
-                    )}
-                    {isActivelyProcessing(comp) && (
-                      <Loader 
-                        size="sm" 
-                        color="gray.5" 
-                        style={{ 
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)'
-                        }} 
-                      />
-                    )}
-                    {wasInterrupted(comp) && (
-                      <IconAlertTriangle
-                        size={16}
-                        style={{ 
-                          position: 'absolute',
-                          top: '50%',
-                          left: '50%',
-                          transform: 'translate(-50%, -50%)',
-                          color: 'var(--mantine-color-yellow-6)'
-                        }} 
-                      />
-                    )}
-                  </div>
-                ),
-                label: (
-                  <Group justify="space-between" wrap="nowrap" w="100%" pl={4}>
-                    <div style={{ lineHeight: 1.2, flex: 1 }}>
-                      <Text 
-                        fw={500} 
-                        truncate="end" 
-                        c={isViewed(comp) ? 'dimmed' : undefined}
-                      >
-                        {comp.subject?.display || 'Unknown Patient'}
-                      </Text>
-                      <Text size="xs" c="dimmed">{formatDate(comp.date)}</Text>
-                    </div>
-                  </Group>
-                ),
-                href: `/composition/${comp.id}`
-              }))
-            },
-          ]}
-        >
-          <ErrorBoundary>
-            <Suspense fallback={<Loading />}>
-              <Routes>
-                <Route path="/" element={profile ? <CalendarPage /> : <LandingPage />} />
-                <Route path="/signin" element={<SignInPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/calendar" element={<CalendarPage />} />
-                <Route path="/patient" element={<PatientDirectoryPage />} />
-                <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
-                <Route 
-                  path="/audio" 
-                  element={
-                    <>
-                      {localStorage.setItem('navbarOpen', 'true')}
-                      <AudioTranscribePage 
-                        onTranscriptionStart={handleTranscriptionStart}
-                        onCompositionSaved={triggerUpdate}
-                        onTranscriptionEnd={handleTranscriptionEnd}
-                        onGeneratingStart={handleGeneratingStart}
-                        onGeneratingEnd={handleGeneratingEnd}
-                      />
-                    </>
-                  } 
-                />
-                <Route path="/Patient/:id" element={<PatientPage />}>
-                  <Route index element={<PatientProfile />} />
-                  <Route path="overview" element={<PatientOverview />} />
-                  <Route path="timeline" element={<Timeline />} />
-                  <Route path="history" element={<PatientHistory />} />
-                  <Route path="notes" element={<SessionNotes />} />
-                  <Route path="recent" element={<PatientRecentComposition />} />
-                  <Route path="treatment" element={<TreatmentPlan />} />
-                  <Route path="profile" element={<PatientProfile />} />
-                </Route>
-                <Route path="/:resourceType/:id" element={<ResourcePage />} />
-                <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
-                <Route path="/composition/:id" element={<NoteView />} />
-                <Route path="/templates/*" element={<TemplateRoutes />} />
-                <Route path="/portal/*" element={<ClientRoutes />} />
-                <Route path="/billing" element={<BillingDashboard />} />
-                <Route path="/settings" element={<ProfilePage />} />
-                <Route path="/Practitioner/:id" element={<ProfilePage />} />
-                <Route path="/provider-register" element={<ProviderRegisterPage />} />
-                <Route path="/organization-invite" element={<OrganizationInvitePage />} />
-                <Route path="/new-encounter" element={<NewEncounter />} />
-                <Route path="/new-practitioner" element={<NewPractitioner />} />
-                <Route path="/invite" element={<InvitePage />} />
-                <Route 
-                  path="/onboarding" 
-                  element={
-                    <>
-                      {localStorage.setItem('navbarOpen', 'true')}
-                      <OnboardingPage 
-                        onTranscriptionStart={handleTranscriptionStart}
-                        onCompositionSaved={triggerUpdate}
-                        onTranscriptionEnd={handleTranscriptionEnd}
-                        onGeneratingStart={handleGeneratingStart}
-                        onGeneratingEnd={handleGeneratingEnd}
-                      />
-                    </>
-                  } 
-                />
-              </Routes>
-            </Suspense>
-          </ErrorBoundary>
-        </AppShell>
-      </CalendarContext.Provider>
+              menus={[
+                {
+                  title: 'My Links',
+                  links: [
+                    { icon: <IconCalendar />, label: 'Calendar', href: '/calendar' },
+                    { icon: <IconUser />, label: 'Patients', href: '/patient' },
+                    { icon: <IconMicrophone />, label: 'Audio Transcribe', href: '/audio' },
+                    { icon: <IconTemplate />, label: 'Note Templates', href: '/templates' },
+                    { icon: <IconSettings />, label: 'Settings', href: '/settings' }
+                  ],
+                },
+                {
+                  title: 'Recent Compositions',
+                  links: isLoading ? [] : localCompositions
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 12)
+                    .map(comp => ({
+                    icon: (
+                      <div style={{ width: 16, height: 16, position: 'relative', marginRight: 12 }}>
+                        {!isActivelyProcessing(comp) && !wasInterrupted(comp) && (
+                          isViewed(comp) ? (
+                            <IconMailOpened 
+                              size={16} 
+                              style={{ 
+                                position: 'absolute',
+                                color: 'var(--mantine-color-gray-5)'
+                              }} 
+                            />
+                          ) : (
+                            <IconFileText 
+                              size={16} 
+                              style={{ 
+                                position: 'absolute',
+                                color: isNoteCompleted(comp) 
+                                  ? 'var(--mantine-color-green-6)' 
+                                  : undefined
+                              }} 
+                            />
+                          )
+                        )}
+                        {isActivelyProcessing(comp) && (
+                          <Loader 
+                            size="sm" 
+                            color="gray.5" 
+                            style={{ 
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)'
+                            }} 
+                          />
+                        )}
+                        {wasInterrupted(comp) && (
+                          <IconAlertTriangle
+                            size={16}
+                            style={{ 
+                              position: 'absolute',
+                              top: '50%',
+                              left: '50%',
+                              transform: 'translate(-50%, -50%)',
+                              color: 'var(--mantine-color-yellow-6)'
+                            }} 
+                          />
+                        )}
+                      </div>
+                    ),
+                    label: (
+                      <Group justify="space-between" wrap="nowrap" w="100%" pl={4}>
+                        <div style={{ lineHeight: 1.2, flex: 1 }}>
+                          <Text 
+                            fw={500} 
+                            truncate="end" 
+                            c={isViewed(comp) ? 'dimmed' : undefined}
+                          >
+                            {comp.subject?.display || 'Unknown Patient'}
+                          </Text>
+                          <Text size="xs" c="dimmed">{formatDate(comp.date)}</Text>
+                        </div>
+                      </Group>
+                    ),
+                    href: `/composition/${comp.id}`
+                  }))
+                },
+              ]}
+            >
+              <ErrorBoundary>
+                <Suspense fallback={<Loading />}>
+                  <Routes>
+                    <Route path="/" element={profile ? <CalendarPage /> : <LandingPage />} />
+                    <Route path="/signin" element={<SignInPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/calendar" element={<CalendarPage />} />
+                    <Route path="/patient" element={<PatientDirectoryPage />} />
+                    <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
+                    <Route 
+                      path="/audio" 
+                      element={
+                        <>
+                          {localStorage.setItem('navbarOpen', 'true')}
+                          <AudioTranscribePage 
+                            onTranscriptionStart={handleTranscriptionStart}
+                            onCompositionSaved={triggerUpdate}
+                            onTranscriptionEnd={handleTranscriptionEnd}
+                            onGeneratingStart={handleGeneratingStart}
+                            onGeneratingEnd={handleGeneratingEnd}
+                          />
+                        </>
+                      } 
+                    />
+                    <Route path="/Patient/:id" element={<PatientPage />}>
+                      <Route index element={<PatientProfile />} />
+                      <Route path="overview" element={<PatientOverview />} />
+                      <Route path="timeline" element={<Timeline />} />
+                      <Route path="history" element={<PatientHistory />} />
+                      <Route path="notes" element={<SessionNotes />} />
+                      <Route path="recent" element={<PatientRecentComposition />} />
+                      <Route path="treatment" element={<TreatmentPlan />} />
+                      <Route path="profile" element={<PatientProfile />} />
+                    </Route>
+                    <Route path="/:resourceType/:id" element={<ResourcePage />} />
+                    <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
+                    <Route path="/composition/:id" element={<NoteView />} />
+                    <Route path="/templates/*" element={<TemplateRoutes />} />
+                    <Route path="/portal/*" element={<ClientRoutes />} />
+                    <Route path="/billing" element={<BillingDashboard />} />
+                    <Route path="/settings" element={<ProfilePage />} />
+                    <Route path="/Practitioner/:id" element={<ProfilePage />} />
+                    <Route path="/provider-register" element={<ProviderRegisterPage />} />
+                    <Route path="/organization-invite" element={<OrganizationInvitePage />} />
+                    <Route path="/new-encounter" element={<NewEncounter />} />
+                    <Route path="/new-practitioner" element={<NewPractitioner />} />
+                    <Route path="/invite" element={<InvitePage />} />
+                    <Route 
+                      path="/onboarding" 
+                      element={
+                        <>
+                          {localStorage.setItem('navbarOpen', 'true')}
+                          <OnboardingPage 
+                            onTranscriptionStart={handleTranscriptionStart}
+                            onCompositionSaved={triggerUpdate}
+                            onTranscriptionEnd={handleTranscriptionEnd}
+                            onGeneratingStart={handleGeneratingStart}
+                            onGeneratingEnd={handleGeneratingEnd}
+                          />
+                        </>
+                      } 
+                    />
+                    <Route path="/dashboard" element={<DashboardPage />} />
+                    <Route path="/pre-register" element={<PreRegisterPage />} />
+                    <Route path="/onboarding/organization" element={<OrganizationSetupPage />} />
+                    <Route path="/onboarding/logoff" element={<OnboardingLogoff />} />
+                  </Routes>
+                </Suspense>
+              </ErrorBoundary>
+            </AppShell>
+          ) : (
+            <Routes>
+              <Route path="/onboarding/organization" element={<OrganizationSetupPage />} />
+              <Route path="/onboarding/logoff" element={<OnboardingLogoff />} />
+              <Route path="/register" element={<RegisterPage />} />
+            </Routes>
+          )}
+        </CalendarContext.Provider>
+      </MedplumProvider>
     </>
   );
 }

@@ -1,4 +1,4 @@
-import { Title } from '@mantine/core';
+import { Container, Image, Title, Text, Stack } from '@mantine/core';
 import { Logo, SignInForm } from '@medplum/react';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,7 +7,7 @@ export function SignInPage(): JSX.Element {
 
   const handleSignInSuccess = () => {
     console.log('SignInPage: Redirecting to dashboard');
-    navigate('/dashboard');
+    navigate('/dashboard');     
   };
 
   return (
@@ -19,8 +19,29 @@ export function SignInPage(): JSX.Element {
       projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
       onSuccess={handleSignInSuccess}
     >
-      <Logo size={32} />
-      <Title>Sign in to Medplum</Title>
+      <Stack align="center" spacing="xs">
+        <Image
+          src="/droplet.png"
+          alt="Practice Harbor Logo"
+          width={48}
+          height={48}
+          mx="auto"
+          mb={8}
+          style={{ width: 48, height: 48 }}
+        />
+        <Title
+          align="center"
+          sx={(theme) => ({
+            fontFamily: `Greycliff CF, ${theme.fontFamily}`,
+            fontWeight: 900
+          })}
+        >
+          Sign in to Practice Harbor
+        </Title>
+        <Text color="dimmed" size="sm" align="center" mt={5}>
+          Welcome back to port.
+        </Text>
+      </Stack>
     </SignInForm>
   );
 }

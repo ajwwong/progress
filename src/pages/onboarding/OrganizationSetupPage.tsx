@@ -1,75 +1,79 @@
-import { Box, Button, Container, Group, Stack, Stepper, Text, Title } from '@mantine/core';
+import { Box, Button, Container, Stack, Text, Title, Paper, Timeline, List, Group, ThemeIcon } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingStep } from '../../hooks/onboardingSteps';
-import { useState } from 'react';
-import { OrganizationInvitePage } from '../OrganizationInvitePage';
+import { useEffect } from 'react';
+import { OrganizationInvitePage } from './OrganizationInvitePage';
+import { IconBuildingHospital, IconUser, IconArrowRight, IconCircleCheck } from '@tabler/icons-react';
+import { showNotification } from '@mantine/notifications';
 
 export function OrganizationSetupPage(): JSX.Element {
   const navigate = useNavigate();
   const { updateOnboardingStep } = useOnboarding();
-  const [activeStep, setActiveStep] = useState(0);
+
+  useEffect(() => {
+    updateOnboardingStep(OnboardingStep.REGISTERED);
+  }, [updateOnboardingStep]);
 
   const handleComplete = async () => {
-    await updateOnboardingStep(OnboardingStep.ORGANIZATION_SETUP);
-    navigate('/dashboard'); // Will route to next step
+    showNotification({
+      title: '🎉 Organization Setup Complete!',
+      message: 'Great job! Your organization is now set up.',
+      color: 'green',
+      autoClose: 5000
+    });
+    
+    await updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
+    navigate('/onboarding/logoff');
   };
 
   return (
-    <Container size="lg">
+    <Container size="md" my={40}>
       <Stack spacing="xl">
-        <Box>
-          <Title order={1}>Organization Setup</Title>
-          <Text c="dimmed">Set up your organization or join an existing one</Text>
+        <Box ta="center" mb={30}>
+          <Title
+            order={1}
+            sx={(theme) => ({
+              fontFamily: `Greycliff CF, ${theme.fontFamily}`,
+              fontWeight: 900,
+              fontSize: 44,
+            })}
+          >
+            Organization Setup
+          </Title>
+          <Text c="dimmed" mt="md" size="xl">
+            Step 2 of 2 in setting up your practice
+          </Text>
         </Box>
 
-        <Stepper active={activeStep} onStepClick={setActiveStep}>
-          <Stepper.Step label="Choose Option" description="Create or join">
-            <Stack spacing="md" mt="xl">
-              <Button 
-                onClick={() => setActiveStep(1)}
-                size="lg"
-              >
-                Create New Organization
-              </Button>
-              <Button 
-                onClick={() => setActiveStep(2)}
-                variant="light"
-                size="lg"
-              >
-                Join Existing Organization
-              </Button>
-            </Stack>
-          </Stepper.Step>
+        <Paper withBorder p="xl" radius="md" bg="green.0">
+          <Stack spacing="md">
+            <Group>
+              <ThemeIcon size="xl" radius="xl" color="green" variant="light">
+                <IconCircleCheck size={24} />
+              </ThemeIcon>
+              <Title order={3}>Test Patient Account Created Successfully!</Title>
+            </Group>
+            
+            <Text size="md">
+              Great job! You've successfully created your test patient account. This account will eventually 
+              allow you to experience the patient portal firsthand, helping you better understand your clients' experience.
+            </Text>
+            
+            <Text size="md" mt="xs">
+              <b>Next Step:</b> Let's set up your actual practice account below, which will give you access to all the 
+              practice management features you need to run your business efficiently.
+            </Text>
+          </Stack>
+        </Paper>
 
-          <Stepper.Step label="Create Organization" description="Set up new org">
+        <Container size="sm" px={0}>
+          <Paper withBorder p="xl" radius="md">
             <OrganizationInvitePage 
-              onSuccess={() => {
-                setActiveStep(3);
-              }}
+              onSuccess={handleComplete}
             />
-          </Stepper.Step>
-
-          <Stepper.Step label="Join Organization" description="Accept invite">
-            <Stack spacing="md" mt="xl">
-              <Text>
-                Enter the invitation code provided by your organization:
-              </Text>
-              {/* Add invitation code input component here */}
-            </Stack>
-          </Stepper.Step>
-
-          <Stepper.Step label="Complete" description="Ready to continue">
-            <Stack spacing="md" mt="xl">
-              <Text>
-                Organization setup complete! You can now proceed with the next steps.
-              </Text>
-              <Button onClick={handleComplete}>
-                Continue to Next Step
-              </Button>
-            </Stack>
-          </Stepper.Step>
-        </Stepper>
+          </Paper>
+        </Container>
       </Stack>
     </Container>
   );

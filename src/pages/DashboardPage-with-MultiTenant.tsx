@@ -4,12 +4,11 @@ import { useOnboarding } from '../hooks/useOnboarding';
 import { Center, Loader } from '@mantine/core';
 import { useMedplum } from '@medplum/react';
 import { OnboardingStep } from '../hooks/onboardingSteps';
-import { ProfileResource } from '@medplum/fhirtypes';
 
 export function DashboardPage(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
-  const { currentStep, updateOnboardingStep } = useOnboarding();
+  const { currentStep } = useOnboarding();
 
   useEffect(() => {
     console.log('DashboardPage: Component mounted');
@@ -30,29 +29,16 @@ export function DashboardPage(): JSX.Element {
       return;
     }
 
-    const profile = medplum.getProfile() as ProfileResource;
-    const isPractitioner = profile?.resourceType === 'Practitioner';
-
     console.log('DashboardPage: Current onboarding step:', currentStep);
     
     // Route based on current onboarding step
     switch (currentStep) {
       case OnboardingStep.NOT_STARTED:
       case OnboardingStep.REGISTERED:
-        if (isPractitioner) {
-          // If practitioner, update step and go to onboarding
-          updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
-          navigate('/onboarding');
-        } else {
-          // If not practitioner (i.e., test patient), go to organization setup
-          navigate('/onboarding/organization');
-        }
-        break;
-      case OnboardingStep.ORGANIZATION_SETUP:
         navigate('/onboarding/organization');
         break;
-      case OnboardingStep.ORGANIZATION_CREATED:
-        navigate('/onboarding/logoff');
+      case OnboardingStep.ORGANIZATION_SETUP:
+        navigate('/onboarding');
         break;
       case OnboardingStep.TRANSCRIPTION_TUTORIAL:
         navigate('/calendar');
@@ -62,14 +48,9 @@ export function DashboardPage(): JSX.Element {
         break;
       default:
         console.error('Unknown onboarding step:', currentStep);
-        if (isPractitioner) {
-          updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
-          navigate('/onboarding');
-        } else {
-          navigate('/onboarding/organization');
-        }
+        navigate('/onboarding/organization');
     }
-  }, [currentStep, navigate, medplum, updateOnboardingStep]);
+  }, [currentStep, navigate, medplum]);
 
   return (
     <Center h="100vh">

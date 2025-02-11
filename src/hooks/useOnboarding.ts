@@ -50,11 +50,16 @@ export function useOnboarding(): UseOnboardingReturn {
         ...profile,
         extension: [
           ...(profile.extension?.filter(e => 
-            e.url !== 'https://progress.care/fhir/onboarding-step'
+            e.url !== 'https://progress.care/fhir/onboarding-step' &&
+            e.url !== 'https://progress.care/fhir/onboarding-complete'
           ) || []),
           {
             url: 'https://progress.care/fhir/onboarding-step',
             valueString: step
+          },
+          {
+            url: 'https://progress.care/fhir/onboarding-complete',
+            valueBoolean: step === OnboardingStep.COMPLETED
           }
         ]
       });
