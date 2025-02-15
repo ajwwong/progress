@@ -180,8 +180,8 @@ export function CustomNewUserForm(props: CustomNewUserFormProps): JSX.Element {
           </div>
 
           <Group justify="flex-end">
-            <Button type="submit" loading={!!outcome} size="lg" radius="md" fullWidth>
-              Register
+            <Button type="submit" loading={!!outcome}>
+              Register Test Patient
             </Button>
           </Group>
         </Stack>

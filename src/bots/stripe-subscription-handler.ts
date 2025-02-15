@@ -1,131 +1,262 @@
-import { BotEvent, createReference, MedplumClient } from '@medplum/core';
-import { Account, Invoice, Money } from '@medplum/fhirtypes';
-import type Stripe from 'stripe';
+import { BotEvent, MedplumClient } from '@medplum/core';
+import Stripe from 'stripe';
 
-export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {
-  const input = event.input;
-  const eventType = input.type || input['type'];
-  const stripeEvent = input['data']['object'];
+const stripe = new Stripe('sk_test_51QbTYlIhrZKLmPheWQseDVQyhBpxkXm3XYi94NVM3VqRZA2Tto7YS4yvmaf6UpVfmvlczGtGEaYCzOAoFNTUYXdu006ORa4LmE', {
+  apiVersion: '2023-10-16'
+});
 
-  console.log('Processing event type:', eventType);
-  console.log('Stripe event:', stripeEvent);
+// Price ID for Claude AI Transcription ($0.99/month)
+const SUBSCRIPTION_PRICE_ID = 'price_1QrxQOIhrZKLmPheB8fmQEjM';
 
-  switch (eventType) {
-    case 'customer.subscription.created':
-    case 'customer.subscription.updated':
-      return handleSubscription(medplum, stripeEvent);
-    case 'invoice.paid':
-      return handleInvoice(medplum, stripeEvent);
-    default:
-      console.log('Unhandled event type:', eventType);
-      return false;
+async function logSubscriptionStep(medplum: MedplumClient, customerId: string, message: string, details?: any) {
+  try {
+    const communication = await medplum.createResource({
+      resourceType: 'Communication',
+      status: 'completed',
+      sender: { reference: 'Bot/42b0ee1a-345b-4fd0-aa41-2493434af9e9' },
+      subject: { reference: `Practitioner/${customerId}` },
+      recipient: [{ reference: `Practitioner/${customerId}` }],
+      sent: new Date().toISOString(),
+      payload: [
+        { contentString: message },
+        details ? { contentString: JSON.stringify(details, null, 2) } : undefined
+      ].filter(Boolean)
+    });
+    console.log('Created communication log:', communication.id);
+  } catch (error) {
+    console.log('Failed to create communication log:', error);
   }
 }
 
-async function handleSubscription(medplum: MedplumClient, stripeSubscription: Stripe.Subscription): Promise<boolean> {
-  console.log('[DEBUG] Starting subscription handler');
+async function checkExistingSubscription(customerId: string): Promise<Stripe.Subscription | null> {
+  const subscriptions = await stripe.subscriptions.list({
+    customer: customerId,
+    price: SUBSCRIPTION_PRICE_ID,
+    status: 'all',
+    limit: 1
+  });
   
-  const accountId = stripeSubscription.customer as string;
-  if (!accountId) {
-    console.error('[ERROR] No customer ID found in subscription');
-    return false;
+  return subscriptions.data[0] || null;a
+}
+
+async function getSubscriptionStatus(subscription: Stripe.Subscription) {
+  const invoice = subscription.latest_invoice as Stripe.Invoice;
+  const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
+  
+  return {
+    subscriptionStatus: subscription.status,
+    invoiceStatus: invoice?.status,
+    paymentStatus: paymentIntent?.status,
+    currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString(),
+    cancelAt: subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null
+  };
+}
+
+async function updateProfileToProStatus(medplum: MedplumClient, practitionerId: string): Promise<void> {
+  try {
+    const practitioner = await medplum.readResource('Practitioner', practitionerId);
+    
+    // Remove existing pro subscription extension if it exists
+    const extensions = (practitioner.extension || []).filter(
+      e => e.url !== 'http://example.com/fhir/StructureDefinition/pro-subscription'
+    );
+
+    // Add pro subscription extension
+    extensions.push({
+      url: 'http://example.com/fhir/StructureDefinition/pro-subscription',
+      valueBoolean: true
+    });
+
+    // Update the practitioner resource
+    const updatedPractitioner = {
+      ...practitioner,
+      extension: extensions
+    };
+
+    await medplum.updateResource(updatedPractitioner);
+    await logSubscriptionStep(medplum, practitionerId, 'Profile updated to PRO status');
+  } catch (error) {
+    console.error('Failed to update profile to PRO:', error);
+    await logSubscriptionStep(medplum, practitionerId, 'Failed to update profile to PRO status', {
+      error: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+}
+
+export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+  console.log('Bot received input:', event.input);
+  
+  const parameters = event.input.parameter || [];
+  const paymentMethodId = parameters.find(p => p.name === 'paymentMethodId')?.valueString;
+  const customerId = parameters.find(p => p.name === 'customerId')?.valueString;
+  
+  if (!paymentMethodId || !customerId) {
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [{
+        severity: 'error',
+        code: 'invalid',
+        details: {
+          text: 'Missing required parameters: paymentMethodId and customerId are required'
+        }
+      }]
+    };
   }
 
   try {
-    // First try to find existing account
-    let account = await medplum.searchOne('Account', 'identifier=' + accountId) as Account;
-    console.log('[DEBUG] Search result:', JSON.stringify(account, null, 2));
+    const user = await medplum.readResource('Practitioner', customerId);
+    console.log('Practitioner telecom:', user.telecom);
+    const email = user.telecom?.find(t => t.system === 'email')?.value;
 
-    if (!account) {
-      // Create if not found
-      account = await medplum.createResourceIfNoneExist<Account>(
-        {
-          resourceType: 'Account',
-          identifier: [{
-            system: 'https://stripe.com/account/id',
-            value: accountId,
-          }],
-          status: 'active'
-        },
-        'identifier=' + accountId
-      );
-      console.log('[DEBUG] Created account:', JSON.stringify(account, null, 2));
+    if (!email) {
+      throw new Error('Email not found for practitioner');
     }
 
-    return true;
-  } catch (err) {
-    console.error('[ERROR] Error in subscription handler:', err);
-    return false;
-  }
-}
-
-async function handleInvoice(medplum: MedplumClient, stripeInvoice: Stripe.Invoice): Promise<boolean> {
-  console.log('[DEBUG] Starting invoice handler');
-  
-  const id = stripeInvoice.id;
-  const accountId = stripeInvoice.customer as string;
-  
-  if (!id || !accountId) {
-    console.error('[ERROR] Missing invoice ID or customer ID');
-    return false;
-  }
-
-  // Check if the invoice is related to a subscription
-  const isSubscriptionPayment = stripeInvoice.subscription !== null;
-  if (isSubscriptionPayment) {
-    console.log('[DEBUG] This is a subscription payment for subscription ID:', stripeInvoice.subscription);
-  }
-
-  try {
-    // First try simple search for account
-    let account = await medplum.searchOne('Account', 'identifier=' + accountId);
-    console.log('[DEBUG] Simple account search result:', JSON.stringify(account, null, 2));
-
-    if (!account) {
-      // Try creating if not found
-      account = await medplum.createResource<Account>({
-        resourceType: 'Account',
-        identifier: [{
-          system: 'https://stripe.com/account/id',
-          value: accountId,
-        }],
-        status: 'active'
+    console.log('Looking up Stripe customer for email:', email);
+    let customer;
+    const customers = await stripe.customers.list({ email });
+    
+    if (customers.data.length > 0) {
+      customer = customers.data[0];
+      console.log('Found existing Stripe customer:', customer.id);
+    } else {
+      customer = await stripe.customers.create({
+        email,
+        metadata: {
+          practitionerId: customerId
+        }
       });
-      console.log('[DEBUG] Created new account:', JSON.stringify(account, null, 2));
+      console.log('Created new Stripe customer:', customer.id);
     }
 
-    const invoice = await medplum.createResource<Invoice>({
-      resourceType: 'Invoice',
-      identifier: [{
-        system: 'https://stripe.com/invoice/id',
-        value: id,
-      }],
-      status: getInvoiceStatus(stripeInvoice.status),
-      account: createReference(account),
-      totalGross: {
-        value: stripeInvoice.amount_due / 100,
-        currency: stripeInvoice.currency.toUpperCase() as Money['currency'],
+    console.log('Attaching payment method to customer...');
+    await stripe.paymentMethods.attach(paymentMethodId, {
+      customer: customer.id,
+    });
+
+    console.log('Setting as default payment method...');
+    await stripe.customers.update(customer.id, {
+      invoice_settings: {
+        default_payment_method: paymentMethodId,
       },
-      totalNet: {
-        value: stripeInvoice.amount_paid / 100,
-        currency: stripeInvoice.currency.toUpperCase() as Money['currency'],
+    });
+
+    // Check for existing subscription
+    const existingSubscription = await checkExistingSubscription(customer.id);
+    
+    if (existingSubscription) {
+      const status = await getSubscriptionStatus(existingSubscription);
+      await logSubscriptionStep(medplum, customerId, 'Found existing subscription', status);
+
+      if (['active', 'trialing'].includes(existingSubscription.status)) {
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'status', valueString: 'existing_active' },
+            { name: 'subscriptionId', valueString: existingSubscription.id },
+            { name: 'details', valueString: JSON.stringify(status) }
+          ]
+        };
+      }
+    }
+
+    // Create new subscription
+    await logSubscriptionStep(medplum, customerId, 'Creating new subscription', {
+      priceId: SUBSCRIPTION_PRICE_ID,
+      customerId: customer.id
+    });
+
+    await logSubscriptionStep(medplum, customerId, 'Creating Stripe subscription', {
+      priceId: SUBSCRIPTION_PRICE_ID,
+      customerId: customer.id
+    });
+
+    const subscription = await stripe.subscriptions.create({
+      customer: customer.id,
+      items: [{ price: SUBSCRIPTION_PRICE_ID }],
+      payment_behavior: 'default_incomplete',
+      payment_settings: {
+        payment_method_types: ['card'],
+        save_default_payment_method: 'on_subscription'
+      },
+      expand: ['latest_invoice.payment_intent'],
+      metadata: {
+        practitionerId: customerId,
+        webhookBotId: '8c3a6e7d-374b-43e1-b6b3-2a27ebe6f747'
       }
     });
-    console.log('[DEBUG] Created invoice:', JSON.stringify(invoice, null, 2));
 
-    return true;
-  } catch (err) {
-    console.error('[ERROR] Error in invoice handler:', err);
-    return false;
-  }
-}
+    // Get the payment intent
+    const invoice = subscription.latest_invoice as Stripe.Invoice;
+    const paymentIntent = invoice?.payment_intent as Stripe.PaymentIntent;
 
-function getInvoiceStatus(status: Stripe.Invoice.Status | null): string {
-  switch (status) {
-    case 'paid': return 'balanced';
-    case 'open': return 'issued';
-    case 'uncollectible':
-    case 'void': return 'cancelled';
-    default: return 'draft';
+    if (paymentIntent.status === 'requires_confirmation') {
+      try {
+        await logSubscriptionStep(medplum, customerId, 'Confirming payment', {
+          paymentIntentId: paymentIntent.id,
+          clientSecret: paymentIntent.client_secret
+        });
+
+        const result = await stripe.paymentIntents.confirm(paymentIntent.id);
+        if (result.status === 'succeeded') {
+          await updateProfileToProStatus(medplum, customerId);
+        }
+
+        // Return client secret for frontend confirmation
+        return {
+          resourceType: 'Parameters',
+          parameter: [
+            { name: 'status', valueString: 'requires_confirmation' },
+            { name: 'paymentMethodId', valueString: paymentMethodId },
+            { name: 'email', valueString: email },
+            { name: 'stripeCustomerId', valueString: customer.id },
+            { name: 'subscriptionId', valueString: subscription.id },
+            { name: 'clientSecret', valueString: paymentIntent.client_secret }
+          ]
+        };
+      } catch (error) {
+        await logSubscriptionStep(medplum, customerId, 'Payment confirmation failed', {
+          error: error instanceof Error ? error.message : 'Unknown error'
+        });
+        throw error;
+      }
+    }
+
+    await logSubscriptionStep(medplum, customerId, 'Subscription created', {
+      subscriptionId: subscription.id,
+      status: subscription.status,
+      currentPeriodEnd: new Date(subscription.current_period_end * 1000).toISOString()
+    });
+
+    const status = await getSubscriptionStatus(subscription);
+    await logSubscriptionStep(medplum, customerId, 'Subscription created', status);
+
+    await updateProfileToProStatus(medplum, customerId);
+
+    return {
+      resourceType: 'Parameters',
+      parameter: [
+        { name: 'status', valueString: subscription.status },
+        { name: 'paymentMethodId', valueString: paymentMethodId },
+        { name: 'email', valueString: email },
+        { name: 'stripeCustomerId', valueString: customer.id },
+        { name: 'subscriptionId', valueString: subscription.id },
+        { name: 'details', valueString: JSON.stringify(status) }
+      ]
+    };
+
+  } catch (error) {
+    // Use console.log instead of console.error
+    console.log('Error processing request:', error);
+    return {
+      resourceType: 'OperationOutcome',
+      issue: [{
+        severity: 'error',
+        code: 'processing',
+        details: {
+          text: error instanceof Error ? error.message : 'Failed to process request'
+        }
+      }]
+    };
   }
 }

@@ -1,11 +1,12 @@
-import { Box, Button, Container, Stack, Text, Title, Paper, Timeline, List, Group, ThemeIcon } from '@mantine/core';
+import { Container, Stack, Title, Text, Group, Image, SimpleGrid, Paper, ThemeIcon, List, Divider } from '@mantine/core';
 import { useNavigate } from 'react-router-dom';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingStep } from '../../hooks/onboardingSteps';
 import { useEffect } from 'react';
 import { OrganizationInvitePage } from './OrganizationInvitePage';
-import { IconBuildingHospital, IconUser, IconArrowRight, IconCircleCheck } from '@tabler/icons-react';
+import { IconBrain, IconRocket, IconCheck, IconHeartHandshake } from '@tabler/icons-react';
 import { showNotification } from '@mantine/notifications';
+import { Document } from '@medplum/react';
 
 export function OrganizationSetupPage(): JSX.Element {
   const navigate = useNavigate();
@@ -17,9 +18,9 @@ export function OrganizationSetupPage(): JSX.Element {
 
   const handleComplete = async () => {
     showNotification({
-      title: '🎉 Organization Setup Complete!',
-      message: 'Great job! Your organization is now set up.',
-      color: 'green',
+      title: '🎉 Welcome to Practice Harbor!',
+      message: 'Your journey to better practice management starts now.',
+      color: 'blue',
       autoClose: 5000
     });
     
@@ -28,53 +29,86 @@ export function OrganizationSetupPage(): JSX.Element {
   };
 
   return (
-    <Container size="md" my={40}>
-      <Stack spacing="xl">
-        <Box ta="center" mb={30}>
-          <Title
-            order={1}
-            sx={(theme) => ({
-              fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-              fontWeight: 900,
-              fontSize: 44,
-            })}
-          >
-            Organization Setup
-          </Title>
-          <Text c="dimmed" mt="md" size="xl">
-            Step 2 of 2 in setting up your practice
-          </Text>
-        </Box>
-
-        <Paper withBorder p="xl" radius="md" bg="green.0">
-          <Stack spacing="md">
-            <Group>
-              <ThemeIcon size="xl" radius="xl" color="green" variant="light">
-                <IconCircleCheck size={24} />
-              </ThemeIcon>
-              <Title order={3}>Test Patient Account Created Successfully!</Title>
-            </Group>
-            
-            <Text size="md">
-              Great job! You've successfully created your test patient account. This account will eventually 
-              allow you to experience the patient portal firsthand, helping you better understand your clients' experience.
-            </Text>
-            
-            <Text size="md" mt="xs">
-              <b>Next Step:</b> Let's set up your actual practice account below, which will give you access to all the 
-              practice management features you need to run your business efficiently.
-            </Text>
-          </Stack>
-        </Paper>
-
-        <Container size="sm" px={0}>
-          <Paper withBorder p="xl" radius="md">
-            <OrganizationInvitePage 
-              onSuccess={handleComplete}
+    <Document width={1000}>
+      <Container size="xl" py="xl">
+        <Stack spacing="xl">
+          <Group align="center" justify="center">
+            <Image
+              src="/droplet.png"
+              alt="Practice Harbor Logo"
+              width={125}
+              height={125}
+              mr={50}
             />
-          </Paper>
-        </Container>
-      </Stack>
-    </Container>
+            <Stack spacing={0}>
+              <Title order={1} style={{ fontSize: '2.8rem', margin: 0, lineHeight: 1 }}>
+                Practice Harbor
+              </Title>
+              <Text size="xl" c="dimmed" style={{ lineHeight: 1.2 }}>
+                Your Modern, AI-Enhanced Practice Management Life Saver
+              </Text>
+            </Stack>
+          </Group>
+
+          <Divider my="xl" />
+
+          <Title order={2} align="center" style={{ fontSize: '2.2rem' }}>
+            Start Your Free Trial
+          </Title>
+          <Text size="xl" c="dimmed" align="center">
+            Built by therapists, for therapists who care
+          </Text>
+
+          <SimpleGrid cols={3} spacing={30} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+            <Paper shadow="md" radius="md" p={30} withBorder>
+              <Stack spacing="lg">
+                <ThemeIcon size={56} radius="md" variant="light" color="violet">
+                  <IconBrain size={28} />
+                </ThemeIcon>
+                <Title order={3}>AI-Powered Notes</Title>
+                <Text size="lg">
+                  Save 5+ hours weekly with intelligent documentation assistance and automated note-taking.
+                </Text>
+              </Stack>
+            </Paper>
+
+            <Paper shadow="md" radius="md" p={30} withBorder>
+              <Stack spacing="lg">
+                <ThemeIcon size={56} radius="md" variant="light" color="blue">
+                  <IconRocket size={28} />
+                </ThemeIcon>
+                <Title order={3}>Integrated Records</Title>
+                <Text size="lg">
+                  Built to make life easier.  Notes drop straight into your records. Click less, get more done.
+                </Text>
+              </Stack>
+            </Paper>
+
+            <Paper shadow="md" radius="md" p={30} withBorder>
+              <Stack spacing="lg">
+                <ThemeIcon size={56} radius="md" variant="light" color="green">
+                  <IconHeartHandshake size={28} />
+                </ThemeIcon>
+                <Title order={3}>HIPAA Secure</Title>
+                <Text size="lg">
+                  Enterprise-grade security and compliance built-in. Your practice, protected.
+                </Text>
+              </Stack>
+            </Paper>
+          </SimpleGrid>
+
+          <Container size="sm">
+            <Paper shadow="md" radius="md" p={35} withBorder>
+              <OrganizationInvitePage onSuccess={handleComplete} />
+            </Paper>
+          </Container>
+
+          <Text c="dimmed" size="sm" ta="center">
+            By signing up, you agree to our Terms of Service and Privacy Policy.
+            Need help? <a href="mailto:support@practiceharbor.com">Contact our team</a>
+          </Text>
+        </Stack>
+      </Container>
+    </Document>
   );
 }

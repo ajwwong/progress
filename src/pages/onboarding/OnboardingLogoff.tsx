@@ -1,4 +1,4 @@
-import { Box, Button, Container, Stack, Text, Title, Paper, Timeline, List, Group, ThemeIcon } from '@mantine/core';
+import { Box, Button, Container, Stack, Text, Title, Paper, Timeline, List, Group, ThemeIcon, Image } from '@mantine/core';
 import { useNavigate, Link } from 'react-router-dom';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingStep } from '../../hooks/onboardingSteps';
@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 import { OrganizationInvitePage } from './OrganizationInvitePage';
 import { IconBuildingHospital, IconUser, IconArrowRight, IconCircleCheck, IconLogin } from '@tabler/icons-react';
 import { showNotification } from '@mantine/notifications';
-import { useMedplum } from '@medplum/react';
+import { Document, SignInForm, useMedplum } from '@medplum/react';
 
 export function OrganizationSetupPage(): JSX.Element {
   const navigate = useNavigate();
@@ -84,30 +84,8 @@ export function OnboardingLogoff(): JSX.Element {
   const navigate = useNavigate();
   const medplum = useMedplum();
 
-  const handleSignOut = async () => {
-    try {
-      showNotification({
-        title: 'Signing out...',
-        message: 'Please wait while we prepare for your practice account login.',
-        color: 'blue',
-        loading: true,
-        autoClose: 2000,
-      });
-
-      await medplum.signOut();
-      
-      // Short delay to ensure signOut completes and notification is seen
-      setTimeout(() => {
-        navigate('/signin');
-      }, 2000);
-      
-    } catch (error) {
-      showNotification({
-        title: 'Error',
-        message: 'Failed to sign out. Please try again.',
-        color: 'red',
-      });
-    }
+  const handleSignInSuccess = () => {
+    navigate('/dashboard');
   };
 
   return (
@@ -129,47 +107,36 @@ export function OnboardingLogoff(): JSX.Element {
           </Text>
         </Box>
 
-        <Paper withBorder p="xl" radius="md" bg="green.0">
-          <Stack spacing="md">
-            <Group>
-              <ThemeIcon size="xl" radius="xl" color="green" variant="light">
-                <IconCircleCheck size={24} />
-              </ThemeIcon>
-              <Title order={3}>Real Practice Account Created Successfully!</Title>
-            </Group>
-            
-            <Text size="md">
-              Congratulations! You've successfully created your practice account. This is the account you'll 
-              use to manage your practice, handle appointments, and access all provider features.
-            </Text>
-            
-            <Text size="md" mt="xs">
-              <b>Next Step:</b> To ensure everything is set up correctly and to access your practice dashboard, 
-              you'll need to sign in with your new practice account credentials.
-            </Text>
-
-            <Paper withBorder p="md" radius="md" bg="blue.0" mt="md">
-              <Group>
-                <ThemeIcon size="lg" radius="xl" color="blue" variant="light">
-                  <IconLogin size={20} />
-                </ThemeIcon>
-                <Text size="sm" fw={500}>
-                  Important: You'll be signing in with your practice email and password, not your test patient account.
-                </Text>
-              </Group>
-            </Paper>
-
-            <Group mt="xl">
-              <Button 
-                onClick={handleSignOut}
-                size="lg" 
-                rightSection={<IconArrowRight size={20} />}
-                color="green"
+        <Paper shadow="md" radius="md" p={35} withBorder>
+          <SignInForm
+            clientId="c9aa51a2-263b-49f1-b861-fddfb13bc54c"
+            projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
+            onSuccess={handleSignInSuccess}
+          >
+            <Stack align="center" spacing="xs">
+              <Image
+                src="/droplet.png"
+                alt="Practice Harbor Logo"
+                width={48}
+                height={48}
+                mx="auto"
+                mb={8}
+                style={{ width: 48, height: 48 }}
+              />
+              <Title
+                align="center"
+                sx={(theme) => ({
+                  fontFamily: `Greycliff CF, ${theme.fontFamily}`,
+                  fontWeight: 900
+                })}
               >
-                Sign In to Practice Account
-              </Button>
-            </Group>
-          </Stack>
+                Sign in to Practice Harbor
+              </Title>
+              <Text color="dimmed" size="sm" align="center" mt={5}>
+                Welcome back to port.
+              </Text>
+            </Stack>
+          </SignInForm>
         </Paper>
       </Stack>
     </Container>

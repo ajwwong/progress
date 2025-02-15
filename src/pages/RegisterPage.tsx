@@ -1,101 +1,108 @@
-import { BackgroundImage, Box, Container, SimpleGrid, Stack, Text, List, Paper, Title, ThemeIcon, Timeline } from '@mantine/core';
-import { RegisterForm, useMedplumProfile } from '@medplum/react';
-import { CustomRegisterForm } from '../components/auth/CustomRegisterForm';
-import { useNavigate } from 'react-router-dom';
+import { Container, Stack, Title, Text, Group, Image, SimpleGrid, Paper, ThemeIcon, List, Button, Divider } from '@mantine/core';
+import { IconBrain, IconCheck, IconHeartHandshake } from '@tabler/icons-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Document, useMedplumProfile } from '@medplum/react';
 import { useEffect } from 'react';
 import { MEDPLUM_PROJECT_ID, MEDPLUM_RECAPTCHA_SITE_KEY } from '../config';
-import { IconUser, IconBuildingHospital, IconArrowRight } from '@tabler/icons-react';
+import { CustomRegisterForm } from '../components/auth/CustomRegisterForm';
 import { useOnboarding } from '../hooks/useOnboarding';
-import { OnboardingStep } from '../hooks/onboardingSteps';
 
 export function RegisterPage(): JSX.Element {
   const navigate = useNavigate();
   const profile = useMedplumProfile();
   const { setCurrentStep } = useOnboarding();
 
-  {/*useEffect(() => {
+  useEffect(() => {
     if (profile) {
-      navigate('/calendar');
+      navigate('/dashboard');
     }
   }, [profile, navigate]);
-*/}
+
   const handleRegistrationSuccess = () => {
     navigate('/dashboard');
   };
 
   return (
-    <Container size="md" my={40}>
+    <Document width={1000}>
       <Stack spacing="xl">
-        <Box ta="center" mb={30}>
-          <Title
-            order={1}
-            sx={(theme) => ({
-              fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-              fontWeight: 900,
-              fontSize: 44,
-            })}
-          >
-            Create Test Patient Account
-          </Title>
-          <Text c="dimmed" mt="md" size="xl">
-            Step 1 of 2 in setting up your practice
-          </Text>
-        </Box>
+        <Container size="xl" py="xl">
+          <Stack spacing="xl">
+            <Group align="center" justify="center">
+              <Image
+                src="/droplet.png"
+                alt="Practice Harbor Logo"
+                width={125}
+                height={125}
+                mr={50}
+              />
+              <Stack spacing={0}>
+                <Title order={1} style={{ fontSize: '2.8rem', margin: 0, lineHeight: 1 }}>
+                  Join Practice Harbor
+                </Title>
+                <Text size="xl" c="dimmed" style={{ lineHeight: 1.2 }}>
+                  Your Modern, AI-Enhanced Practice Management Life Saver
+                </Text>
+              </Stack>
+            </Group>
 
-        <Paper withBorder p="xl" radius="md">
-          <Timeline active={0} bulletSize={32} lineWidth={2}>
-            <Timeline.Item 
-              bullet={<IconUser size={16} />} 
-              title="Step 1: Create Test Patient Account"
-            >
-              <Text color="dimmed" size="sm">
-                First, create a test patient account to:
-              </Text>
-              <List
-                spacing="xs"
-                size="sm"
-                center
-                mt={10}
-              >
-                <List.Item>Experience the patient portal firsthand</List.Item>
-                <List.Item>Test features from a patient's perspective</List.Item>
-                <List.Item>Better understand the client experience</List.Item>
-              </List>
-            </Timeline.Item>
+            <Divider my="xl" />
 
-            <Timeline.Item 
-              bullet={<IconBuildingHospital size={16} />} 
-              title="Step 2: Create Practice Account"
-            >
-              <Text color="dimmed" size="sm">
-                Next, you'll set up your practice account to:
-              </Text>
-              <List
-                spacing="xs"
-                size="sm"
-                center
-                mt={10}
-              >
-                <List.Item>Access practice management features</List.Item>
-                <List.Item>Manage patient records and appointments</List.Item>
-                <List.Item>Configure your practice settings</List.Item>
-              </List>
-            </Timeline.Item>
-          </Timeline>
-        </Paper>
+            <SimpleGrid cols={2} spacing={50} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+              <Paper shadow="md" radius="md" p={35} withBorder>
+                <Stack spacing="lg">
+                  <ThemeIcon size={56} radius="md" variant="light" color="blue">
+                    <IconBrain size={28} />
+                  </ThemeIcon>
+                  <Title order={3}>For Mental Health Providers</Title>
+                  <List spacing="md" size="lg" center icon={
+                    <ThemeIcon color="blue" size={28} radius="xl">
+                      <IconCheck size={18} />
+                    </ThemeIcon>
+                  }>
+                    <List.Item>AI-Powered Clinical Documentation</List.Item>
+                    <List.Item>Smart Voice-to-Text Transcription</List.Item>
+                    <List.Item>Intelligent Scheduling System</List.Item>
+                    <List.Item>Integrated Progress Notes</List.Item>
+                  </List>
+                </Stack>
+              </Paper>
 
-        <Container size="sm" px={0}>
-          <Paper withBorder p="xl" radius="md">
-            <CustomRegisterForm
+              <Paper shadow="md" radius="md" p={35} withBorder>
+                <Stack spacing="lg">
+                  <ThemeIcon size={56} radius="md" variant="light" color="green">
+                    <IconHeartHandshake size={28} />
+                  </ThemeIcon>
+                  <Title order={3}>Get Started Now</Title>
+                  <Text size="lg">
+                  Join the future of mental health practice management. Create your therapist account today and focus more on what matters - helping your clients thrive.
+                  </Text>
+                  <Group mt="auto" grow direction="column">
+                  <CustomRegisterForm
               type="patient"
               projectId={MEDPLUM_PROJECT_ID}
               recaptchaSiteKey={MEDPLUM_RECAPTCHA_SITE_KEY}
               onSuccess={handleRegistrationSuccess}
             />
-          </Paper>
+                    <Button 
+                      component={Link} 
+                      to="/signin" 
+                      size="lg" 
+                      radius="md" 
+                      variant="light"
+                      fullWidth
+                    >
+                      Sign In
+                    </Button>
+                  </Group>
+                </Stack>
+              </Paper>
+            </SimpleGrid>
+          </Stack>
         </Container>
+
+        
       </Stack>
-    </Container>
+    </Document>
   );
 }
 

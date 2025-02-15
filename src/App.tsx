@@ -1,7 +1,7 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
 import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconSettings, IconAlertTriangle, IconMailOpened } from '@tabler/icons-react';
 import { Suspense, useState, useEffect } from 'react';
-import { Route, Routes, Link, useLocation } from 'react-router-dom';
+import { Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
 import { PatientOverview } from './components/PatientOverview';
 import { Timeline } from './components/Timeline';
@@ -25,7 +25,7 @@ import { PatientDirectoryPage } from './features/patients/pages/PatientDirectory
 import { ClientRoutes } from './routes/ClientRoutes';
 import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
-import { ProfilePage } from './pages/ProfilePage';
+import { ProfilePage } from './pages/profile/ProfilePage';
 import { PatientRecentComposition } from './components/PatientRecentComposition';
 import { TemplateRoutes } from './components/templates/TemplateRoutes';
 import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
@@ -61,7 +61,16 @@ export function App(): JSX.Element | null {
   const [generatingCompositionId, setGeneratingCompositionId] = useState<string | null>(null);
   const [localCompositions, setLocalCompositions] = useState<any[]>([]);
   const location = useLocation();
-  const hideAppShell = location.pathname === '/onboarding/organization' || location.pathname === '/register';
+  
+  // Define hideAppShell paths explicitly
+  const hideAppShellPaths = [
+    '/onboarding/organization',
+    '/onboarding/logoff',
+    '/register'
+  ];
+  
+  // Evaluate hideAppShell immediately based on current path
+  const hideAppShell = hideAppShellPaths.includes(location.pathname);
 
   // Initialize localCompositions when compositions load
   useEffect(() => {
@@ -331,7 +340,7 @@ export function App(): JSX.Element | null {
                       fontSize: 'var(--mantine-font-size-xl)'
                     }}
                   >
-                     Practice Harbor
+                     Progressnotes.app
                   </Text>
                 </Group>
               }
@@ -425,7 +434,22 @@ export function App(): JSX.Element | null {
               <ErrorBoundary>
                 <Suspense fallback={<Loading />}>
                   <Routes>
-                    <Route path="/" element={profile ? <CalendarPage /> : <LandingPage />} />
+                    <Route 
+                      path="/" 
+                      element={
+                        profile ? (
+                          profile.resourceType === 'Patient' ? (
+                            <Navigate to="/onboarding/organization" replace />
+                          ) : profile.resourceType === 'Practitioner' ? (
+                            <Navigate to="/dashboard" replace />
+                          ) : (
+                            <Navigate to="/" replace />
+                          )
+                        ) : (
+                          <LandingPage />
+                        )
+                      } 
+                    />
                     <Route path="/signin" element={<SignInPage />} />
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/calendar" element={<CalendarPage />} />

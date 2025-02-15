@@ -32,7 +32,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
           model: 'nova-2',
           smart_format: true,
           punctuate: true,
-          diarize: true
+          diarize: true,
+          paragraphs: true
         }
       );
 
@@ -41,7 +42,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       return {
         message: 'Audio transcribed successfully',
         details: {
-          transcript: result.results?.channels[0]?.alternatives[0]?.transcript || 'No transcript available',
+          transcript: result.results?.channels[0]?.alternatives[0]?.paragraphs?.transcript || 'No transcript available',
           confidence: result.results?.channels[0]?.alternatives[0]?.confidence,
           audioSize: audioBuffer.length,
           duration: result.metadata?.duration

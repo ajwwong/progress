@@ -34,6 +34,7 @@
     "@medplum/mock": "3.2.26",
     "@medplum/react": "^3.2.26",
     "@medplum/react-hooks": "^3.2.26",
+    "@stripe/react-stripe-js": "^3.1.1",
     "@stripe/stripe-js": "^2.4.0",
     "@tabler/icons-react": "3.17.0",
     "date-fns": "^4.1.0",
