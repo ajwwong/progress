@@ -18,7 +18,7 @@ export function LandingPage(): JSX.Element {
             />
             <Stack spacing={0}>
               <Title order={1} style={{ fontSize: '2.8rem', margin: 0, lineHeight: 1 }}>
-                Welcome to Practice Harbor
+                Welcome to Progress Notes
               </Title>
               <Text size="xl" c="dimmed" style={{ lineHeight: 1.2 }}>
                 Your Modern, AI-Enhanced Practice Management Life Saver

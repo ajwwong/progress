@@ -1,6 +1,6 @@
 import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
-import { handler } from './stripe-subscription-handler';
+import { handler } from './stripe-subscription-handler-archive';
 
 const medplum = new MockClient();
 

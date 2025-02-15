@@ -31,7 +31,7 @@ import { TemplateRoutes } from './components/templates/TemplateRoutes';
 import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
-import { RegisterPage as ProviderRegisterPage } from './pages/ProviderRegisterPage';
+import { RegisterPage as ProviderRegisterPage } from './pages/ProviderRegisterPage-archive';
 import { OrganizationInvitePage } from './pages/onboarding/OrganizationInvitePage';
 import { NewEncounter } from './pages/NewEncounter';
 import { NewPractitioner } from './pages/NewPractitioner';
@@ -340,7 +340,7 @@ export function App(): JSX.Element | null {
                       fontSize: 'var(--mantine-font-size-xl)'
                     }}
                   >
-                     Progressnotes.app
+                     Progress Notes
                   </Text>
                 </Group>
               }

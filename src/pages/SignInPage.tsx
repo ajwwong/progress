@@ -36,10 +36,10 @@ export function SignInPage(): JSX.Element {
             fontWeight: 900
           })}
         >
-          Sign in to Practice Harbor
+          Sign in to Progress Notes
         </Title>
         <Text color="dimmed" size="sm" align="center" mt={5}>
-          Welcome back to port.
+          Welcome back.  Glad you're here.
         </Text>
       </Stack>
     </SignInForm>
