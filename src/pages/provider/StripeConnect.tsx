@@ -3,6 +3,10 @@ import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { Practitioner } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
 import { IconCreditCard } from '@tabler/icons-react';
+import { loadStripe } from '@stripe/stripe-js';
+
+// Use a different key for Stripe Connect
+const stripeConnectPromise = loadStripe(import.meta.env.VITE_STRIPE_CONNECT_PUBLISHABLE_KEY);
 
 export function StripeConnect() {
   const medplum = useMedplum();
