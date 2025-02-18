@@ -143,6 +143,16 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
     }
   }, [location.state, templates]);
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isRecording && !isPaused) {
+      interval = setInterval(() => {
+        setIsBlinking(prev => !prev);
+      }, 1500);
+    }
+    return () => clearInterval(interval);
+  }, [isRecording, isPaused]);
+
   const handleStartRecording = async () => {
     if (!canUseSession) {
       showNotification({
@@ -461,7 +471,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
           <Group justify="space-between" align="center">
             <Switch
               size="md"
-              color="teal"
+              color="teal.6"
               checked={isTelehealth}
               onChange={(event) => setIsTelehealth(event.currentTarget.checked)}
               label={
@@ -509,48 +519,47 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
 
             <Box 
               style={{ 
-                height: '52px',
-                width: '340px',
+                height: '56px',
+                width: '380px',
                 margin: '0 auto'
               }}
             >
               {!isRecording ? (
                 <Button
                   size="xl"
-                  radius="xl"
+                  radius="lg"
                   color={isTelehealth ? 'teal' : 'blue.9'}
-                  leftSection={isTelehealth ? <IconHeadphones size={20} /> : <IconMicrophone size={20} />}
+                  leftSection={isTelehealth ? <IconHeadphones size={22} /> : <IconMicrophone size={22} />}
                   onClick={handleStartRecording}
                   onMouseEnter={() => setIsStartButtonHovered(true)}
                   onMouseLeave={() => setIsStartButtonHovered(false)}
                   styles={{
                     inner: {
-                      fontSize: '18px',
+                      fontSize: '17px',
                       fontWeight: 500,
-                      height: '52px'
+                      height: '56px',
+                      letterSpacing: '0.3px',
+                      padding: '0 28px'
                     },
                     root: {
                       width: '100%',
                       background: isTelehealth 
-                        ? 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)' 
-                        : 'linear-gradient(135deg, #2C5282 0%, #3B82B6 100%)',
+                        ? 'linear-gradient(165deg, rgba(15, 118, 110, 0.85) 0%, rgba(20, 184, 166, 0.8) 100%)' 
+                        : 'linear-gradient(165deg, #2C5282 0%, #3B82B6 100%)',
+                      border: `1px solid ${isTelehealth ? 'rgba(15, 118, 110, 0.08)' : 'rgba(44, 82, 130, 0.1)'}`,
+                      backdropFilter: 'blur(10px)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       boxShadow: isTelehealth
-                        ? '0 4px 15px rgba(15, 118, 110, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                        : '0 4px 15px rgba(44, 82, 130, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                        ? '0 8px 25px rgba(15, 118, 110, 0.2), 0 4px 10px rgba(15, 118, 110, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                        : '0 8px 25px rgba(44, 82, 130, 0.2), 0 4px 10px rgba(44, 82, 130, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
                       '&:hover': {
-                        transform: 'translateY(-1px)',
+                        transform: 'translateY(-2px)',
                         background: isTelehealth
-                          ? 'linear-gradient(135deg, #0D6D6B 0%, #0F9B8E 100%)'
-                          : 'linear-gradient(135deg, #234876 0%, #2D6899 100%)',
+                          ? 'linear-gradient(165deg, rgba(13, 109, 107, 0.9) 0%, rgba(15, 155, 142, 0.85) 100%)'
+                          : 'linear-gradient(165deg, #234876 0%, #2D6899 100%)',
                         boxShadow: isTelehealth
-                          ? '0 6px 20px rgba(15, 118, 110, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
-                          : '0 6px 20px rgba(44, 82, 130, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
-                      },
-                      '&:active': {
-                        transform: 'translateY(0)',
-                        boxShadow: isTelehealth
-                          ? '0 2px 10px rgba(15, 118, 110, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                          : '0 2px 10px rgba(44, 82, 130, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+                          ? '0 12px 30px rgba(15, 118, 110, 0.25), 0 6px 15px rgba(15, 118, 110, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+                          : '0 12px 30px rgba(44, 82, 130, 0.25), 0 6px 15px rgba(44, 82, 130, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
                       }
                     }
                   }}
@@ -562,66 +571,99 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                   justify="center" 
                   style={{ 
                     width: '100%',
-                    gap: '16px',
+                    gap: '20px',
                     opacity: 1,
                     transform: 'translateY(0)'
                   }}
                 >
                   <Button
                     variant="outline"
-                    color="blue"
-                    radius="xl"
-                    size="lg"
-                    leftSection={<IconMicrophone size={20} />}
+                    color="blue.6"
+                    radius="lg"
+                    size="xl"
+                    leftSection={<IconPlayerStop size={22} />}
                     onClick={handleFullWorkflow}
-                    style={{ 
-                      flex: 1,
-                      '&:hover': {
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                    styles={{
+                      root: {
+                        flex: 1,
+                        height: '56px',
+                        border: '1px solid rgba(37, 99, 235, 0.3)',
+                        backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 8px 16px rgba(37, 99, 235, 0.15), 0 4px 8px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                          boxShadow: '0 20px 40px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                        }
+                      },
+                      inner: {
+                        fontSize: '17px',
+                        fontWeight: 500,
+                        letterSpacing: '0.3px'
                       }
                     }}
                   >
                     End session
                   </Button>
+
                   <Box
                     style={{
-                      width: '12px',
-                      height: '12px',
+                      width: '10px',
+                      height: '10px',
                       borderRadius: '50%',
                       backgroundColor: '#fa5252',
-                      opacity: isBlinking && !isPaused ? 1 : 0.3
+                      opacity: isBlinking && !isPaused ? 0.7 : 0.2,
+                      transition: 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                      boxShadow: '0 0 10px rgba(250, 82, 82, 0.15)'
                     }}
                   />
+
                   <ActionIcon 
-                    variant="light" 
+                    variant="subtle"
                     color="gray" 
-                    size="xl" 
-                    radius="xl"
+                    size={56}
+                    radius="lg"
                     onClick={isPaused ? resumeRecording : pauseRecording}
-                    style={{
-                      '&:hover': {
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                    styles={{
+                      root: {
+                        border: '1px solid rgba(0, 0, 0, 0.12)',
+                        backgroundColor: 'white',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          backgroundColor: 'white',
+                          border: '1px solid rgba(0, 0, 0, 0.18)',
+                          boxShadow: '0 8px 20px rgba(0, 0, 0, 0.08)'
+                        }
                       }
                     }}
                   >
-                    {isPaused ? <IconPlayerPlay size={20} /> : <IconPlayerPause size={20} />}
+                    {isPaused ? <IconPlayerPlay size={22} /> : <IconPlayerPause size={22} />}
                   </ActionIcon>
+
                   <ActionIcon 
-                    variant="light" 
-                    color="red" 
-                    size="xl" 
-                    radius="xl"
-                    onClick={handleCancelClick}
-                    style={{
-                      '&:hover': {
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                    variant="subtle"
+                    color="red.6" 
+                    size={56}
+                    radius="lg"
+                    onClick={cancelRecording}
+                    styles={{
+                      root: {
+                        border: '1px solid rgba(241, 79, 79, 0.15)',
+                        backgroundColor: 'rgba(241, 79, 79, 0.03)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          backgroundColor: 'rgba(241, 79, 79, 0.05)',
+                          boxShadow: '0 8px 20px rgba(241, 79, 79, 0.15)'
+                        }
                       }
                     }}
                   >
-                    <IconX size={20} />
+                    <IconX size={22} />
                   </ActionIcon>
                 </Group>
               )}
