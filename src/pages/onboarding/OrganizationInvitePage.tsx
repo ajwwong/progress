@@ -9,8 +9,8 @@ import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingStep } from '../../hooks/onboardingSteps';
 import { useMedplum } from '@medplum/react';
 
-const ORGANIZATION_REGISTRATION_BOT_ID = '2d870407-8e34-4ff9-b1f1-a499819bfe5e';
-
+//const ORGANIZATION_REGISTRATION_BOT_ID = '2d870407-8e34-4ff9-b1f1-a499819bfe5e';
+const ORGANIZATION_REGISTRATION_BOT_ID = '01952512-3a8f-7567-93d0-0db6c29bb5f3';
 export function OrganizationInvitePage(): JSX.Element {
   const [loading, setLoading] = useState(false);
   const [passwordError, setPasswordError] = useState('');

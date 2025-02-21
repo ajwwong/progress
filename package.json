@@ -1,59 +1,60 @@
 {
-  "name": "medplum-hello-world",
-  "version": "3.2.18",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "tsc && vite build",
-    "dev": "vite --host",
-    "lint": "eslint .",
-    "preview": "vite preview",
-    "test": "vitest",
-    "test:watch": "vitest watch"
-  },
-  "prettier": {
-    "printWidth": 120,
-    "singleQuote": true,
-    "trailingComma": "es5"
-  },
-  "eslintConfig": {
-    "extends": [
-      "@medplum/eslint-config"
-    ]
-  },
-  "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.1",
-    "@dnd-kit/core": "^6.3.1",
-    "@hello-pangea/dnd": "^17.0.0",
-    "@mantine/core": "^7.13.4",
-    "@mantine/dates": "^7.13.4",
-    "@mantine/hooks": "^7.13.4",
-    "@mantine/notifications": "^7.13.4",
-    "@medplum/core": "3.2.26",
-    "@medplum/fhirtypes": "3.2.26",
-    "@medplum/mock": "3.2.26",
-    "@medplum/react": "^3.2.26",
-    "@medplum/react-hooks": "^3.2.26",
-    "@stripe/react-stripe-js": "^3.1.1",
-    "@stripe/stripe-js": "^2.4.0",
-    "@tabler/icons-react": "3.17.0",
-    "date-fns": "^4.1.0",
-    "dayjs": "^1.11.13",
-    "react": "^18.2.0",
-    "react-dom": "18.2.0",
-    "react-router-dom": "6.27.0",
-    "stripe": "^14.14.0",
-    "ts-node": "^10.9.2"
-  },
-  "devDependencies": {
-    "@types/node": "^20.0.0",
-    "@types/react": "^18.3.12",
-    "@types/react-dom": "18.3.1",
-    "@vitejs/plugin-react": "4.3.3",
-    "postcss": "8.4.47",
-    "postcss-preset-mantine": "1.17.0",
-    "typescript": "^5.0.0",
-    "vite": "5.4.10",
-    "vitest": "^1.0.0"
+    "name": "medplum-hello-world",
+    "version": "3.2.18",
+    "private": true,
+    "type": "module",
+    "scripts": {
+      "build": "tsc && vite build",
+      "dev": "vite --host",
+      "lint": "eslint .",
+      "preview": "vite preview",
+      "test": "vitest",
+      "test:watch": "vitest watch"
+    },
+    "prettier": {
+      "printWidth": 120,
+      "singleQuote": true,
+      "trailingComma": "es5"
+    },
+    "eslintConfig": {
+      "extends": [
+        "@medplum/eslint-config"
+      ]
+    },
+    "dependencies": {
+      "@anthropic-ai/sdk": "^0.32.1",
+      "@deepgram/sdk": "^3.9.0",
+      "@dnd-kit/core": "^6.3.1",
+      "@hello-pangea/dnd": "^17.0.0",
+      "@mantine/core": "^7.13.4",
+      "@mantine/dates": "^7.13.4",
+      "@mantine/hooks": "^7.13.4",
+      "@mantine/notifications": "^7.13.4",
+      "@medplum/core": "3.2.32",
+      "@medplum/fhirtypes": "3.2.32",
+      "@medplum/mock": "3.2.32",
+      "@medplum/react": "3.2.32",
+      "@medplum/react-hooks": "3.2.32",
+      "@stripe/react-stripe-js": "^3.1.1",
+      "@stripe/stripe-js": "^2.4.0",
+      "@tabler/icons-react": "3.17.0",
+      "date-fns": "^4.1.0",
+      "dayjs": "^1.11.10",
+      "react": "^18.2.0",
+      "react-dom": "18.2.0",
+      "react-router-dom": "6.27.0",
+      "stripe": "^14.14.0",
+      "ts-node": "^10.9.2"
+    },
+    "devDependencies": {
+      "@types/node": "^20.0.0",
+      "@types/react": "^18.3.12",
+      "@types/react-dom": "18.3.1",
+      "@vitejs/plugin-react": "4.3.3",
+      "postcss": "8.4.47",
+      "postcss-preset-mantine": "1.17.0",
+      "typescript": "^5.0.0",
+      "vite": "5.4.10",
+      "vitest": "^1.0.0"
+    }
   }
-}

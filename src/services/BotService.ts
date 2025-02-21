@@ -22,18 +22,20 @@ export class BotService {
   private static readonly TRANSCRIPTION_BOT_ID = '@https://progressnotes.app/bots:audio-transcribe';
   private static readonly NOTE_GENERATION_BOT_ID = '@https://progressnotes.app:ask-claude';
   private isLocalhost: boolean;
+  private baseUrl: string;
 
   constructor(private medplum: MedplumClient) {
     // Check if we're running against localhost
     this.isLocalhost = medplum.getBaseUrl().includes('localhost');
+    this.baseUrl = medplum.getBaseUrl();
   }
 
   private checkBotAvailability(): void {
-    if (!this.isLocalhost) {
+    if (this.baseUrl.includes('app.medplum.com')) {
       throw new Error(
-        'Bots are only available when running against a local Medplum server. ' +
-        'If you\'re seeing this message, you\'re likely running against app.medplum.com. ' +
-        'To use bots, please run your own Medplum server locally and update the baseUrl in main.tsx to point to http://localhost:8103'
+        'Bots are only available when running against a self-hosted Medplum server. ' +
+        'If you\'re seeing this message, you\'re running against app.medplum.com. ' +
+        'To use bots, please run your own Medplum server and ensure your baseUrl is configured correctly.'
       );
     }
   }

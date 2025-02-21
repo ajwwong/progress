@@ -4,13 +4,15 @@ import { useMedplum } from '@medplum/react';
 import { showNotification } from '@mantine/notifications';
 import { IconCheck } from '@tabler/icons-react';
 import { pronounOptions } from './constants';
+import { normalizeErrorString } from '@medplum/core';
 
 interface PatientModalProps {
   opened: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export function PatientModal({ opened, onClose }: PatientModalProps): JSX.Element {
+export function PatientModal({ opened, onClose, onSuccess }: PatientModalProps): JSX.Element {
   const medplum = useMedplum();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -31,20 +33,14 @@ export function PatientModal({ opened, onClose }: PatientModalProps): JSX.Elemen
           given: [firstName],
           family: lastName,
         }],
-        extension: [{
-          url: 'http://hl7.org/fhir/StructureDefinition/patient-pronouns',
+        extension: pronouns ? [{
+          url: 'http://hl7.org/fhir/StructureDefinition/individual-pronouns',
           valueString: pronouns
-        }],
+        }] : undefined,
         telecom: [
-          {
-            system: 'email',
-            value: email,
-          },
-          {
-            system: 'phone',
-            value: phone,
-          },
-        ],
+          ...(email ? [{ system: 'email', value: email }] : []),
+          ...(phone ? [{ system: 'phone', value: phone }] : [])
+        ]
       });
 
       showNotification({
@@ -61,12 +57,13 @@ export function PatientModal({ opened, onClose }: PatientModalProps): JSX.Elemen
       setEmail('');
       setPhone('');
       
+      onSuccess?.();
       onClose();
     } catch (error) {
       console.error('Error creating patient:', error);
       showNotification({
         title: 'Error',
-        message: 'Failed to create patient',
+        message: normalizeErrorString(error),
         color: 'red'
       });
     } finally {

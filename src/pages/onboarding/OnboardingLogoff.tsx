@@ -103,14 +103,14 @@ export function OnboardingLogoff(): JSX.Element {
             Practice Account Created!
           </Title>
           <Text c="dimmed" mt="md" size="xl">
-            You're almost ready to start using Practice Harbor
+            You're almost ready to start using Progress Notes
           </Text>
         </Box>
 
         <Paper shadow="md" radius="md" p={35} withBorder>
           <SignInForm
-            clientId="c9aa51a2-263b-49f1-b861-fddfb13bc54c"
-            projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
+            //clientId="c9aa51a2-263b-49f1-b861-fddfb13bc54c"
+            //projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
             onSuccess={handleSignInSuccess}
           >
             <Stack align="center" spacing="xs">
