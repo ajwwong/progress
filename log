@@ -36,14 +36,7 @@ src/bots/stripe-session-charge.ts(57,7): error TS2322: Type '{ actor: Reference<
         Type 'undefined' is not assignable to type 'Reference<Patient | CareTeam | Device | Organization | Practitioner | PractitionerRole | RelatedPerson>'.
 src/bots/stripe-session-charge.ts(80,28): error TS2339: Property 'subject' does not exist on type 'Appointment'.
 src/bots/stripe-session-charge.ts(107,27): error TS2339: Property 'sendEmail' does not exist on type 'InvoicesResource'.
-src/bots/stripe-subscription-handler-archive.ts(6,20): error TS1361: 'Stripe' cannot be used as a value because it was imported using 'import type'.
-src/bots/stripe-subscription-handler-archive.ts(31,34): error TS2339: Property 'parameter' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
-  Property 'parameter' does not exist on type 'string'.
-src/bots/stripe-subscription-handler-archive.ts(32,43): error TS7006: Parameter 'p' implicitly has an 'any' type.
-src/bots/stripe-subscription-handler-archive.ts(33,38): error TS7006: Parameter 'p' implicitly has an 'any' type.
-src/bots/stripe-subscription-handler-archive.ts(34,35): error TS7006: Parameter 'p' implicitly has an 'any' type.
-src/bots/stripe-subscription-handler-archive.ts(223,7): error TS2322: Type 'string' is not assignable to type '"cancelled" | "draft" | "entered-in-error" | "issued" | "balanced"'.
-src/bots/stripe-subscription-handler.ts(20,7): error TS2322: Type '({ contentString: string; } | undefined)[]' is not assignable to type 'CommunicationPayload[]'.
+ssrc/bots/stripe-subscription-handler.ts(20,7): error TS2322: Type '({ contentString: string; } | undefined)[]' is not assignable to type 'CommunicationPayload[]'.
   Type '{ contentString: string; } | undefined' is not assignable to type 'CommunicationPayload'.
     Type 'undefined' is not assignable to type 'CommunicationPayload'.
 src/bots/stripe-subscription-handler.ts(39,40): error TS2304: Cannot find name 'a'.
@@ -55,19 +48,7 @@ src/bots/stripe-webhook-handler.ts(35,33): error TS2339: Property 'header' does 
   Property 'header' does not exist on type 'string'.
 src/bots/stripe-webhook-handler.ts(36,31): error TS2339: Property 'body' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
   Property 'body' does not exist on type 'string'.
-src/bots/stripe-webhook-subscription-bot-archive.ts(97,7): error TS2322: Type 'string' is not assignable to type '"cancelled" | "draft" | "entered-in-error" | "issued" | "balanced"'.
 src/components/PatientRecentComposition.tsx(39,13): error TS2741: Property 'status' is missing in type '{ div: string; }' but required in type 'Narrative'.
-src/components/TreatmentPlan-archive.tsx(37,14): error TS2322: Type '{ children: (Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/TreatmentPlan-archive.tsx(38,16): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/TreatmentPlan-archive.tsx(41,13): error TS2322: Type '{ children: string; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/components/TreatmentPlan-archive.tsx(50,20): error TS2322: Type '{ children: Element[]; position: string; mb: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/TreatmentPlan-archive.tsx(51,22): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/TreatmentPlan-archive.tsx(65,39): error TS2339: Property 'description' does not exist on type 'Reference<Goal>'.
 src/components/audio/AudioControls.tsx(68,17): error TS2322: Type '{ styles: (theme: any) => { root: { width: number; height: number; borderRadius: string; backgroundColor: any; opacity: number; transition: string; }; }; }' is not assignable to type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
   Property 'styles' does not exist on type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'. Did you mean 'style'?
 src/components/audio/AudioControls.tsx(68,26): error TS7006: Parameter 'theme' implicitly has an 'any' type.
