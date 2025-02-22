@@ -11,6 +11,16 @@ import { useParams } from 'react-router-dom';
 import { Patient, Composition } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
 
+interface Narrative {
+  status: 'generated' | 'extensions' | 'additional' | 'empty';
+  div: string;
+}
+
+const narrative: Narrative = {
+  status: 'generated',
+  div: '<div>Content</div>'
+};
+
 export function PatientRecentComposition(): JSX.Element {
   const { id } = useParams();
   const medplum = useMedplum();

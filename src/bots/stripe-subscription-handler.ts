@@ -8,19 +8,35 @@ const stripe = new Stripe('sk_test_51QbTYlIhrZKLmPheWQseDVQyhBpxkXm3XYi94NVM3VqR
 // Price ID for Claude AI Transcription ($0.99/month)
 const SUBSCRIPTION_PRICE_ID = 'price_1QrxQOIhrZKLmPheB8fmQEjM';
 
-async function logSubscriptionStep(medplum: MedplumClient, customerId: string, message: string, details?: any) {
+interface CommunicationPayload {
+  contentString: string;
+}
+
+async function logSubscriptionStep(
+  medplum: MedplumClient, 
+  practitionerId: string, 
+  message: string, 
+  details?: Record<string, unknown>
+): Promise<void> {
+  const payload: CommunicationPayload[] = [
+    { contentString: message }
+  ];
+  
+  if (details) {
+    payload.push({ 
+      contentString: JSON.stringify(details, null, 2) 
+    });
+  }
+  
   try {
     const communication = await medplum.createResource({
       resourceType: 'Communication',
       status: 'completed',
       sender: { reference: 'Bot/42b0ee1a-345b-4fd0-aa41-2493434af9e9' },
-      subject: { reference: `Practitioner/${customerId}` },
-      recipient: [{ reference: `Practitioner/${customerId}` }],
+      subject: { reference: `Practitioner/${practitionerId}` },
+      recipient: [{ reference: `Practitioner/${practitionerId}` }],
       sent: new Date().toISOString(),
-      payload: [
-        { contentString: message },
-        details ? { contentString: JSON.stringify(details, null, 2) } : undefined
-      ].filter(Boolean)
+      payload
     });
     console.log('Created communication log:', communication.id);
   } catch (error) {
@@ -54,7 +70,7 @@ async function getSubscriptionStatus(subscription: Stripe.Subscription) {
 
 async function updateProfileToProStatus(medplum: MedplumClient, practitionerId: string): Promise<void> {
   try {
-    const practitioner = await medplum.readResource('Practitioner', practitionerId);
+    const practitioner = await medplum.readResource<PractitionerResource>('Practitioner', practitionerId);
     
     // Remove existing pro subscription extension if it exists
     const extensions = (practitioner.extension || []).filter(
@@ -83,12 +99,29 @@ async function updateProfileToProStatus(medplum: MedplumClient, practitionerId: 
   }
 }
 
+interface BotEventParameter {
+  name: string;
+  valueString?: string;
+}
+
+function getParameterValue(parameters: BotEventParameter[], name: string): string | undefined {
+  return parameters.find(p => p.name === name)?.valueString;
+}
+
+interface BotEventInput {
+  parameter?: BotEventParameter[];
+}
+
+interface BotEvent {
+  input: BotEventInput;
+}
+
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
   console.log('Bot received input:', event.input);
   
   const parameters = event.input.parameter || [];
-  const paymentMethodId = parameters.find(p => p.name === 'paymentMethodId')?.valueString;
-  const customerId = parameters.find(p => p.name === 'customerId')?.valueString;
+  const paymentMethodId = getParameterValue(parameters, 'paymentMethodId');
+  const customerId = getParameterValue(parameters, 'customerId');
   
   if (!paymentMethodId || !customerId) {
     return {

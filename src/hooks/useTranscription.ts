@@ -22,6 +22,7 @@ interface UseTranscriptionReturn {
     selectedTemplate: NoteTemplate | undefined,
     compositionId: string
   ) => Promise<void>;
+  setPsychNote: (note: { content: string; prompt?: string; rawResponse?: string }) => void;
 }
 
 interface NoteSection {
@@ -42,6 +43,11 @@ export function useTranscription(): UseTranscriptionReturn {
   const [transcript, setTranscript] = useState<string>('');
   const [psychNote, setPsychNote] = useState<{ content: string; prompt?: string; rawResponse?: string }>({ content: '' });
   const [status, setStatus] = useState('Ready');
+
+  // Add type guard
+  function isPractitioner(profile: any): profile is Practitioner {
+    return profile?.resourceType === 'Practitioner';
+  }
 
   const transcribeAudio = async (audioBlob: Blob, compositionId: string, onStart?: (time: string) => void): Promise<string> => {
     console.log('transcribeAudio called with blob size:', audioBlob.size);
@@ -164,8 +170,8 @@ export function useTranscription(): UseTranscriptionReturn {
       const composition = await medplum.readResource('Composition', compositionId);
       console.log('Retrieved composition for update:', composition);
       
-      if (!profile) {
-        throw new Error('No profile found');
+      if (!profile || !isPractitioner(profile)) {
+        throw new Error('Invalid profile type');
       }
       
       const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, profile);
@@ -217,6 +223,7 @@ export function useTranscription(): UseTranscriptionReturn {
     psychNote,
     status,
     transcribeAudio,
-    generateNote
+    generateNote,
+    setPsychNote
   };
 }

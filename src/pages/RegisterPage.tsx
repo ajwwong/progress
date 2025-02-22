@@ -10,7 +10,7 @@ import { useOnboarding } from '../hooks/useOnboarding';
 export function RegisterPage(): JSX.Element {
   const navigate = useNavigate();
   const profile = useMedplumProfile();
-  const { setCurrentStep } = useOnboarding();
+  const { currentStep, setCurrentStep } = useOnboarding();
 
   useEffect(() => {
     if (profile) {

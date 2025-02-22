@@ -17,6 +17,28 @@ const AUTOSAVE_DELAY = 2000;
 // Add at the top with other constants
 const TRANSCRIPT_TITLES = ['transcript', 'session transcript', 'audio transcript', 'recording transcript'];
 
+interface NoteViewStyles {
+  container: (theme: MantineTheme) => React.CSSProperties;
+  header: (theme: MantineTheme) => React.CSSProperties;
+  content: (theme: MantineTheme) => React.CSSProperties;
+}
+
+const useStyles = (theme: MantineTheme): NoteViewStyles => ({
+  container: (theme) => ({
+    maxWidth: '800px',
+    margin: '0 auto',
+    padding: theme.spacing.xl
+  }),
+  header: (theme) => ({
+    marginBottom: theme.spacing.lg
+  }),
+  content: (theme) => ({
+    backgroundColor: theme.white,
+    padding: theme.spacing.md,
+    borderRadius: theme.radius.md
+  })
+});
+
 export function NoteView(): JSX.Element {
   const { id } = useParams();
   const navigate = useNavigate();

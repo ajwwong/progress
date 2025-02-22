@@ -5,6 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useProfileData } from '../hooks/useProfileData';
 import { normalizeErrorString } from '@medplum/core';
+import { Practitioner, ContactPoint } from '@medplum/fhirtypes';
 
 export function ProfileSettings(): JSX.Element {
   const { 
@@ -18,30 +19,35 @@ export function ProfileSettings(): JSX.Element {
   } = useProfileData();
   const medplum = useMedplum();
   const [loading, setLoading] = useState(false);
-  const [specialty, setSpecialty] = useState(profile?.qualification?.[0]?.code?.text || '');
+  const [specialty, setSpecialty] = useState(
+    (profile as Practitioner)?.qualification?.[0]?.code?.text || ''
+  );
 
   const handleProfileUpdate = async () => {
     if (!profile) return;
     
     setLoading(true);
     try {
-      await medplum.updateResource({
-        ...profile,
+      const updatedProfile: Practitioner = {
+        ...profile as Practitioner,
         name: [{
-          ...profile.name?.[0],
           given: [firstName],
           family: lastName
         }],
         telecom: [
-          { system: 'email', value: email },
-          ...(profile.telecom?.filter(t => t.system !== 'email') || [])
+          { system: 'email', value: email } as ContactPoint,
+          ...((profile as Practitioner).telecom?.filter(
+            (t: ContactPoint) => t.system !== 'email'
+          ) || [])
         ],
         qualification: [{
           code: {
             text: specialty
           }
         }]
-      });
+      };
+
+      await medplum.updateResource(updatedProfile);
 
       showNotification({
         icon: <IconCircleCheck />,
@@ -61,7 +67,7 @@ export function ProfileSettings(): JSX.Element {
 
   return (
     <Stack gap="xl">
-      <Group position="apart">
+      <Group justify="space-between">
         <div>
           <Title order={2}>Profile Settings</Title>
           <Text c="dimmed">Manage your account information.</Text>

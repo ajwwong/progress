@@ -5,6 +5,7 @@ import { getDisplayString } from '@medplum/core';
 import { forwardRef, useState } from 'react';
 import { ResourceAvatar } from '@medplum/react';
 import { Group, Text } from '@mantine/core';
+import { MantineTheme } from '@mantine/core';
 
 const ItemComponent = forwardRef<HTMLDivElement, { resource: Patient }>(({ resource, ...others }, ref) => (
   <div ref={ref} {...others}>
@@ -43,12 +44,15 @@ export function PatientAutocompletePage(): JSX.Element {
     resource: patient,
   });
 
+  const styles = (theme: MantineTheme) => ({
+    root: {
+      // your styles here
+    }
+  });
+
   return (
     <Container size="sm" mt="xl">
-      <Box p="xl" sx={(theme) => ({
-        borderRadius: theme.radius.lg,
-        border: `1px solid ${theme.colors.gray[2]}`,
-      })}>
+      <Box p="xl" sx={styles}>
         <Title order={1} mb="xl">Patient Search Test</Title>
         
         <AsyncAutocomplete

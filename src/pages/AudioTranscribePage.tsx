@@ -144,14 +144,14 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   }, [location.state, templates]);
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isRecording && !isPaused) {
-      interval = setInterval(() => {
-        setIsBlinking(prev => !prev);
-      }, 1500);
+    if (isRecording) {
+      const interval = setInterval(() => {
+        setIsBlinking((prev: boolean) => !prev);
+      }, 1000);
+      return () => clearInterval(interval);
     }
-    return () => clearInterval(interval);
-  }, [isRecording, isPaused]);
+    return undefined;
+  }, [isRecording]);
 
   const handleStartRecording = async () => {
     if (!canUseSession) {
@@ -506,13 +506,13 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                   const template = templates.find(t => t.id === value);
                   setSelectedTemplate(template);
                 }}
-                styles={{
+                styles={(theme) => ({
                   root: { maxWidth: '100%' },
                   input: {
                     height: '45px',
                     fontSize: '16px'
                   }
-                }}
+                })}
                 disabled={isRecording || isTranscribing || isGeneratingNote}
               />
             )}
@@ -744,7 +744,12 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
           </Stack>
 
           {(isTranscribing || isGeneratingNote) && (
-            <Paper p="md" withBorder bg="gray.0">
+            <Paper withBorder styles={(theme) => ({
+              root: {
+                padding: theme.spacing.md,
+                backgroundColor: theme.colors.gray[0]
+              }
+            })}>
               <Stack gap="xs">
                 <Group>
                   <Loader size="sm" />

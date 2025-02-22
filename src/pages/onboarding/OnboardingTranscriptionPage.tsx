@@ -277,8 +277,8 @@ export function OnboardingPage({
         'Unknown Practitioner';
 
       // Create initial composition - FIRST TRIGGER POINT
-      const initialComposition = {
-        resourceType: 'Composition',
+      const initialComposition: Composition = {
+        resourceType: 'Composition' as const,
         status: 'preliminary',
         type: {
           coding: [{
@@ -290,8 +290,10 @@ export function OnboardingPage({
         date: new Date().toISOString(),
         title: 'Progress Notes',
         author: [{
-          reference: `Practitioner/${profile.id}`,
-          display: practitionerName
+          reference: `Practitioner/${profile?.id}`,
+          display: profile?.name?.[0] ? 
+            `${profile.name[0].given?.[0] || ''} ${profile.name[0].family || ''}`.trim() : 
+            'Unknown Practitioner'
         }],
         subject: {
           reference: `Patient/${selectedPatient.id}`,
@@ -358,7 +360,7 @@ export function OnboardingPage({
         await generateNote(transcriptText, selectedPatient!, selectedTemplate!, savedComposition!.id);
         console.log('Note generation complete');
         
-        await incrementUsage();
+        await handleIncrementUsage();
         onCompositionSaved?.();
         
         // Mark onboarding as complete
@@ -402,6 +404,23 @@ export function OnboardingPage({
         color: 'red'
       });
     }
+  };
+
+  const handleIncrementUsage = async () => {
+    try {
+      await incrementUsage('transcription');
+    } catch (error) {
+      handleError(error);
+    }
+  };
+
+  const handleError = (error: unknown) => {
+    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+    showNotification({
+      title: 'Error',
+      message: errorMessage,
+      color: 'red'
+    });
   };
 
   return (
@@ -586,12 +605,14 @@ export function OnboardingPage({
                         size="xl" 
                         radius="xl"
                         onClick={isPaused ? resumeRecording : pauseRecording}
-                        style={{
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                        styles={(theme) => ({
+                          root: {
+                            '&:hover': {
+                              transform: 'translateY(-1px)',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                            }
                           }
-                        }}
+                        })}
                       >
                         {isPaused ? <IconPlayerPlay size={20} /> : <IconPlayerPause size={20} />}
                       </ActionIcon>
@@ -601,12 +622,14 @@ export function OnboardingPage({
                         size="xl" 
                         radius="xl"
                         onClick={cancelRecording}
-                        style={{
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                        styles={(theme) => ({
+                          root: {
+                            '&:hover': {
+                              transform: 'translateY(-1px)',
+                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                            }
                           }
-                        }}
+                        })}
                       >
                         <IconX size={20} />
                       </ActionIcon>

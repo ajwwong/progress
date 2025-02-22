@@ -1,10 +1,11 @@
 import { Box, Paper, Stack, Text, Title } from '@mantine/core';
 
 interface TranscriptionViewProps {
-  transcript?: string;
-  psychNote?: {
+  transcript: string;
+  psychNote: {
     content: string;
     prompt?: string;
+    rawResponse?: string;
   };
 }
 

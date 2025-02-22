@@ -1,6 +1,6 @@
 import { BotEvent, createReference, MedplumClient } from '@medplum/core';
 import { Account, Invoice, Money, Communication, OperationOutcome } from '@medplum/fhirtypes';
-import type Stripe from 'stripe';
+import Stripe from 'stripe';
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe('sk_test_51QbTYlIhrZKLmPheWQseDVQyhBpxkXm3XYi94NVM3VqRZA2Tto7YS4yvmaf6UpVfmvlczGtGEaYCzOAoFNTUYXdu006ORa4LmE');

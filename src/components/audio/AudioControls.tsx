@@ -46,7 +46,15 @@ export function AudioControls({
   onGenerateNote,
 }: AudioControlsProps): JSX.Element {
   return (
-    <Paper p="md" radius="md" bg="gray.0">
+    <Paper 
+      withBorder 
+      p="md"
+      styles={(theme) => ({
+        root: {
+          backgroundColor: theme.colors.gray[0]
+        }
+      })}
+    >
       <Group justify="space-between" mb="xs">
         <Text size="sm" fw={500}>Status</Text>
         <Text size="sm" c={status.includes('Error') ? 'red' : 'dimmed'}>{status}</Text>
@@ -57,13 +65,15 @@ export function AudioControls({
           <Group justify="space-between" align="center">
             {!isPaused && (
               <Box
-                style={(theme) => ({
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  backgroundColor: theme.colors.red[6],
-                  opacity: isBlinking ? 1 : 0.3,
-                  transition: 'opacity 0.3s ease'
+                styles={(theme) => ({
+                  root: {
+                    width: 8,
+                    height: 8,
+                    borderRadius: '50%',
+                    backgroundColor: theme.colors.red[6],
+                    opacity: isBlinking ? 1 : 0.3,
+                    transition: 'opacity 0.3s ease'
+                  }
                 })}
               />
             )}

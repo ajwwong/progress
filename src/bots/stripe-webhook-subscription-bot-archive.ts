@@ -2,6 +2,17 @@ import { BotEvent, createReference, MedplumClient } from '@medplum/core';
 import { Account, Invoice, Money } from '@medplum/fhirtypes';
 import type Stripe from 'stripe';
 
+type AccountStatus = 'active' | 'inactive' | 'entered-in-error' | 'on-hold' | 'unknown';
+
+interface AccountResource {
+  resourceType: 'Account';
+  status: AccountStatus;
+  identifier?: Array<{
+    system: string;
+    value: string;
+  }>;
+}
+
 export async function handler(medplum: MedplumClient, event: BotEvent<Record<string, any>>): Promise<any> {
   const input = event.input;
   const eventType = input.type || input['type'];
@@ -38,17 +49,15 @@ async function handleSubscription(medplum: MedplumClient, stripeSubscription: St
 
     if (!account) {
       // Create if not found
-      account = await medplum.createResourceIfNoneExist<Account>(
-        {
-          resourceType: 'Account',
-          identifier: [{
-            system: 'https://stripe.com/account/id',
-            value: accountId,
-          }],
-          status: 'active'
-        },
-        'identifier=' + accountId
-      );
+      const account: AccountResource = {
+        resourceType: 'Account',
+        status: 'active',
+        identifier: [{
+          system: 'https://stripe.com/account/id',
+          value: accountId
+        }]
+      };
+      account = await medplum.createResourceIfNoneExist<Account>(account, 'identifier=' + accountId);
       console.log('[DEBUG] Created account:', JSON.stringify(account, null, 2));
     }
 

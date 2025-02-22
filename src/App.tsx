@@ -4,8 +4,6 @@ import { Suspense, useState, useEffect } from 'react';
 import { Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
 import { PatientOverview } from './components/PatientOverview';
-import { Timeline } from './components/Timeline-archive';
-import { TreatmentPlan } from './components/TreatmentPlan-archive';
 import { PatientProfile } from './components/PatientProfile';
 import { NoteTemplatesPage } from './components/templates/NoteTemplatesPage';
 import { HomePage } from './pages/HomePage';
@@ -21,7 +19,6 @@ import { RegisterPage } from './pages/RegisterPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
 import { PatientDirectoryPage } from './features/patients/pages/PatientDirectoryPage';
-import { ClientRoutes } from './routes/ClientRoutes';
 import { StripeConnect } from './pages/provider/StripeConnect';
 import { BillingDashboard } from './pages/provider/BillingDashboard';
 import { ProfilePage } from './pages/profile/ProfilePage';
@@ -30,10 +27,7 @@ import { TemplateRoutes } from './components/templates/TemplateRoutes';
 import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
-import { RegisterPage as ProviderRegisterPage } from './pages/ProviderRegisterPage-archive';
 import { OrganizationInvitePage } from './pages/onboarding/OrganizationInvitePage';
-import { NewEncounter } from './pages/NewEncounter';
-import { NewPractitioner } from './pages/NewPractitioner';
 import { InvitePage } from './pages/InvitePage';
 import { OnboardingPage } from './pages/onboarding/OnboardingTranscriptionPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -478,24 +472,18 @@ export function App(): JSX.Element | null {
                     <Route path="/Patient/:id" element={<PatientPage />}>
                       <Route index element={<PatientProfile />} />
                       <Route path="overview" element={<PatientOverview />} />
-                      <Route path="timeline" element={<Timeline />} />
                       <Route path="history" element={<PatientHistory />} />
                       <Route path="recent" element={<PatientRecentComposition />} />
-                      <Route path="treatment" element={<TreatmentPlan />} />
                       <Route path="profile" element={<PatientProfile />} />
                     </Route>
                     <Route path="/:resourceType/:id" element={<ResourcePage />} />
                     <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
                     <Route path="/composition/:id" element={<NoteView />} />
                     <Route path="/templates/*" element={<TemplateRoutes />} />
-                    <Route path="/portal/*" element={<ClientRoutes />} />
                     <Route path="/billing" element={<BillingDashboard />} />
                     <Route path="/settings" element={<ProfilePage />} />
                     <Route path="/Practitioner/:id" element={<ProfilePage />} />
-                    <Route path="/provider-register" element={<ProviderRegisterPage />} />
                     <Route path="/organization-invite" element={<OrganizationInvitePage />} />
-                    <Route path="/new-encounter" element={<NewEncounter />} />
-                    <Route path="/new-practitioner" element={<NewPractitioner />} />
                     <Route path="/invite" element={<InvitePage />} />
                     <Route 
                       path="/onboarding" 

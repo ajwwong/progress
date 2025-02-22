@@ -2,18 +2,10 @@
 > medplum-hello-world@3.2.18 build
 > tsc && vite build
 
-src/App.tsx(367,19): error TS2322: Type '{ icon: Element; label: Element; href: string; }[]' is not assignable to type 'NavbarLink[]'.
+src/App.tsx(364,19): error TS2322: Type '{ icon: Element; label: Element; href: string; }[]' is not assignable to type 'NavbarLink[]'.
   Type '{ icon: JSX.Element; label: JSX.Element; href: string; }' is not assignable to type 'NavbarLink'.
     Types of property 'label' are incompatible.
       Type 'Element' is not assignable to type 'string'.
-src/bots/audio-transcribe-archive.ts(19,15): error TS2339: Property 'type' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
-  Property 'type' does not exist on type 'string'.
-src/bots/audio-transcribe-archive.ts(19,41): error TS2339: Property 'binaryId' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
-  Property 'binaryId' does not exist on type 'string'.
-src/bots/audio-transcribe-archive.ts(23,63): error TS2339: Property 'binaryId' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
-  Property 'binaryId' does not exist on type 'string'.
-src/bots/audio-transcribe-archive.ts(60,16): error TS18046: 'error' is of type 'unknown'.
-src/bots/audio-transcribe-archive.ts(61,14): error TS18046: 'error' is of type 'unknown'.
 src/bots/audio-transcribe.ts(19,15): error TS2339: Property 'type' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
   Property 'type' does not exist on type 'string'.
 src/bots/audio-transcribe.ts(19,41): error TS2339: Property 'binaryId' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
@@ -23,23 +15,6 @@ src/bots/audio-transcribe.ts(23,63): error TS2339: Property 'binaryId' does not 
 src/bots/audio-transcribe.ts(60,16): error TS18046: 'error' is of type 'unknown'.
 src/bots/audio-transcribe.ts(61,14): error TS18046: 'error' is of type 'unknown'.
 src/bots/cleanup-transcripts-bot.ts(2,28): error TS2307: Cannot find module './BotService' or its corresponding type declarations.
-src/bots/clone-project.ts(27,22): error TS2339: Property 'baseUrl' does not exist on type 'BotEvent<Project>'.
-src/bots/custom-welcome-email-archive.ts(18,83): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
-  Type 'undefined' is not assignable to type 'string'.
-src/bots/custom-welcome-email-archive.ts(64,16): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email-archive.ts(65,14): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email-archive.ts(66,17): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email-archive.ts(67,15): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email.ts(93,35): error TS2339: Property 'name' does not exist on type 'Resource'.
-  Property 'name' does not exist on type 'Composition'.
-src/bots/custom-welcome-email.ts(120,17): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email.ts(121,20): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email.ts(122,19): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email.ts(123,24): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email.ts(124,32): error TS18046: 'error' is of type 'unknown'.
-src/bots/custom-welcome-email.ts(125,18): error TS18046: 'error' is of type 'unknown'.
-src/bots/generate-superbill.ts(10,28): error TS2339: Property 'subject' does not exist on type 'Appointment'.
-src/bots/generate-superbill.ts(34,28): error TS2339: Property 'subject' does not exist on type 'Appointment'.
 src/bots/organization-registration-bot.ts(65,43): error TS2339: Property 'id' does not exist on type '{ resourceType: "Organization"; name: string; meta: { project: string; compartment: { reference: string; }[]; }; }'.
 src/bots/organization-registration-bot.ts(83,49): error TS2339: Property 'id' does not exist on type '{ resourceType: "Organization"; name: string; meta: { project: string; compartment: { reference: string; }[]; }; }'.
 src/bots/organization-registration-bot.ts(109,47): error TS2339: Property 'id' does not exist on type '{ resourceType: "Organization"; name: string; meta: { project: string; compartment: { reference: string; }[]; }; }'.
@@ -81,22 +56,6 @@ src/bots/stripe-webhook-handler.ts(35,33): error TS2339: Property 'header' does 
 src/bots/stripe-webhook-handler.ts(36,31): error TS2339: Property 'body' does not exist on type 'string | Record<string, any> | Resource | Hl7Message'.
   Property 'body' does not exist on type 'string'.
 src/bots/stripe-webhook-subscription-bot-archive.ts(97,7): error TS2322: Type 'string' is not assignable to type '"cancelled" | "draft" | "entered-in-error" | "issued" | "balanced"'.
-src/bots/submit-insurance-claim.ts(46,20): error TS2339: Property 'id' does not exist on type '{ resourceType: "Task"; status: "requested"; intent: "order"; code: { coding: { system: string; code: string; display: string; }[]; }; focus: { reference: string; }; for: Reference<Patient | Group> | undefined; authoredOn: string; lastModified: string; businessStatus: { ...; }; }'.
-src/claude-bot.ts(14,33): error TS2769: No overload matches this call.
-  Overload 1 of 3, '(body: MessageCreateParamsNonStreaming, options?: RequestOptions<unknown> | undefined): APIPromise<Message>', gave the following error.
-    Type 'string | Record<string, any> | Resource | Hl7Message' is not assignable to type 'string | (TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]'.
-      Type 'Record<string, any>' is not assignable to type 'string | (TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]'.
-        Type 'Record<string, any>' is missing the following properties from type '(TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]': length, pop, push, concat, and 35 more.
-  Overload 2 of 3, '(body: MessageCreateParamsStreaming, options?: RequestOptions<unknown> | undefined): APIPromise<Stream<RawMessageStreamEvent>>', gave the following error.
-    Type 'string | Record<string, any> | Resource | Hl7Message' is not assignable to type 'string | (TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]'.
-      Type 'Record<string, any>' is not assignable to type 'string | (TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]'.
-        Type 'Record<string, any>' is missing the following properties from type '(TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]': length, pop, push, concat, and 35 more.
-  Overload 3 of 3, '(body: MessageCreateParamsBase, options?: RequestOptions<unknown> | undefined): APIPromise<Message | Stream<RawMessageStreamEvent>>', gave the following error.
-    Type 'string | Record<string, any> | Resource | Hl7Message' is not assignable to type 'string | (TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]'.
-      Type 'Record<string, any>' is not assignable to type 'string | (TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]'.
-        Type 'Record<string, any>' is missing the following properties from type '(TextBlockParam | ImageBlockParam | ToolUseBlockParam | ToolResultBlockParam)[]': length, pop, push, concat, and 35 more.
-src/claude-bot.ts(19,35): error TS2339: Property 'text' does not exist on type 'ContentBlock'.
-  Property 'text' does not exist on type 'ToolUseBlock'.
 src/components/PatientRecentComposition.tsx(39,13): error TS2741: Property 'status' is missing in type '{ div: string; }' but required in type 'Narrative'.
 src/components/TreatmentPlan-archive.tsx(37,14): error TS2322: Type '{ children: (Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
@@ -109,6 +68,9 @@ src/components/TreatmentPlan-archive.tsx(50,20): error TS2322: Type '{ children:
 src/components/TreatmentPlan-archive.tsx(51,22): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/components/TreatmentPlan-archive.tsx(65,39): error TS2339: Property 'description' does not exist on type 'Reference<Goal>'.
+src/components/audio/AudioControls.tsx(68,17): error TS2322: Type '{ styles: (theme: any) => { root: { width: number; height: number; borderRadius: string; backgroundColor: any; opacity: number; transition: string; }; }; }' is not assignable to type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
+  Property 'styles' does not exist on type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'. Did you mean 'style'?
+src/components/audio/AudioControls.tsx(68,26): error TS7006: Parameter 'theme' implicitly has an 'any' type.
 src/components/auth/RegisterForm.stories.tsx(2,22): error TS2307: Cannot find module '@storybook/react' or its corresponding type declarations.
 src/components/auth/RegisterForm.stories.tsx(4,22): error TS2307: Cannot find module '../Logo/Logo' or its corresponding type declarations.
 src/components/auth/RegisterForm.test.tsx(7,57): error TS2307: Cannot find module '../test-utils/render' or its corresponding type declarations.
@@ -187,8 +149,6 @@ src/components/calendar/CalendarGrid.tsx(4,34): error TS2307: Cannot find module
 src/components/calendar/CalendarHeader.tsx(81,16): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/components/calendar/DayCalendar.tsx(5,34): error TS2307: Cannot find module '../types/calendar' or its corresponding type declarations.
-src/components/calendar/PatientModal-archive.tsx(102,16): error TS2322: Type '{ children: Element[]; spacing: string; p: "md"; style: { flex: number; }; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/components/calendar/PatientModal.tsx(40,9): error TS2322: Type '{ system: string; value: string; }[]' is not assignable to type 'ContactPoint[]'.
   Type '{ system: string; value: string; }' is not assignable to type 'ContactPoint'.
     Types of property 'system' are incompatible.
@@ -208,26 +168,23 @@ src/components/calendar/appointment/useAppointmentForm.ts(226,53): error TS2345:
   Type 'null' is not assignable to type 'string'.
 src/components/calendar/appointment/useAppointmentForm.ts(236,35): error TS2345: Argument of type 'string | null' is not assignable to parameter of type 'string'.
   Type 'null' is not assignable to type 'string'.
-src/components/calendar/xMonthCalendar-archive.tsx(4,34): error TS2307: Cannot find module '../types/calendar' or its corresponding type declarations.
-src/components/calendar/xMonthCalendar-archive.tsx(42,16): error TS7053: Element implicitly has an 'any' type because expression of type 'any' can't be used to index type '{ readonly checkup: "cyan"; readonly surgery: "red"; readonly consultation: "violet"; readonly followup: "green"; }'.
-src/components/calendar/xMonthCalendar-archive.tsx(109,9): error TS2353: Object literal may only specify known properties, and 'calendar' does not exist in type 'Partial<Record<MonthPickerInputStylesNames, CSSProperties>> | ((theme: MantineTheme, props: MonthPickerInputProps<...>, ctx: unknown) => Partial<...>)'.
-src/components/modals/SignNoteModal.tsx(34,14): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/components/modals/SignNoteModal-archive.tsx(34,14): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/modals/SignNoteModal.tsx(35,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/components/modals/SignNoteModal-archive.tsx(35,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/modals/SignNoteModal.tsx(40,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/components/modals/SignNoteModal-archive.tsx(40,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/modals/SignNoteModal.tsx(42,27): error TS2339: Property 'qualification' does not exist on type 'ProfileResource'.
+src/components/modals/SignNoteModal-archive.tsx(42,27): error TS2339: Property 'qualification' does not exist on type 'ProfileResource'.
   Property 'qualification' does not exist on type 'Patient'.
-src/components/modals/SignNoteModal.tsx(48,18): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/components/modals/SignNoteModal-archive.tsx(48,18): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/components/modals/SignNoteModal.tsx(53,25): error TS2339: Property 'qualification' does not exist on type 'ProfileResource'.
+src/components/modals/SignNoteModal-archive.tsx(53,25): error TS2339: Property 'qualification' does not exist on type 'ProfileResource'.
   Property 'qualification' does not exist on type 'Patient'.
-src/components/modals/SignNoteModal.tsx(53,72): error TS2339: Property 'qualification' does not exist on type 'ProfileResource'.
+src/components/modals/SignNoteModal-archive.tsx(53,72): error TS2339: Property 'qualification' does not exist on type 'ProfileResource'.
   Property 'qualification' does not exist on type 'Patient'.
-src/components/modals/SignNoteModal.tsx(68,83): error TS2322: Type '{ children: string; component: "span"; c: "blue"; sx: { cursor: string; }; }' is not assignable to type 'IntrinsicAttributes & TextProps & ComponentProp<"span"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, "ref">, "component" | keyof TextProps> & { ...; }'.
+src/components/modals/SignNoteModal-archive.tsx(68,83): error TS2322: Type '{ children: string; component: "span"; c: "blue"; sx: { cursor: string; }; }' is not assignable to type 'IntrinsicAttributes & TextProps & ComponentProp<"span"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, "ref">, "component" | keyof TextProps> & { ...; }'.
   Property 'sx' does not exist on type 'IntrinsicAttributes & TextProps & ComponentProp<"span"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLSpanElement>, HTMLSpanElement>, "ref">, "component" | keyof TextProps> & { ...; }'.
-src/components/modals/SignNoteModal.tsx(71,16): error TS2322: Type '{ children: Element[]; position: string; mt: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/components/modals/SignNoteModal-archive.tsx(71,16): error TS2322: Type '{ children: Element[]; position: string; mt: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/components/templates/components/TemplateCard.tsx(21,16): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
@@ -271,12 +228,16 @@ src/features/patients/pages/PatientDirectoryPage.tsx(349,42): error TS2322: Type
   Property 'spacing' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/features/patients/pages/PatientDirectoryPage.tsx(416,18): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/hooks/useOnboarding.ts(30,32): error TS18048: 'profile' is possibly 'undefined'.
-src/hooks/useOnboarding.ts(49,36): error TS2345: Argument of type '{ extension: Extension[]; } | { extension: Extension[]; resourceType: "Patient"; id?: string | undefined; meta?: Meta | undefined; implicitRules?: string | undefined; ... 21 more ...; link?: PatientLink[] | undefined; } | { ...; } | { ...; }' is not assignable to parameter of type 'Resource'.
+src/hooks/useOnboarding.ts(15,58): error TS2345: Argument of type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not assignable to parameter of type 'number | (() => number)'.
+src/hooks/useOnboarding.ts(31,32): error TS18048: 'profile' is possibly 'undefined'.
+src/hooks/useOnboarding.ts(36,24): error TS2345: Argument of type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not assignable to parameter of type 'SetStateAction<number>'.
+src/hooks/useOnboarding.ts(50,36): error TS2345: Argument of type '{ extension: Extension[]; } | { extension: Extension[]; resourceType: "Patient"; id?: string | undefined; meta?: Meta | undefined; implicitRules?: string | undefined; ... 21 more ...; link?: PatientLink[] | undefined; } | { ...; } | { ...; }' is not assignable to parameter of type 'Resource'.
   Type '{ extension: Extension[]; }' is not assignable to type 'Resource'.
     Type '{ extension: Extension[]; }' is missing the following properties from type 'VisionPrescription': resourceType, status, created, patient, and 3 more.
-src/hooks/useOnboarding.ts(52,15): error TS18048: 'profile' is possibly 'undefined'.
-src/hooks/useOnboarding.ts(75,47): error TS2304: Cannot find name 'isStepComplete'.
+src/hooks/useOnboarding.ts(53,15): error TS18048: 'profile' is possibly 'undefined'.
+src/hooks/useOnboarding.ts(67,22): error TS2345: Argument of type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not assignable to parameter of type 'SetStateAction<number>'.
+src/hooks/useOnboarding.ts(77,47): error TS2304: Cannot find name 'isStepComplete'.
+src/hooks/useOnboarding.ts(78,29): error TS2367: This comparison appears to be unintentional because the types 'number' and 'OnboardingStep' have no overlap.
 src/hooks/useProfileUsage.ts(29,27): error TS2339: Property 'extension' does not exist on type 'Resource'.
   Property 'extension' does not exist on type 'Binary'.
 src/hooks/useProfileUsage.ts(29,43): error TS7006: Parameter 'e' implicitly has an 'any' type.
@@ -289,12 +250,7 @@ src/hooks/useProfileUsage.ts(52,48): error TS7006: Parameter 'e' implicitly has 
 src/hooks/useProfileUsage.ts(64,21): error TS2339: Property 'extension' does not exist on type 'Resource'.
   Property 'extension' does not exist on type 'Binary'.
 src/hooks/useProfileUsage.ts(64,45): error TS7006: Parameter 'e' implicitly has an 'any' type.
-src/hooks/useTranscription.ts(171,84): error TS2345: Argument of type 'ProfileResource' is not assignable to parameter of type 'Practitioner'.
-  Type 'Patient' is not assignable to type 'Practitioner'.
-    Types of property 'resourceType' are incompatible.
-      Type '"Patient"' is not assignable to type '"Practitioner"'.
-src/pages/AudioTranscribePage.tsx(150,9): error TS2552: Cannot find name 'setIsBlinking'. Did you mean 'isBlinking'?
-src/pages/AudioTranscribePage.tsx(150,23): error TS7006: Parameter 'prev' implicitly has an 'any' type.
+src/pages/AudioTranscribePage.tsx(149,9): error TS2552: Cannot find name 'setIsBlinking'. Did you mean 'isBlinking'?
 src/pages/AudioTranscribePage.tsx(380,79): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
 src/pages/AudioTranscribePage.tsx(413,11): error TS2322: Type '{ children: Element[]; position: string; mb: "md"; spacing: string; style: { opacity: number; }; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
@@ -311,7 +267,18 @@ src/pages/AudioTranscribePage.tsx(679,39): error TS2322: Type '{ children: Eleme
 src/pages/AudioTranscribePage.tsx(710,23): error TS2353: Object literal may only specify known properties, and 'item' does not exist in type 'Partial<Record<SelectStylesNames, CSSProperties>> | ((theme: MantineTheme, props: SelectProps, ctx: unknown) => Partial<...>)'.
 src/pages/CalendarPage.tsx(11,7): error TS2322: Type '{ children: Element; sx: { height: string; width: string; padding: string; }; }' is not assignable to type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
   Property 'sx' does not exist on type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
+src/pages/DashboardPage-with-MultiTenant.tsx(36,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage-with-MultiTenant.tsx(37,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage-with-MultiTenant.tsx(40,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage-with-MultiTenant.tsx(43,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage-with-MultiTenant.tsx(46,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
 src/pages/DashboardPage.tsx(7,10): error TS2305: Module '"@medplum/fhirtypes"' has no exported member 'ProfileResource'.
+src/pages/DashboardPage.tsx(40,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage.tsx(41,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage.tsx(51,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage.tsx(54,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage.tsx(57,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
+src/pages/DashboardPage.tsx(60,12): error TS2678: Type 'import("/root/mts/v1/progress3-prod3/src/hooks/onboardingSteps").OnboardingStep' is not comparable to type 'number'.
 src/pages/InvitePage.tsx(8,10): error TS2305: Module '"@medplum/fhirtypes"' has no exported member 'ProfileResource'.
 src/pages/LandingPage.tsx(10,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
@@ -323,41 +290,9 @@ src/pages/LandingPage.tsx(33,22): error TS2322: Type '{ children: Element[]; spa
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/pages/LandingPage.tsx(51,22): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/NewEncounter.tsx(68,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/NewEncounter.tsx(122,18): error TS2322: Type '{ children: Element[]; position: string; mt: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/OrganizationInvitePage-archive.tsx(34,32): error TS2554: Expected 2 arguments, but got 0.
-src/pages/OrganizationInvitePage-archive.tsx(39,9): error TS2322: Type 'FormDataEntryValue | null' is not assignable to type 'string | undefined'.
-  Type 'null' is not assignable to type 'string | undefined'.
-src/pages/OrganizationInvitePage-archive2.tsx(47,32): error TS2554: Expected 2 arguments, but got 0.
-src/pages/OrganizationInvitePage-archive2.tsx(58,20): error TS18046: 'err' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(59,21): error TS18046: 'err' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(60,19): error TS18046: 'err' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(68,9): error TS2322: Type 'FormDataEntryValue | null' is not assignable to type 'string | undefined'.
-  Type 'null' is not assignable to type 'string | undefined'.
-src/pages/OrganizationInvitePage-archive2.tsx(109,19): error TS18046: 'error' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(110,23): error TS18046: 'error' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(111,17): error TS18046: 'error' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(112,20): error TS18046: 'error' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(113,18): error TS18046: 'error' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(129,18): error TS18046: 'err' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(130,19): error TS18046: 'err' is of type 'unknown'.
-src/pages/OrganizationInvitePage-archive2.tsx(131,17): error TS18046: 'err' is of type 'unknown'.
-src/pages/PatientAutocomplete.tsx(48,19): error TS2322: Type '{ children: (Element | undefined)[]; p: "xl"; sx: (theme: any) => { borderRadius: any; border: string; }; }' is not assignable to type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
+src/pages/PatientAutocomplete.tsx(55,19): error TS2322: Type '{ children: (Element | undefined)[]; p: "xl"; sx: (theme: MantineTheme) => { root: {}; }; }' is not assignable to type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
   Property 'sx' does not exist on type 'IntrinsicAttributes & BoxComponentProps & ComponentProp<"div"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLDivElement>, HTMLDivElement>, "ref">, "component" | keyof BoxComponentProps> & { ...; }'.
-src/pages/PatientAutocomplete.tsx(48,24): error TS7006: Parameter 'theme' implicitly has an 'any' type.
-src/pages/PreRegisterPage.tsx(8,14): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/PreRegisterPage.tsx(12,13): error TS2322: Type '{ children: string; order: 1; sx: (theme: any) => { fontFamily: string; fontWeight: number; fontSize: number; }; }' is not assignable to type 'IntrinsicAttributes & TitleProps & RefAttributes<HTMLHeadingElement> & { component?: any; renderRoot?: ((props: Record<...>) => ReactNode) | undefined; }'.
-  Property 'sx' does not exist on type 'IntrinsicAttributes & TitleProps & RefAttributes<HTMLHeadingElement> & { component?: any; renderRoot?: ((props: Record<...>) => ReactNode) | undefined; }'.
-src/pages/PreRegisterPage.tsx(12,18): error TS7006: Parameter 'theme' implicitly has an 'any' type.
-src/pages/PreRegisterPage.tsx(68,18): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/PreRegisterPage.tsx(82,17): error TS2322: Type '{ children: string; component: ForwardRefExoticComponent<LinkProps & RefAttributes<HTMLAnchorElement>>; to: string; size: "lg"; rightIcon: Element; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<ForwardRefExoticComponent<LinkProps & RefAttributes<HTMLAnchorElement>>> & Omit<...> & { ...; }'.
-  Property 'rightIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<ForwardRefExoticComponent<LinkProps & RefAttributes<HTMLAnchorElement>>> & Omit<...> & { ...; }'.
 src/pages/ProviderRegisterPage-archive.tsx(26,11): error TS2322: Type '"practitioner"' is not assignable to type '"patient" | "project"'.
-src/pages/RegisterPage.tsx(13,11): error TS2339: Property 'setCurrentStep' does not exist on type 'UseOnboardingReturn'.
 src/pages/RegisterPage.tsx(27,14): error TS2322: Type '{ children: Element; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/pages/RegisterPage.tsx(29,18): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
@@ -385,143 +320,6 @@ src/pages/api/register-organization.ts(17,5): error TS2349: This expression is n
   Type 'String' has no call signatures.
 src/pages/api/register-organization.ts(22,40): error TS2554: Expected 2-3 arguments, but got 1.
 src/pages/api/register-organization.ts(40,55): error TS2339: Property 'id' does not exist on type '{ resourceType: "Organization"; name: any; }'.
-src/pages/client/ClientAppointments.tsx(17,13): error TS2345: Argument of type 'Dispatch<SetStateAction<never[]>>' is not assignable to parameter of type '(value: ResourceArray<Appointment>) => void | PromiseLike<void>'.
-  Types of parameters 'value' and 'value' are incompatible.
-    Type 'ResourceArray<Appointment>' is not assignable to type 'SetStateAction<never[]>'.
-      Type 'ResourceArray<Appointment>' is not assignable to type 'never[]'.
-        The types returned by 'pop()' are incompatible between these types.
-          Type 'Appointment | undefined' is not assignable to type 'undefined'.
-            Type 'Appointment' is not assignable to type 'undefined'.
-src/pages/client/ClientAppointments.tsx(21,12): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientAppointments.tsx(22,14): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientAppointments.tsx(24,17): error TS2322: Type '{ children: string; leftIcon: Element; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientAppointments.tsx(29,14): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientAppointments.tsx(32,20): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientAppointments.tsx(33,22): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientAppointments.tsx(51,21): error TS2322: Type '{ children: any; transform: string; }' is not assignable to type 'IntrinsicAttributes & TextProps & ComponentProp<"p"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>, "ref">, "component" | keyof TextProps> & { ...; }'.
-  Property 'transform' does not exist on type 'IntrinsicAttributes & TextProps & ComponentProp<"p"> & Omit<Omit<DetailedHTMLProps<HTMLAttributes<HTMLParagraphElement>, HTMLParagraphElement>, "ref">, "component" | keyof TextProps> & { ...; }'.
-src/pages/client/ClientBilling.tsx(31,29): error TS2345: Argument of type '"PaymentMethod"' is not assignable to parameter of type '"Patient" | "Composition" | "AccessPolicy" | "Account" | "ActivityDefinition" | "AdverseEvent" | "Agent" | "AllergyIntolerance" | "Appointment" | "AppointmentResponse" | "AsyncJob" | ... 151 more ... | "VisionPrescription"'.
-src/pages/client/ClientBilling.tsx(105,12): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(110,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(111,18): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(115,15): error TS2322: Type '{ children: string; variant: "light"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientBilling.tsx(136,16): error TS2322: Type '{ children: ("" | Element | undefined)[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(166,18): error TS2322: Type '{ children: Element[]; position: string; mt: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(189,18): error TS2322: Type '{ children: (false | Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(192,24): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(193,26): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(214,23): error TS2322: Type '{ children: string; variant: "light"; size: "sm"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientBilling.tsx(248,18): error TS2322: Type '{ children: (false | Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(256,26): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(257,28): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientBilling.tsx(282,27): error TS2322: Type '{ children: string; variant: "light"; size: "sm"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientBilling.tsx(284,52): error TS2345: Argument of type '{ resourceType: "Task"; status: "in-progress"; code: { coding: { system: string; code: string; display: string; }[]; }; focus: { reference: string; }; }' is not assignable to parameter of type 'Resource'.
-  Property 'intent' is missing in type '{ resourceType: "Task"; status: "in-progress"; code: { coding: { system: string; code: string; display: string; }[]; }; focus: { reference: string; }; }' but required in type 'Task'.
-src/pages/client/ClientBilling.tsx(312,25): error TS2322: Type '{ children: string; variant: "light"; size: "sm"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientDashboard.tsx(18,13): error TS2345: Argument of type 'Dispatch<SetStateAction<never[]>>' is not assignable to parameter of type '(value: ResourceArray<Appointment>) => void | PromiseLike<void>'.
-  Types of parameters 'value' and 'value' are incompatible.
-    Type 'ResourceArray<Appointment>' is not assignable to type 'SetStateAction<never[]>'.
-      Type 'ResourceArray<Appointment>' is not assignable to type 'never[]'.
-        The types returned by 'pop()' are incompatible between these types.
-          Type 'Appointment | undefined' is not assignable to type 'undefined'.
-            Type 'Appointment' is not assignable to type 'undefined'.
-src/pages/client/ClientDashboard.tsx(22,12): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientDashboard.tsx(26,16): error TS2322: Type '{ children: (Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientDashboard.tsx(30,22): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientInvoices.tsx(46,12): error TS2322: Type '{ children: (Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientInvoices.tsx(51,18): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientInvoices.tsx(52,20): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientInvoices.tsx(73,17): error TS2322: Type '{ children: string; variant: "light"; size: "sm"; leftIcon: Element; onClick: () => Promise<void>; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientProfile.tsx(26,29): error TS2345: Argument of type '"PaymentMethod"' is not assignable to parameter of type '"Patient" | "Composition" | "AccessPolicy" | "Account" | "ActivityDefinition" | "AdverseEvent" | "Agent" | "AllergyIntolerance" | "Appointment" | "AppointmentResponse" | "AsyncJob" | ... 151 more ... | "VisionPrescription"'.
-src/pages/client/ClientProfile.tsx(60,12): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(61,14): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(72,16): error TS2322: Type '{ children: (false | Element)[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(113,20): error TS2322: Type '{ children: Element; position: string; mt: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(121,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(122,18): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(126,15): error TS2322: Type '{ children: string; variant: "light"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/ClientProfile.tsx(147,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(149,36): error TS2322: Type '{ children: Element[]; key: string | undefined; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/ClientProfile.tsx(151,40): error TS2339: Property 'occurrence' does not exist on type 'ChargeItem'.
-src/pages/client/InsuranceSuperbills.tsx(137,12): error TS2322: Type '{ children: (false | Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/InsuranceSuperbills.tsx(146,20): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/InsuranceSuperbills.tsx(147,22): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/InsuranceSuperbills.tsx(178,24): error TS2322: Type '{ children: Element[]; spacing: number; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/PaymentMethodModal.tsx(90,9): error TS2322: Type '"PaymentMethod"' is not assignable to type '"Patient" | "Composition" | "AccessPolicy" | "Account" | "ActivityDefinition" | "AdverseEvent" | "Agent" | "AllergyIntolerance" | "Appointment" | "AppointmentResponse" | "AsyncJob" | ... 151 more ... | "VisionPrescription"'.
-src/pages/client/PaymentMethodModal.tsx(123,14): error TS2322: Type '{ children: ("" | Element | undefined)[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/PaymentMethodModal.tsx(153,16): error TS2322: Type '{ children: Element[]; position: string; mt: "md"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/ClientForms.tsx(31,12): error TS2322: Type '{ children: (Element | Element[])[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/ClientForms.tsx(36,18): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/ClientForms.tsx(38,22): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/ClientForms.tsx(52,15): error TS2322: Type '{ children: string; variant: "light"; leftIcon: Element; onClick: () => void; }' is not assignable to type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-  Property 'leftIcon' does not exist on type 'IntrinsicAttributes & ButtonProps & ComponentProp<"button"> & Omit<Omit<DetailedHTMLProps<ButtonHTMLAttributes<HTMLButtonElement>, HTMLButtonElement>, "ref">, "component" | keyof ButtonProps> & { ...; }'.
-src/pages/client/forms/CreditCardForm.tsx(139,36): error TS2345: Argument of type '{ resourceType: string; status: string; subject: { reference: string; }; type: { coding: { system: string; code: string; display: string; }[]; }; identifier: { system: string; value: string; }[]; }' is not assignable to parameter of type 'Resource'.
-  Type '{ resourceType: string; status: string; subject: { reference: string; }; type: { coding: { system: string; code: string; display: string; }[]; }; identifier: { system: string; value: string; }[]; }' is not assignable to type 'Composition | Account | CatalogEntry | Claim | ClaimResponse | Contract | Coverage | Device | ... 15 more ... | SupplyDelivery'.
-    Type '{ resourceType: string; status: string; subject: { reference: string; }; type: { coding: { system: string; code: string; display: string; }[]; }; identifier: { system: string; value: string; }[]; }' is not assignable to type 'Specimen'.
-      Types of property 'resourceType' are incompatible.
-        Type 'string' is not assignable to type '"Specimen"'.
-src/pages/client/forms/CreditCardForm.tsx(150,12): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/CreditCardForm.tsx(151,14): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/CreditCardForm.tsx(157,16): error TS2322: Type '{ children: ("" | Element | undefined)[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/CreditCardForm.tsx(221,18): error TS2322: Type '{ children: Element[]; position: string; mt: "xl"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/FormRenderer.tsx(49,12): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/FormRenderer.tsx(54,16): error TS2322: Type '{ children: (Element | Element[] | undefined)[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/FormRenderer.tsx(56,38): error TS2322: Type '{ children: (false | Element)[]; key: string; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/client/forms/FormRenderer.tsx(107,18): error TS2322: Type '{ children: Element[]; position: string; mt: "xl"; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-  Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/pages/onboarding/OnboardingLogoff.tsx(33,14): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
 src/pages/onboarding/OnboardingLogoff.tsx(37,13): error TS2322: Type '{ children: string; order: 1; sx: (theme: any) => { fontFamily: string; fontWeight: number; fontSize: number; }; }' is not assignable to type 'IntrinsicAttributes & TitleProps & RefAttributes<HTMLHeadingElement> & { component?: any; renderRoot?: ((props: Record<...>) => ReactNode) | undefined; }'.
@@ -542,37 +340,28 @@ src/pages/onboarding/OnboardingLogoff.tsx(127,17): error TS2322: Type '{ childre
   Property 'align' does not exist on type 'IntrinsicAttributes & TitleProps & RefAttributes<HTMLHeadingElement> & { component?: any; renderRoot?: ((props: Record<...>) => ReactNode) | undefined; }'.
 src/pages/onboarding/OnboardingLogoff.tsx(128,22): error TS7006: Parameter 'theme' implicitly has an 'any' type.
 src/pages/onboarding/OnboardingTranscriptionPage.tsx(89,35): error TS2339: Property 'completeOnboarding' does not exist on type 'UseOnboardingReturn'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(112,5): error TS2339: Property 'setPsychNote' does not exist on type 'UseTranscriptionReturn'.
 src/pages/onboarding/OnboardingTranscriptionPage.tsx(202,20): error TS18046: 'error' is of type 'unknown'.
 src/pages/onboarding/OnboardingTranscriptionPage.tsx(275,32): error TS18048: 'profile' is possibly 'undefined'.
 src/pages/onboarding/OnboardingTranscriptionPage.tsx(276,12): error TS18048: 'profile' is possibly 'undefined'.
 src/pages/onboarding/OnboardingTranscriptionPage.tsx(276,48): error TS18048: 'profile' is possibly 'undefined'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(293,38): error TS18048: 'profile' is possibly 'undefined'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(303,56): error TS2345: Argument of type '{ resourceType: string; status: string; type: { coding: { system: string; code: string; display: string; }[]; }; date: string; title: string; author: { reference: string; display: string; }[]; subject: { reference: string; display: string; }; section: never[]; }' is not assignable to parameter of type 'Resource'.
-  Type '{ resourceType: string; status: string; type: { coding: { system: string; code: string; display: string; }[]; }; date: string; title: string; author: { reference: string; display: string; }[]; subject: { reference: string; display: string; }; section: never[]; }' is not assignable to type 'Composition | Account | CatalogEntry | Claim | ClaimResponse | Contract | Coverage | Device | ... 15 more ... | SupplyDelivery'.
-    Type '{ resourceType: string; status: string; type: { coding: { system: string; code: string; display: string; }[]; }; date: string; title: string; author: { reference: string; display: string; }[]; subject: { reference: string; display: string; }; section: never[]; }' is not assignable to type 'Composition'.
-      Types of property 'resourceType' are incompatible.
-        Type 'string' is not assignable to type '"Composition"'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(304,27): error TS2345: Argument of type 'Resource' is not assignable to parameter of type 'SetStateAction<Composition | undefined>'.
-  Type 'Patient' is not assignable to type 'SetStateAction<Composition | undefined>'.
-    Type 'Patient' is missing the following properties from type 'Composition': status, type, date, author, title
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(310,13): error TS2554: Expected 1 arguments, but got 0.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(317,18): error TS18046: 'error' is of type 'unknown'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(340,64): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(312,13): error TS2554: Expected 1 arguments, but got 0.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(319,18): error TS18046: 'error' is of type 'unknown'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(342,64): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(358,81): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(360,81): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
   Type 'undefined' is not assignable to type 'string'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(411,9): error TS2559: Type 'false' has no properties in common with type '{ desktop?: boolean | undefined; mobile?: boolean | undefined; }'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(434,24): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(411,28): error TS2554: Expected 0 arguments, but got 1.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(430,9): error TS2559: Type 'false' has no properties in common with type '{ desktop?: boolean | undefined; mobile?: boolean | undefined; }'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(453,24): error TS2322: Type '{ children: Element[]; position: string; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'position' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(623,45): error TS2322: Type '{ children: Element[]; align: "center"; spacing: string; style: { maxWidth: string; margin: string; }; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(646,45): error TS2322: Type '{ children: Element[]; align: "center"; spacing: string; style: { maxWidth: string; margin: string; }; }' is not assignable to type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & GroupProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(632,27): error TS2322: Type 'Dispatch<SetStateAction<string>>' is not assignable to type '(value: string | null, option: ComboboxItem) => void'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(655,27): error TS2322: Type 'Dispatch<SetStateAction<string>>' is not assignable to type '(value: string | null, option: ComboboxItem) => void'.
   Types of parameters 'value' and 'value' are incompatible.
     Type 'string | null' is not assignable to type 'SetStateAction<string>'.
       Type 'null' is not assignable to type 'SetStateAction<string>'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(654,29): error TS2353: Object literal may only specify known properties, and 'item' does not exist in type 'Partial<Record<SelectStylesNames, CSSProperties>> | ((theme: MantineTheme, props: SelectProps, ctx: unknown) => Partial<...>)'.
-src/pages/onboarding/OnboardingTranscriptionPage.tsx(674,23): error TS2322: Type '{ transcript: string; psychNote: { content: string; prompt?: string | undefined; rawResponse?: string | undefined; }; status: string; }' is not assignable to type 'IntrinsicAttributes & TranscriptionViewProps'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(677,29): error TS2353: Object literal may only specify known properties, and 'item' does not exist in type 'Partial<Record<SelectStylesNames, CSSProperties>> | ((theme: MantineTheme, props: SelectProps, ctx: unknown) => Partial<...>)'.
+src/pages/onboarding/OnboardingTranscriptionPage.tsx(697,23): error TS2322: Type '{ transcript: string; psychNote: { content: string; prompt?: string | undefined; rawResponse?: string | undefined; }; status: string; }' is not assignable to type 'IntrinsicAttributes & TranscriptionViewProps'.
   Property 'status' does not exist on type 'IntrinsicAttributes & TranscriptionViewProps'.
 src/pages/onboarding/OrganizationSetupPage.tsx(34,16): error TS2322: Type '{ children: Element[]; spacing: string; }' is not assignable to type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.
   Property 'spacing' does not exist on type 'IntrinsicAttributes & StackProps & RefAttributes<HTMLDivElement> & { component?: any; renderRoot?: ((props: Record<string, any>) => ReactNode) | undefined; }'.

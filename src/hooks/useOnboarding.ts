@@ -3,7 +3,8 @@ import { useEffect, useState } from 'react';
 import { OnboardingStep } from './onboardingSteps';
 
 export interface UseOnboardingReturn {
-  currentStep: OnboardingStep;
+  currentStep: number;
+  setCurrentStep: (step: number) => void;
   updateOnboardingStep: (step: OnboardingStep) => Promise<void>;
   isStepComplete: (step: OnboardingStep) => boolean;
   hasCompletedOnboarding: boolean;
@@ -11,7 +12,7 @@ export interface UseOnboardingReturn {
 
 export function useOnboarding(): UseOnboardingReturn {
   const medplum = useMedplum();
-  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.NOT_STARTED);
+  const [currentStep, setCurrentStep] = useState<number>(OnboardingStep.NOT_STARTED);
   
   useEffect(() => {
     const checkOnboardingStatus = async () => {
@@ -71,6 +72,7 @@ export function useOnboarding(): UseOnboardingReturn {
 
   return {
     currentStep,
+    setCurrentStep,
     updateOnboardingStep,
     isStepComplete: (step: OnboardingStep) => isStepComplete(currentStep, step),
     hasCompletedOnboarding: currentStep === OnboardingStep.COMPLETED

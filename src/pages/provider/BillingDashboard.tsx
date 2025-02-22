@@ -37,15 +37,15 @@ export function BillingDashboard() {
 
               <Paper withBorder p="xl">
                 <Stack gap="lg">
-                  <Group position="apart">
+                  <Group justify="space-between">
                     <Title order={4}>Payment History</Title>
                     <Button variant="subtle">View All</Button>
                   </Group>
                   
                   {invoices.map((invoice) => (
                     <Paper key={invoice.id} p="md" withBorder>
-                      <Group position="apart">
-                        <Stack spacing={4}>
+                      <Group justify="space-between">
+                        <Stack gap={4}>
                           <Text fw={500}>
                             {new Date(invoice.date || '').toLocaleDateString('en-US', {
                               month: 'long',
@@ -124,11 +124,11 @@ export function BillingDashboard() {
                 <Stack gap="md">
                   <Title order={4}>Processing Overview</Title>
                   <Stack gap="xs">
-                    <Group position="apart">
+                    <Group justify="space-between">
                       <Text size="sm">This Month</Text>
                       <Text size="sm" fw={500}>$4,820.00</Text>
                     </Group>
-                    <Group position="apart">
+                    <Group justify="space-between">
                       <Text size="sm">Pending Payouts</Text>
                       <Text size="sm" fw={500}>$950.00</Text>
                     </Group>

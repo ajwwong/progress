@@ -31,9 +31,20 @@ async function handleSubscriptionUpdated(medplum: MedplumClient, subscription: S
   });
 }
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+interface WebhookEvent extends BotEvent {
+  input: {
+    header?: Record<string, string>;
+    body: string;
+  }
+}
+
+export async function handler(medplum: MedplumClient, event: WebhookEvent): Promise<any> {
   const signature = event.input.header?.['stripe-signature'];
   const payload = event.input.body;
+  
+  if (!signature || !payload) {
+    throw new Error('Missing webhook signature or payload');
+  }
 
   try {
     const stripeEvent = stripe.webhooks.constructEvent(

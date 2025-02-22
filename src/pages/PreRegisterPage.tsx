@@ -5,17 +5,19 @@ import { Link } from 'react-router-dom';
 export function PreRegisterPage(): JSX.Element {
   return (
     <Container size="md" my={40}>
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <Box ta="center" mb={30}>
           <Title
             order={1}
-            sx={(theme) => ({
-              fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-              fontWeight: 900,
-              fontSize: 44,
+            styles={(theme) => ({
+              root: {
+                fontFamily: theme.fontFamily,
+                fontWeight: 700,
+                fontSize: 34
+              }
             })}
           >
-            Registration Process
+            Welcome
           </Title>
           <Text c="dimmed" mt="md" size="xl">
             Our two-account system ensures security and proper access management
@@ -65,7 +67,7 @@ export function PreRegisterPage(): JSX.Element {
         </Paper>
 
         <Paper withBorder p="xl" radius="md" bg="blue.0">
-          <Stack spacing="md">
+          <Stack gap="md">
             <Title order={3}>Why Two Separate Accounts?</Title>
             <Text>
               This dual-account system is designed to provide you with a comprehensive understanding 
@@ -79,9 +81,9 @@ export function PreRegisterPage(): JSX.Element {
                 component={Link} 
                 to="/register" 
                 size="lg" 
-                rightIcon={<IconArrowRight size={18} />}
+                rightSection={<IconArrowRight />}
               >
-                Start Registration Process
+                Get Started
               </Button>
             </Group>
           </Stack>
