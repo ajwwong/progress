@@ -5,7 +5,6 @@ import { Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
 import { PatientOverview } from './components/PatientOverview';
 import { Timeline } from './components/Timeline';
-import { SessionNotes } from './components/SessionNotes';
 import { TreatmentPlan } from './components/TreatmentPlan';
 import { PatientProfile } from './components/PatientProfile';
 import { NoteTemplatesPage } from './components/templates/NoteTemplatesPage';
@@ -475,7 +474,6 @@ export function App(): JSX.Element | null {
                       <Route path="overview" element={<PatientOverview />} />
                       <Route path="timeline" element={<Timeline />} />
                       <Route path="history" element={<PatientHistory />} />
-                      <Route path="notes" element={<SessionNotes />} />
                       <Route path="recent" element={<PatientRecentComposition />} />
                       <Route path="treatment" element={<TreatmentPlan />} />
                       <Route path="profile" element={<PatientProfile />} />

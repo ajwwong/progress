@@ -51,12 +51,12 @@ export function PatientRecentComposition(): JSX.Element {
 
   return (
     <Document>
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <Paper p="md" radius="md" withBorder>
           <Title order={3} mb="md">Latest Progress Note</Title>
           {latestNote ? (
-            <Stack spacing="xs">
-              <Group position="apart">
+            <Stack gap="xs">
+              <Group justify="apart">
                 <Text fw={500}>
                   {new Date(latestNote.date || '').toLocaleDateString('en-US', {
                     weekday: 'long',
