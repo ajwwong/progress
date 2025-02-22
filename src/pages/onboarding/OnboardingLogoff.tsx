@@ -132,7 +132,7 @@ export function OnboardingLogoff(): JSX.Element {
               >
                 Sign in to Practice Harbor
               </Title>
-              <Text color="dimmed" size="sm" align="center" mt={5}>
+              <Text c="dimmed" size="sm" ta="center" mt={4}>
                 Welcome back to port.
               </Text>
             </Stack>

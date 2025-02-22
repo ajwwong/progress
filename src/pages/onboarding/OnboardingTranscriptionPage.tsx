@@ -372,10 +372,10 @@ export function OnboardingPage({
         }
       }
     } catch (error) {
-      console.error('Error in handleFullWorkflow:', error);
+      console.error('Error in workflow:', error);
       showNotification({
         title: 'Error',
-        message: 'An error occurred during the workflow',
+        message: error instanceof Error ? error.message : 'An unexpected error occurred',
         color: 'red'
       });
     }

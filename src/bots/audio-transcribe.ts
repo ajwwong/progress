@@ -1,98 +1,64 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
+import { writeFileSync } from 'fs';
+import { Buffer } from 'node:buffer';
 import { createClient } from '@deepgram/sdk';
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
-  const debugLog: string[] = [];
-  const log = async (message: string) => {
-    debugLog.push(message);
-    // Create Communication resource for logging
-    await medplum.createResource({
-      resourceType: 'Communication',
-      status: 'completed',
-      category: [{
-        coding: [{
-          system: 'http://terminology.medplum.org/communication-categories',
-          code: 'audio-transcription-log'
-        }]
-      }],
-      payload: [{
-        contentString: message
-      }]
-    });
-  };
-
   try {
-    if (!event.secrets['DEEPGRAM_API_KEY']?.valueString) {
-      await log('Error: Deepgram API key not found in bot secrets');
-      throw new Error('Deepgram API key not found in bot secrets');
+    // Get the API key from secrets
+    const deepgramApiKey = event.secrets['DEEPGRAM_API_KEY']?.valueString;
+    if (!deepgramApiKey) {
+      throw new Error('DEEPGRAM_API_KEY not found in secrets');
     }
 
-    // Initialize Deepgram
-    const deepgram = createClient(event.secrets['DEEPGRAM_API_KEY'].valueString);
-    await log('Deepgram client initialized');
-
-    // Get the binary data from the input
-    if (!event.input.type === 'audio' || !event.input.binaryId) {
-      await log('Error: Invalid input format - missing audio type or binaryId');
-      throw new Error('Invalid input format. Expected {type: "audio", binaryId: string}');
-    }
-
-    await log(`Processing binary resource: ${event.input.binaryId}`);
-    const binary = await medplum.readResource('Binary', event.input.binaryId);
+    // Initialize Deepgram with the API key from secrets
+    const deepgram = createClient(deepgramApiKey);
     
-    if (!binary.data) {
-      await log('Error: No audio data found in binary resource');
-      throw new Error('No audio data found in binary resource');
-    }
-
-    await log(`Audio file size: ${binary.data.length} bytes`);
-    await log(`Content type: ${binary.contentType || 'audio/wav'}`);
-
-    // Convert base64 to buffer
-    const buffer = Buffer.from(binary.data, 'base64');
-
-    // Send to Deepgram
-    await log('Sending to Deepgram for transcription...');
-    const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
-      {
-        buffer,
-        mimetype: binary.contentType || 'audio/wav'
-      },
-      {
-        model: "nova-2",
-        punctuate: true,
-      }
-    );
-
-    if (error) {
-      await log(`Deepgram transcription error: ${JSON.stringify(error)}`);
-      throw new Error(`Deepgram transcription error: ${error.message}`);
-    }
-
-    const transcript = result?.results?.channels[0]?.alternatives[0]?.transcript;
-    const confidence = result?.results?.channels[0]?.alternatives[0]?.confidence;
+    const input = event.input;
     
-    await log(`Transcription completed. Confidence: ${confidence}`);
-    await log(`Transcript length: ${transcript?.length || 0} characters`);
+    if (input.type === 'audio' && input.binaryId) {
+      console.log('Getting audio from Binary storage...');
+      
+      // Get the audio content
+      const response = await medplum.download(`Binary/${input.binaryId}`);
+      const arrayBuffer = await response.arrayBuffer();
+      const audioBuffer = Buffer.from(arrayBuffer);
+      
+      console.log('Transcribing audio...');
+      // Using the correct V3 syntax
+      const { result, error } = await deepgram.listen.prerecorded.transcribeFile(
+        audioBuffer,
+        {
+          model: 'nova-2',
+          smart_format: true,
+          punctuate: true,
+          diarize: true,
+          paragraphs: true
+        }
+      );
 
+      if (error) throw error;
+
+      return {
+        message: 'Audio transcribed successfully',
+        details: {
+          transcript: result.results?.channels[0]?.alternatives[0]?.paragraphs?.transcript || 'No transcript available',
+          confidence: result.results?.channels[0]?.alternatives[0]?.confidence,
+          audioSize: audioBuffer.length,
+          duration: result.metadata?.duration
+        }
+      };
+    }
+    
     return {
-      details: {
-        transcript,
-        confidence,
-        debugLog
-      },
-      success: true
+      message: 'Unexpected input type',
+      received: input
     };
-
   } catch (error) {
-    const errorMessage = `Transcription error: ${(error as Error).message}`;
-    await log(errorMessage);
-    await log(`Stack trace: ${(error as Error).stack}`);
-    
     return {
-      success: false,
-      error: errorMessage,
-      debugLog
+      error: 'Failed to process',
+      details: error.message,
+      stack: error.stack
     };
   }
 }

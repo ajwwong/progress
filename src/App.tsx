@@ -50,6 +50,12 @@ export const CalendarContext = createContext<{
   setShowNewAppointmentModal: () => {},
 });
 
+interface NavbarLink {
+  icon: JSX.Element;
+  label: JSX.Element | string;
+  href: string;
+}
+
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
   const profile = useMedplumProfile();
