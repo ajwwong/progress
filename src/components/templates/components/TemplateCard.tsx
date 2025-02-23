@@ -18,12 +18,12 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
         onClick={() => setOpened(o => !o)}
         style={{ width: '100%' }}
       >
-        <Group position="apart">
+        <Group justify="space-between">
           <Group>
             {opened ? <IconChevronDown size={16} /> : <IconChevronRight size={16} />}
             <Text size="lg" fw={500}>{template.name}</Text>
           </Group>
-          <Group spacing="xs" onClick={(e) => e.stopPropagation()}>
+          <Group gap="xs" onClick={(e) => e.stopPropagation()}>
             <ActionIcon
               variant="light"
               color="blue"

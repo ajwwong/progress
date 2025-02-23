@@ -19,8 +19,6 @@ import { RegisterPage } from './pages/RegisterPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
 import { PatientDirectoryPage } from './features/patients/pages/PatientDirectoryPage';
-import { StripeConnect } from './pages/provider/StripeConnect';
-import { BillingDashboard } from './pages/provider/BillingDashboard';
 import { ProfilePage } from './pages/profile/ProfilePage';
 import { PatientRecentComposition } from './components/PatientRecentComposition';
 import { TemplateRoutes } from './components/templates/TemplateRoutes';
@@ -480,7 +478,6 @@ export function App(): JSX.Element | null {
                     <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
                     <Route path="/composition/:id" element={<NoteView />} />
                     <Route path="/templates/*" element={<TemplateRoutes />} />
-                    <Route path="/billing" element={<BillingDashboard />} />
                     <Route path="/settings" element={<ProfilePage />} />
                     <Route path="/Practitioner/:id" element={<ProfilePage />} />
                     <Route path="/organization-invite" element={<OrganizationInvitePage />} />

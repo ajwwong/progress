@@ -7,6 +7,7 @@ import { OrganizationInvitePage } from './OrganizationInvitePage';
 import { IconBuildingHospital, IconUser, IconArrowRight, IconCircleCheck, IconLogin } from '@tabler/icons-react';
 import { showNotification } from '@mantine/notifications';
 import { Document, SignInForm, useMedplum } from '@medplum/react';
+import { MantineTheme } from '@mantine/core';
 
 export function OrganizationSetupPage(): JSX.Element {
   const navigate = useNavigate();
@@ -30,11 +31,11 @@ export function OrganizationSetupPage(): JSX.Element {
 
   return (
     <Container size="md" my={40}>
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <Box ta="center" mb={30}>
           <Title
             order={1}
-            sx={(theme) => ({
+            style={(theme: MantineTheme) => ({
               fontFamily: `Greycliff CF, ${theme.fontFamily}`,
               fontWeight: 900,
               fontSize: 44,
@@ -48,7 +49,7 @@ export function OrganizationSetupPage(): JSX.Element {
         </Box>
 
         <Paper withBorder p="xl" radius="md" bg="green.0">
-          <Stack spacing="md">
+          <Stack gap="md">
             <Group>
               <ThemeIcon size="xl" radius="xl" color="green" variant="light">
                 <IconCircleCheck size={24} />
@@ -90,17 +91,13 @@ export function OnboardingLogoff(): JSX.Element {
 
   return (
     <Container size="md" my={40}>
-      <Stack spacing="xl">
+      <Stack gap="xl">
         <Box ta="center" mb={30}>
           <Title
             order={1}
-            sx={(theme) => ({
-              fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-              fontWeight: 900,
-              fontSize: 44,
-            })}
+            style={{ fontSize: '2.8rem', margin: 0, lineHeight: 1 }}
           >
-            Practice Account Created!
+            Your Account Has Been Created!
           </Title>
           <Text c="dimmed" mt="md" size="xl">
             You're almost ready to start using Progress Notes
@@ -109,31 +106,26 @@ export function OnboardingLogoff(): JSX.Element {
 
         <Paper shadow="md" radius="md" p={35} withBorder>
           <SignInForm
-            //clientId="c9aa51a2-263b-49f1-b861-fddfb13bc54c"
-            //projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
             onSuccess={handleSignInSuccess}
           >
-            <Stack align="center" spacing="xs">
+            <Stack align="center" gap="xs">
               <Image
                 src="/droplet.png"
                 alt="Practice Harbor Logo"
-                width={48}
-                height={48}
+                w={48}
+                h={48}
                 mx="auto"
                 mb={8}
                 style={{ width: 48, height: 48 }}
               />
               <Title
-                align="center"
-                sx={(theme) => ({
-                  fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-                  fontWeight: 900
-                })}
+                ta="center"
+                style={{ fontSize: '1.8rem', margin: 0, lineHeight: 1 }}
               >
-                Sign in to Practice Harbor
+                Sign in to Progress Notes
               </Title>
               <Text c="dimmed" size="sm" ta="center" mt={4}>
-                Welcome back to port.
+                Great to have you here.
               </Text>
             </Stack>
           </SignInForm>

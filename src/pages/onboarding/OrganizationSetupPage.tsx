@@ -8,6 +8,10 @@ import { IconBrain, IconRocket, IconCheck, IconHeartHandshake } from '@tabler/ic
 import { showNotification } from '@mantine/notifications';
 import { Document } from '@medplum/react';
 
+interface OrganizationInvitePageProps {
+  onSuccess: () => Promise<void>;
+}
+
 export function OrganizationSetupPage(): JSX.Element {
   const navigate = useNavigate();
   const { updateOnboardingStep } = useOnboarding();
@@ -31,18 +35,18 @@ export function OrganizationSetupPage(): JSX.Element {
   return (
     <Document width={1000}>
       <Container size="xl" py="xl">
-        <Stack spacing="xl">
+        <Stack gap="xl">
           <Group align="center" justify="center">
             <Image
               src="/droplet.png"
               alt="Practice Harbor Logo"
-              width={125}
-              height={125}
+              w={125}
+              h={125}
               mr={50}
             />
-            <Stack spacing={0}>
+            <Stack gap={0}>
               <Title order={1} style={{ fontSize: '2.8rem', margin: 0, lineHeight: 1 }}>
-                Practice Harbor
+                Progress Notes
               </Title>
               <Text size="xl" c="dimmed" style={{ lineHeight: 1.2 }}>
                 Your Modern, AI-Enhanced Practice Management Life Saver
@@ -52,16 +56,16 @@ export function OrganizationSetupPage(): JSX.Element {
 
           <Divider my="xl" />
 
-          <Title order={2} align="center" style={{ fontSize: '2.2rem' }}>
+          <Title order={2} ta="center" style={{ fontSize: '2.2rem' }}>
             Start Your Free Trial
           </Title>
-          <Text size="xl" c="dimmed" align="center">
+          <Text size="xl" c="dimmed" ta="center">
             Built by therapists, for therapists who care
           </Text>
 
-          <SimpleGrid cols={3} spacing={30} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+          <SimpleGrid cols={3} spacing={30}>
             <Paper shadow="md" radius="md" p={30} withBorder>
-              <Stack spacing="lg">
+              <Stack gap="lg">
                 <ThemeIcon size={56} radius="md" variant="light" color="violet">
                   <IconBrain size={28} />
                 </ThemeIcon>
@@ -73,19 +77,19 @@ export function OrganizationSetupPage(): JSX.Element {
             </Paper>
 
             <Paper shadow="md" radius="md" p={30} withBorder>
-              <Stack spacing="lg">
+              <Stack gap="lg">
                 <ThemeIcon size={56} radius="md" variant="light" color="blue">
                   <IconRocket size={28} />
                 </ThemeIcon>
                 <Title order={3}>Integrated Records</Title>
                 <Text size="lg">
-                  Built to make life easier.  Notes drop straight into your records. Click less, get more done.
+                  Built to make life easier. Notes drop straight into your records. Click less, get more done.
                 </Text>
               </Stack>
             </Paper>
 
             <Paper shadow="md" radius="md" p={30} withBorder>
-              <Stack spacing="lg">
+              <Stack gap="lg">
                 <ThemeIcon size={56} radius="md" variant="light" color="green">
                   <IconHeartHandshake size={28} />
                 </ThemeIcon>

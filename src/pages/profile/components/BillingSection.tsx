@@ -1,18 +1,21 @@
-import { Stack, Title, Text, Paper, Button, Badge, Group, List, ThemeIcon } from '@mantine/core';
-import { useMedplum } from '@medplum/react';
+import { Stack, Title, Text, Paper, Button, Badge, Group, List, ThemeIcon, Loader } from '@mantine/core';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
 import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconDownload, IconHistory, IconCheck, IconCreditCard } from '@tabler/icons-react';
-import { Invoice, Practitioner } from '@medplum/fhirtypes';
+import { Invoice, Practitioner, Communication, Parameters } from '@medplum/fhirtypes';
 import { useStripeSetup } from '../hooks/useStripeSetup';
 import { useProfileUsage } from '../../../hooks/useProfileUsage';
 import { StripeCardElement } from './StripeCardElement';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
-import { useMedplumProfile } from '@medplum/react';
-import { Communication } from '@medplum/fhirtypes';
 
 const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
+
+interface ParameterType {
+  name: string;
+  valueString?: string;
+}
 
 export function BillingSection(): JSX.Element {
   const medplum = useMedplum();
@@ -33,11 +36,9 @@ export function BillingSection(): JSX.Element {
   }, [medplum]);
 
   useEffect(() => {
-    // Get profile on mount
     const getProfile = async () => {
       try {
-        const userProfile = await medplum.getProfile();
-        setProfile(userProfile);
+        await medplum.getProfile();
       } catch (err) {
         console.error('Failed to load profile:', err);
         setError('Failed to load user profile');
@@ -71,7 +72,7 @@ export function BillingSection(): JSX.Element {
     });
 
     console.log('💳 Mounting card element...');
-    card.mount('#card-element');
+    //card.mount('#card-element');
 
     card.on('change', (event) => {
       console.log('🔄 Card input changed:', {
@@ -180,8 +181,12 @@ export function BillingSection(): JSX.Element {
         throw new Error(response.issue?.[0]?.details?.text || 'Subscription failed');
       }
 
-      if (response.parameter?.find(p => p.name === 'status')?.valueString === 'requires_confirmation') {
-        const clientSecret = response.parameter?.find(p => p.name === 'clientSecret')?.valueString;
+      if (response.parameter?.find((p: ParameterType) => 
+        p.name === 'status'
+      )?.valueString === 'requires_confirmation') {
+        const clientSecret = response.parameter?.find((p: ParameterType) => 
+          p.name === 'clientSecret'
+        )?.valueString;
         if (clientSecret) {
           const result = await stripe.confirmCardPayment(clientSecret);
           if (result.error) {
@@ -221,7 +226,7 @@ export function BillingSection(): JSX.Element {
 
   // Show loading state while profile is being fetched
   if (medplum.isLoading()) {
-    return <Loading />;
+    return <Loader />;
   }
 
   // Show error if no profile
@@ -251,7 +256,7 @@ export function BillingSection(): JSX.Element {
           <Stack justify="space-between" h="100%">
             <div>
               <Badge color="gray" variant="light" size="lg" mb="md">Free Plan</Badge>
-              <Group align="flex-end" spacing="xs" mb="md">
+              <Group align="flex-end" gap="xs" mb="md">
                 <Text size="xl" fw={700}>$0</Text>
                 <Text size="sm" c="dimmed" mb={4}>/month</Text>
               </Group>
@@ -303,7 +308,7 @@ export function BillingSection(): JSX.Element {
           <Stack justify="space-between" h="100%">
             <div>
               <Badge color="blue" variant="light" size="lg" mb="md">Pro Plan</Badge>
-              <Group align="flex-end" spacing="xs" mb="md">
+              <Group align="flex-end" gap="xs" mb="md">
                 <Text size="xl" fw={700}>$0.99</Text>
                 <Text size="sm" c="dimmed" mb={4}>/month</Text>
               </Group>
@@ -325,7 +330,7 @@ export function BillingSection(): JSX.Element {
                 <List.Item>Priority processing</List.Item>
               </List>
             </div>
-            {!usageData.isPro && (
+            {/*!usageData.isPro && (
               <Elements stripe={stripePromise}>
                 <form onSubmit={handleSubscribe}>
                   <StripeCardElement 
@@ -347,14 +352,14 @@ export function BillingSection(): JSX.Element {
                   </Button>
                 </form>
               </Elements>
-            )}
+            )*/}
           </Stack>
         </Paper>
       </Group>
 
       {/* Payment History Section */}
       <Paper withBorder p="xl">
-        <Group position="apart" mb="xl">
+        <Group justify="apart" mb="xl">
           <div>
             <Title order={3}>Payment History</Title>
             <Text c="dimmed">View and download your past invoices</Text>
@@ -367,7 +372,7 @@ export function BillingSection(): JSX.Element {
         ) : (
           <Stack gap="md">
             {invoices.map((invoice) => (
-              <Group key={invoice.id} position="apart" p="md" style={{ border: '1px solid #eee', borderRadius: '4px' }}>
+              <Group justify="flex-end" gap="md" mb="md" style={{ border: '1px solid #eee', borderRadius: '4px' }}>
                 <div>
                   <Text>Invoice #{invoice.id}</Text>
                   <Text size="sm" c="dimmed">{new Date(invoice.date || '').toLocaleDateString()}</Text>

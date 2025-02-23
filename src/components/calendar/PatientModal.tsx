@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { IconCheck } from '@tabler/icons-react';
 import { pronounOptions } from './constants';
 import { normalizeErrorString } from '@medplum/core';
-
+import { ContactPoint } from '@medplum/fhirtypes';
 interface PatientModalProps {
   opened: boolean;
   onClose: () => void;
@@ -40,7 +40,7 @@ export function PatientModal({ opened, onClose, onSuccess }: PatientModalProps):
         telecom: [
           ...(email ? [{ system: 'email', value: email }] : []),
           ...(phone ? [{ system: 'phone', value: phone }] : [])
-        ]
+        ] as ContactPoint[]
       });
 
       showNotification({

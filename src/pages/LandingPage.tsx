@@ -7,16 +7,16 @@ export function LandingPage(): JSX.Element {
   return (
     <Document width={1000}>
       <Container size="xl" py="xl">
-        <Stack spacing="xl">
+        <Stack gap="xl">
           <Group align="center" justify="center">
             <Image
               src="/droplet.png"
               alt="Practice Harbor Logo"
-              width={125}
-              height={125}
+              w={125}
+              h={125}
               mr={50}
             />
-            <Stack spacing={0}>
+            <Stack gap="md">
               <Title order={1} style={{ fontSize: '2.8rem', margin: 0, lineHeight: 1 }}>
                 Welcome to Progress Notes
               </Title>
@@ -28,27 +28,37 @@ export function LandingPage(): JSX.Element {
 
           <Divider my="xl" />
 
-          <SimpleGrid cols={2} spacing={50} breakpoints={[{ maxWidth: 'sm', cols: 1 }]}>
+          <SimpleGrid cols={2} spacing={50}>
             <Paper shadow="md" radius="md" p={35} withBorder>
-              <Stack spacing="lg">
+              <Stack gap="lg">
                 <ThemeIcon size={56} radius="md" variant="light" color="blue">
                   <IconBrain size={28} />
                 </ThemeIcon>
                 <Title order={3}>For Mental Health Providers</Title>
-                <List spacing="md" size="lg" center icon={
-                  <ThemeIcon color="blue" size={28} radius="xl">
-                    <IconCheck size={18} />
-                  </ThemeIcon>
-                }>
+                <List 
+                  size="lg" 
+                  center 
+                  styles={{
+                    item: {
+                      marginBottom: '1rem'
+                    }
+                  }}
+                  icon={
+                    <ThemeIcon color="blue" size={28} radius="xl">
+                      <IconCheck size={18} />
+                    </ThemeIcon>
+                  }
+                >
                   <List.Item>AI-Powered Clinical Documentation</List.Item>
                   <List.Item>Smart Voice-to-Text Transcription</List.Item>
                   <List.Item>Intelligent Scheduling System</List.Item>
-                  <List.Item>Integrated Progress Notes</List.Item>                </List>
+                  <List.Item>Integrated Progress Notes</List.Item>
+                </List>
               </Stack>
             </Paper>
 
             <Paper shadow="md" radius="md" p={35} withBorder>
-              <Stack spacing="lg">
+              <Stack gap="lg">
                 <ThemeIcon size={56} radius="md" variant="light" color="green">
                   <IconHeartHandshake size={28} />
                 </ThemeIcon>

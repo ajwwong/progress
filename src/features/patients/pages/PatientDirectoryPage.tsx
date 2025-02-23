@@ -1,12 +1,12 @@
-import { Group, Title, Text, Anchor,Button, Stack, Box, ActionIcon, TextInput, Modal, Paper, Menu, Table, Select, Container } from '@mantine/core';
+import { Group, Title, Text, Anchor, Button, Stack, Box, ActionIcon, TextInput, Modal, Paper, Menu, Table, Select, Container } from '@mantine/core';
 import { Patient } from '@medplum/fhirtypes';
 import { ResourceName, useMedplum, useMedplumNavigate, useMedplumProfile } from '@medplum/react';
 import { IconSearch, IconPhone, IconMail, IconDotsVertical, IconPlus } from '@tabler/icons-react';
 import { useState, useEffect } from 'react';
 import { notifications } from '@mantine/notifications';
 import { PatientFilters } from '../components/PatientFilters';
-import { CreatePatientModal } from '../../../components/modals/CreatePatientModal';
 import { PatientModal } from '../../../components/calendar/PatientModal';
+import { PatchOperation } from '@medplum/core';
 
 const theme = {
   components: {
@@ -147,15 +147,17 @@ export function PatientDirectoryPage(): JSX.Element {
       const [firstName, ...restName] = patientName.split(' ');
       const lastName = restName.join(' ');
 
-      const newPatient = await medplum.createResource('Patient', {
+      const newPatient: Patient = {
         resourceType: 'Patient',
         name: [{
           given: [firstName],
           family: lastName
         }],
         active: true
-      });
+      };
 
+      await medplum.createResource(newPatient);
+      
       notifications.show({
         title: 'Success',
         message: 'Patient created successfully',
@@ -252,7 +254,7 @@ export function PatientDirectoryPage(): JSX.Element {
   return (
     <Container size="xl">
       <Box p="md">
-        <Stack spacing="xl">
+        <Stack gap="xl">
           <Group justify="space-between" mb="lg">
             <Group gap="sm">
               <Title order={2}>Patients</Title>
@@ -263,15 +265,13 @@ export function PatientDirectoryPage(): JSX.Element {
                 radius="md"
                 leftSection={<IconPlus size={18} />}
                 onClick={() => setIsPatientModalOpen(true)}
-                styles={(theme) => ({
-                  root: {
-                    fontWeight: 600,
-                    boxShadow: theme.shadows.xs,
-                    transition: 'all 150ms ease',
-                    '&:hover': {
-                      transform: 'translateY(-1px)',
-                      boxShadow: theme.shadows.sm,
-                    }
+                style={(theme) => ({
+                  fontWeight: 600,
+                  boxShadow: theme.shadows.xs,
+                  transition: 'all 150ms ease',
+                  '&:hover': {
+                    transform: 'translateY(-1px)',
+                    boxShadow: theme.shadows.sm,
                   }
                 })}
               >
@@ -280,7 +280,7 @@ export function PatientDirectoryPage(): JSX.Element {
             </Group>
           </Group>
 
-          <Group align="flex-end" spacing="md">
+          <Group align="flex-end" gap="md">
             <TextInput
               placeholder="Search patients by name..."
               size="md"
@@ -298,15 +298,13 @@ export function PatientDirectoryPage(): JSX.Element {
                 { value: 'active', label: 'Active' }
               ]}
               value={clientStatus}
-              onChange={setClientStatus}
+              onChange={(value) => setClientStatus(value || 'all')}
               size="md"
               radius="md"
               style={{ width: 200 }}
             />
-           
           </Group>
 
-          {/* Patient List */}
           <Paper withBorder>
             <Table highlightOnHover>
               <Table.Thead>
@@ -321,18 +319,16 @@ export function PatientDirectoryPage(): JSX.Element {
                 {patients.map((patient) => (
                   <Table.Tr key={patient.id}>
                     <Table.Td>
-                    <Anchor
-      href="#"
-      onClick={(e) => {
-        e.preventDefault();
-        navigate(`/patient/${patient.id}`);
-      }}
-      sx={(theme) => ({
-        fontWeight: 500,
-      })}
-    >
-      <ResourceName value={patient} />
-    </Anchor>
+                      <Anchor
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          navigate(`/patient/${patient.id}`);
+                        }}
+                        style={{ fontWeight: 500 }}
+                      >
+                        <ResourceName value={patient} />
+                      </Anchor>
                     </Table.Td>
                     <Table.Td>
                       <Button 
@@ -344,9 +340,9 @@ export function PatientDirectoryPage(): JSX.Element {
                       </Button>
                     </Table.Td>
                     <Table.Td>
-                      <Stack spacing={4}>
+                      <Stack gap={4}>
                         {patient.telecom?.filter(t => t.system && t.value).map((t, i) => (
-                          <Group key={i} spacing={6}>
+                          <Group key={i} gap={6}>
                             {t.system === 'phone' && <IconPhone size={14} />}
                             {t.system === 'email' && <IconMail size={14} />}
                             <Text size="sm">{t.value}</Text>
@@ -396,7 +392,6 @@ export function PatientDirectoryPage(): JSX.Element {
           </Paper>
         </Stack>
 
-
         <PatientModal
           opened={isPatientModalOpen}
           onClose={() => setIsPatientModalOpen(false)}
@@ -413,13 +408,9 @@ export function PatientDirectoryPage(): JSX.Element {
           title={<Text size="lg" fw={500} c="red">Delete Patient</Text>}
           centered
         >
-          <Stack spacing="md">
-            <Text>
-              Are you sure you want to delete this patient? This action cannot be undone.
-            </Text>
-            <Text size="sm">
-              Please type "DELETE" to confirm:
-            </Text>
+          <Stack gap="md">
+            <Text>Are you sure you want to delete this patient? This action cannot be undone.</Text>
+            <Text size="sm">Please type "DELETE" to confirm:</Text>
             <TextInput
               value={deleteConfirmName}
               onChange={(e) => setDeleteConfirmName(e.currentTarget.value)}
@@ -448,6 +439,6 @@ export function PatientDirectoryPage(): JSX.Element {
           </Stack>
         </Modal>
       </Box>
-      </Container>
-    );
-  }
+    </Container>
+  );
+}

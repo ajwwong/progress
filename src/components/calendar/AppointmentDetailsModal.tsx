@@ -157,7 +157,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
         opened={opened}
         onClose={handleCloseAttempt}
         title={
-          <Group>
+          <Group justify="flex-start">
             <Text fw={500}>Patient:</Text>
             <Link 
               to={`/Patient/${appointment.patientId}/profile`}
@@ -176,7 +176,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
         <Stack gap="md">
           <Paper withBorder p="md">
             <Stack gap="xs">
-              <Group position="apart">
+              <Group justify="space-between">
                 <Text fw={500}>Status</Text>
                 <Select
                   value={editableAppointment.status}
@@ -289,7 +289,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
           title="Delete Appointment"
           size="sm"
         >
-          <Stack>
+          <Stack gap="md">
             <Text>Are you sure you want to delete this appointment? It will be permanently removed.</Text>
             <Group justify="flex-end" mt="xl">
               <Button variant="light" onClick={() => setDeleteModalOpened(false)}>Cancel</Button>
@@ -304,7 +304,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
           title="Unsaved Changes"
           size="sm"
         >
-          <Stack>
+          <Stack gap="md">
             <Text>You have unsaved changes. Would you like to save them before closing?</Text>
             <Group justify="flex-end" mt="xl">
               <Button variant="light" onClick={() => {
@@ -331,7 +331,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
           title="Delete Recurring Appointment"
           size="sm"
         >
-          <Stack>
+          <Stack gap="md">
             <Text>How would you like to delete this recurring appointment?</Text>
             <Button 
               variant="light" 

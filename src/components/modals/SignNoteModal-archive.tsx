@@ -1,6 +1,7 @@
 import { Modal, Stack, Text, Button, Group, Paper, Divider } from '@mantine/core';
 import { useMedplumProfile } from '@medplum/react';
 import { useState } from 'react';
+import { Practitioner, Resource } from '@medplum/fhirtypes';
 
 interface SignNoteModalProps {
   opened: boolean;
@@ -8,9 +9,20 @@ interface SignNoteModalProps {
   onSign: () => Promise<void>;
 }
 
+// Type guard to check if profile is Practitioner
+function isPractitioner(profile: Resource | undefined): profile is Practitioner {
+  return profile?.resourceType === 'Practitioner';
+}
+
 export function SignNoteModal({ opened, onClose, onSign }: SignNoteModalProps): JSX.Element {
   const profile = useMedplumProfile();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  if (!isPractitioner(profile)) {
+    throw new Error('Only practitioners can sign notes');
+  }
+
+  const qualification = profile.qualification?.[0]?.code?.text || 'Ph.D.';
 
   const handleSign = async () => {
     try {
@@ -31,26 +43,26 @@ export function SignNoteModal({ opened, onClose, onSign }: SignNoteModalProps): 
       title="Sign and lock progress note"
       size="md"
     >
-      <Stack spacing="md">
-        <Stack spacing="xs">
+      <Stack gap="md">
+        <Stack gap="xs">
           <Text fw={500}>Your name</Text>
           <Text>{profile?.name?.[0]?.given?.[0]} {profile?.name?.[0]?.family}</Text>
         </Stack>
 
-        <Stack spacing="xs">
+        <Stack gap="xs">
           <Text fw={500}>Credentials</Text>
-          <Text>{profile?.qualification?.[0]?.code?.text || 'Ph.D.'}</Text>
+          <Text>{qualification}</Text>
         </Stack>
 
         <Divider my="md" />
 
         <Paper withBorder p="md" bg="gray.0">
-          <Stack spacing="xs">
+          <Stack gap="xs">
             <Text fw={500}>Preview</Text>
             <Text>{profile?.name?.[0]?.given?.[0]} {profile?.name?.[0]?.family}</Text>
             <Text size="sm">
               Signed by {profile?.name?.[0]?.given?.[0]} {profile?.name?.[0]?.family}
-              {profile?.qualification?.[0]?.code?.text && `, ${profile.qualification[0].code.text}`}
+              {qualification && `, ${qualification}`}
             </Text>
             <Text size="sm" c="dimmed">
               {new Date().toLocaleString('en-US', {
@@ -65,10 +77,10 @@ export function SignNoteModal({ opened, onClose, onSign }: SignNoteModalProps): 
         </Paper>
 
         <Text size="sm" c="dimmed">
-          Signed and locked notes are uneditable. <Text component="span" c="blue" sx={{ cursor: 'pointer' }}>Learn about signing and locking</Text>
+          Signed and locked notes are uneditable. <Text component="span" c="blue" style={{ cursor: 'pointer' }}>Learn about signing and locking</Text>
         </Text>
 
-        <Group position="right" mt="md">
+        <Group justify="flex-end" mt="md">
           <Button variant="subtle" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>

@@ -12,3 +12,9 @@ export function addMinutesToTime(time: string, minutes: number): string {
     const [endHours, endMins] = endTime.split(':').map(Number);
     return (endHours * 60 + endMins) - (startHours * 60 + startMins);
   }
+
+export function getDefaultAppointmentTime(date: Date = new Date()): Date {
+  const defaultTime = new Date(date);
+  defaultTime.setHours(9, 0, 0, 0); // Set to 9:00 AM
+  return defaultTime;
+}
