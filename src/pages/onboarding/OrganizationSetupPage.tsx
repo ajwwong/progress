@@ -17,7 +17,10 @@ export function OrganizationSetupPage(): JSX.Element {
   const { updateOnboardingStep } = useOnboarding();
 
   useEffect(() => {
-    updateOnboardingStep(OnboardingStep.REGISTERED);
+    const initStep = async () => {
+      await updateOnboardingStep(OnboardingStep.REGISTERED);
+    };
+    initStep();
   }, [updateOnboardingStep]);
 
   const handleComplete = async () => {

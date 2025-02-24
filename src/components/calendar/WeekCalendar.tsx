@@ -2,7 +2,7 @@ import { Box, Paper, Text } from '@mantine/core';
 import { format, startOfWeek, isSameDay, isToday, differenceInMinutes, parse, addDays } from 'date-fns';
 import { useDroppable } from '@dnd-kit/core';
 import { AppointmentItem } from './AppointmentItem';
-import type { Appointment } from '../types/calendar';
+import type { Appointment } from '../../types/calendar';
 
 interface WeekCalendarProps {
   selectedDate: Date;

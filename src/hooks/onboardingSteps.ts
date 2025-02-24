@@ -1,10 +1,10 @@
 export enum OnboardingStep {
-  NOT_STARTED = 'NOT_STARTED',
-  REGISTERED = 'REGISTERED',                   // After test patient registration
-  ORGANIZATION_SETUP = 'ORGANIZATION_SETUP',    // During organization setup
-  ORGANIZATION_CREATED = 'ORGANIZATION_CREATED', // After organization setup, before logoff
-  TRANSCRIPTION_TUTORIAL = 'TRANSCRIPTION_TUTORIAL',
-  COMPLETED = 'COMPLETED'
+  NOT_STARTED = 0,
+  REGISTERED = 1,
+  ORGANIZATION_SETUP = 2,
+  ORGANIZATION_CREATED = 3,
+  TRANSCRIPTION_TUTORIAL = 4,
+  COMPLETED = 5
 }
 
 // Optional: Add a comment explaining the temporary bypass

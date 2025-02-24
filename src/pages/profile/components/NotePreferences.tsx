@@ -4,22 +4,22 @@ import { useState } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
-import { Resource } from '@medplum/fhirtypes';
+import { Practitioner, Extension } from '@medplum/fhirtypes';
 
 export function NotePreferences(): JSX.Element {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Resource;
+  const profile = useMedplumProfile() as Practitioner;
   const [loading, setLoading] = useState(false);
   const [includeDatetime, setIncludeDatetime] = useState(false);
   const [deleteAfter30Days, setDeleteAfter30Days] = useState(false);
   const [referencePreference, setReferencePreference] = useState(
-    profile?.extension?.find(e => e.url === 'https://progress.care/fhir/reference-preference')?.valueString || 'client'
+    profile?.extension?.find((e: Extension) => e.url === 'https://progress.care/fhir/reference-preference')?.valueString || 'client'
   );
   const [quotePreference, setQuotePreference] = useState(
-    profile?.extension?.find(e => e.url === 'https://progress.care/fhir/quote-preference')?.valueString || 'exclude'
+    profile?.extension?.find((e: Extension) => e.url === 'https://progress.care/fhir/quote-preference')?.valueString || 'exclude'
   );
   const [selectedInterventions, setSelectedInterventions] = useState<string[]>(
-    JSON.parse(profile?.extension?.find(e => e.url === 'https://progress.care/fhir/interventions')?.valueString || '[]')
+    JSON.parse(profile?.extension?.find((e: Extension) => e.url === 'https://progress.care/fhir/interventions')?.valueString || '[]')
   );
 
   const handleNotePreferencesUpdate = async () => {

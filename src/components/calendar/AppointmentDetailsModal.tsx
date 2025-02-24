@@ -1,7 +1,7 @@
 import { Modal, Button, Group, Text, Stack, Select, Badge, Anchor, Paper, ActionIcon } from '@mantine/core';
 import { DatePickerInput, TimeInput } from '@mantine/dates';
 import { format, parse } from 'date-fns';
-import type { Appointment } from '../types/calendar';
+import type { Appointment } from '../../types/calendar';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { IconTrash } from '@tabler/icons-react';

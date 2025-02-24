@@ -1,72 +1,105 @@
-import { useMedplum } from '@medplum/react';
-import { useEffect, useState } from 'react';
+import { useMedplum, useMedplumProfile } from '@medplum/react';
+import { useState, useEffect } from 'react';
+import { Practitioner, Extension } from '@medplum/fhirtypes';
 import { OnboardingStep } from './onboardingSteps';
 
+export const ONBOARDING_STEP_URL = 'https://progress.care/fhir/onboarding-step';
+
 export interface UseOnboardingReturn {
-  currentStep: number;
-  setCurrentStep: (step: number) => void;
+  currentStep: OnboardingStep;
+  loading: boolean;
   updateOnboardingStep: (step: OnboardingStep) => Promise<void>;
-  isStepComplete: (step: OnboardingStep) => boolean;
+  isStepCompleted: (step: OnboardingStep) => boolean;
   hasCompletedOnboarding: boolean;
+  completeOnboarding: () => Promise<void>;
+  setCurrentStep: (step: OnboardingStep) => void;
 }
 
 export function useOnboarding(): UseOnboardingReturn {
   const medplum = useMedplum();
-  const [currentStep, setCurrentStep] = useState<number>(OnboardingStep.NOT_STARTED);
-  
+  const profile = useMedplumProfile() as Practitioner;
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>(OnboardingStep.NOT_STARTED);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    const checkOnboardingStatus = async () => {
-      console.log('useOnboarding: checkOnboardingStatus called');
+    if (profile) {
+      const onboardingExt = profile.extension?.find(
+        (e: Extension) => e.url === ONBOARDING_STEP_URL
+      );
+      console.log('Found onboarding extension:', onboardingExt);
       
-      if (!medplum) {
-        console.log('useOnboarding: medplum not available');
-        return;
+      let stepValue = onboardingExt?.valueInteger;
+      if (typeof stepValue === 'string') {
+        stepValue = OnboardingStep[stepValue as keyof typeof OnboardingStep];
       }
+      console.log('Processed step value:', stepValue);
       
-      try {
-        const profile = await medplum.getProfile();
-        console.log('useOnboarding: got profile', JSON.stringify(profile, null, 2));
-        
-        // Get onboarding step from profile extension
-        const onboardingStep = profile.extension?.find(
-          ext => ext.url === 'https://progress.care/fhir/onboarding-step'
-        )?.valueString as OnboardingStep || OnboardingStep.NOT_STARTED;
-        
-        console.log('useOnboarding: current step:', onboardingStep);
-        setCurrentStep(onboardingStep);
-        
-      } catch (error) {
-        console.error('Error checking onboarding status:', error);
-      }
-    };
-    checkOnboardingStatus();
-  }, [medplum]);
+      const validatedStep = typeof stepValue === 'number' && stepValue in OnboardingStep
+        ? stepValue
+        : OnboardingStep.NOT_STARTED;
+      console.log('Final validated step:', validatedStep);
+      
+      setCurrentStep(validatedStep);
+      setLoading(false);
+    }
+  }, [profile]);
 
   const updateOnboardingStep = async (step: OnboardingStep) => {
-    if (!medplum) return;
-    
+    if (!profile) return;
+
     try {
-      const profile = await medplum.getProfile();
-      await medplum.updateResource({
-        ...profile,
-        extension: [
-          ...(profile.extension?.filter(e => 
-            e.url !== 'https://progress.care/fhir/onboarding-step' &&
-            e.url !== 'https://progress.care/fhir/onboarding-complete'
-          ) || []),
-          {
-            url: 'https://progress.care/fhir/onboarding-step',
-            valueString: step
-          },
-          {
-            url: 'https://progress.care/fhir/onboarding-complete',
-            valueBoolean: step === OnboardingStep.COMPLETED
-          }
-        ]
+      // Get fresh profile to avoid conflicts
+      const currentProfile = await medplum.readResource('Practitioner', profile.id!);
+      
+      // Find existing onboarding extension
+      const extensions = currentProfile.extension || [];
+      const onboardingExtIndex = extensions.findIndex(
+        ext => ext.url === 'https://progress.care/fhir/onboarding-step'
+      );
+
+      // Create or update the extension
+      const onboardingExt = {
+        url: 'https://progress.care/fhir/onboarding-step',
+        valueInteger: step
+      };
+
+      if (onboardingExtIndex >= 0) {
+        extensions[onboardingExtIndex] = onboardingExt;
+      } else {
+        extensions.push(onboardingExt);
+      }
+
+      // Update the profile with new extension
+      const updatedProfile = await medplum.updateResource({
+        ...currentProfile,
+        extension: extensions
       });
+
+      // Force profile refresh
+      await medplum.getProfile();
+      
       setCurrentStep(step);
+      setLoading(false);
     } catch (error) {
       console.error('Error updating onboarding step:', error);
+      throw error;
+    }
+  };
+
+  const isStepCompleted = (step: OnboardingStep): boolean => {
+    return currentStep > step;
+  };
+
+  const hasCompletedOnboarding = currentStep === OnboardingStep.COMPLETED;
+
+  const completeOnboarding = async () => {
+    if (!profile) return;
+
+    try {
+      await updateOnboardingStep(OnboardingStep.COMPLETED);
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      throw error;
     }
   };
 
@@ -74,7 +107,9 @@ export function useOnboarding(): UseOnboardingReturn {
     currentStep,
     setCurrentStep,
     updateOnboardingStep,
-    isStepComplete: (step: OnboardingStep) => isStepComplete(currentStep, step),
-    hasCompletedOnboarding: currentStep === OnboardingStep.COMPLETED
+    isStepCompleted,
+    hasCompletedOnboarding,
+    loading,
+    completeOnboarding
   };
 }

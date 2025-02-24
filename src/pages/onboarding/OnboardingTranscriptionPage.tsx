@@ -67,6 +67,13 @@ const sampleDialog: DialogLine[] = [
   { speaker: 'Client', text: "Yes, I'd like that. I need something I can use when I start feeling overwhelmed." }
 ];
 
+const ensureCompositionId = (composition?: Composition): string => {
+  if (!composition?.id) {
+    throw new Error('No composition ID found');
+  }
+  return composition.id;
+};
+
 export function OnboardingPage({ 
   onTranscriptionStart, 
   onCompositionSaved, 
@@ -141,6 +148,9 @@ export function OnboardingPage({
 
         // Get the practitioner's organization from their membership
         const membership = await medplum.getProfile();
+        if (!membership) {
+          throw new Error('No practitioner profile found');
+        }
       {/*}}  const organizationReference = membership.access?.[0]?.parameter?.find(
           p => p.name === 'current_organization'
         )?.valueReference;
@@ -195,11 +205,11 @@ export function OnboardingPage({
             color: 'green'
           });
         }
-      } catch (error) {
-        console.error('Error in setupTestPatient:', error);
+      } catch (err: unknown) {
+        console.error('Error in setupTestPatient:', err);
         showNotification({
           title: 'Error Creating Sample Client',
-          message: error.message || 'An unexpected error occurred',
+          message: err instanceof Error ? err.message : 'An unexpected error occurred',
           color: 'red'
         });
       }
@@ -272,6 +282,10 @@ export function OnboardingPage({
 
       // Get the practitioner profile
       const profile = await medplum.getProfile();
+      if (!profile) {
+        throw new Error('No practitioner profile found');
+      }
+
       const practitionerName = profile.name?.[0] ? 
         `${profile.name[0].given?.[0] || ''} ${profile.name[0].family || ''}`.trim() : 
         'Unknown Practitioner';
@@ -290,10 +304,8 @@ export function OnboardingPage({
         date: new Date().toISOString(),
         title: 'Progress Notes',
         author: [{
-          reference: `Practitioner/${profile?.id}`,
-          display: profile?.name?.[0] ? 
-            `${profile.name[0].given?.[0] || ''} ${profile.name[0].family || ''}`.trim() : 
-            'Unknown Practitioner'
+          reference: `Practitioner/${profile.id}`,
+          display: practitionerName
         }],
         subject: {
           reference: `Patient/${selectedPatient.id}`,
@@ -309,14 +321,14 @@ export function OnboardingPage({
       onCompositionSaved?.();
       
       setIsSessionStarted(true);
-      await startRecording();
+      await startRecording(false);
       setOnboardingStep(1);
 
-    } catch (error) {
-      console.error('Error starting session:', error);
+    } catch (err: unknown) {
+      console.error('Error starting session:', err);
       showNotification({
         title: 'Error',
-        message: error.message || 'Failed to start session',
+        message: err instanceof Error ? err.message : 'Failed to start session',
         color: 'red'
       });
     }
@@ -328,27 +340,26 @@ export function OnboardingPage({
       
       const blob = await stopRecording();
       console.log('Recording stopped, blob available:', blob);
-      setIsSessionStarted(false);  // Add this line to hide controls
+      setIsSessionStarted(false);
 
-      
-      // SECOND TRIGGER POINT - Transcription Start
       setIsTranscribing(true);
       if (savedComposition?.id) {
         onTranscriptionStart?.(savedComposition.id);
-        onCompositionSaved?.(); // Update list with transcribing status
+        onCompositionSaved?.();
       }
       
-      setOnboardingStep(2);
-      const transcriptText = await handleTranscribeAudio(blob, savedComposition?.id);
+      const transcriptText = await handleTranscribeAudio(
+        blob, 
+        ensureCompositionId(savedComposition)
+      );
       
       if (!transcriptText) {
         throw new Error('No transcript was generated');
       }
       
-      // THIRD TRIGGER POINT - Transcription End
       setIsTranscribing(false);
       onTranscriptionEnd?.();
-      onCompositionSaved?.(); // Update list after transcription
+      onCompositionSaved?.();
       
       console.log('Generating note...');
       setIsGeneratingNote(true);
@@ -357,16 +368,29 @@ export function OnboardingPage({
       }
       
       try {
-        await generateNote(transcriptText, selectedPatient!, selectedTemplate!, savedComposition!.id);
+        await generateNote(
+          transcriptText, 
+          selectedPatient!, 
+          selectedTemplate!, 
+          ensureCompositionId(savedComposition)
+        );
         console.log('Note generation complete');
         
         await handleIncrementUsage();
         onCompositionSaved?.();
         
-        // Mark onboarding as complete
-        await handleCompleteOnboarding();
+        // First update to tutorial step, then complete onboarding
+        await updateOnboardingStep(OnboardingStep.TRANSCRIPTION_TUTORIAL);
+        await completeOnboarding();
+        console.log('Current onboarding completion status:', hasCompletedOnboarding);
         
-        setOnboardingStep(3);
+        showNotification({
+          title: '🎉 Tutorial Complete!',
+          message: 'You\'ve completed the transcription tutorial! You can now use this feature in your practice.',
+          color: 'green',
+          autoClose: false
+        });
+        
       } finally {
         setIsGeneratingNote(false);
         if (savedComposition?.id) {
@@ -377,30 +401,7 @@ export function OnboardingPage({
       console.error('Error in workflow:', error);
       showNotification({
         title: 'Error',
-        message: error instanceof Error ? error.message : 'An unexpected error occurred',
-        color: 'red'
-      });
-    }
-  };
-
-  const handleCompleteOnboarding = async () => {
-    try {
-      showNotification({
-        title: '🎉 Tutorial Complete!',
-        message: 'You\'ve completed the transcription tutorial! You can now use this feature in your practice.',
-        color: 'green',
-        autoClose: false
-      });
-      
-      // Update onboarding step
-      await updateOnboardingStep(OnboardingStep.TRANSCRIPTION_TUTORIAL);
-      
-      navigate('/dashboard');
-    } catch (error) {
-      console.error('Error completing onboarding:', error);
-      showNotification({
-        title: 'Error',
-        message: 'Failed to update onboarding progress',
+        message: error instanceof Error ? error.message : 'An error occurred during the workflow',
         color: 'red'
       });
     }
@@ -408,7 +409,7 @@ export function OnboardingPage({
 
   const handleIncrementUsage = async () => {
     try {
-      await incrementUsage('transcription');
+      await incrementUsage(); // Removed the argument as per the lint error
     } catch (error) {
       handleError(error);
     }
@@ -427,9 +428,8 @@ export function OnboardingPage({
     <AppShell
       navbar={{
         width: 300,
-        collapsed: false,
         breakpoint: 'sm',
-        collapsible: false
+        collapsed: { mobile: false, desktop: false }
       }}
     >
       <Container size="sm" mt="xl">
@@ -450,7 +450,7 @@ export function OnboardingPage({
             {/* Onboarding Progress */}
             <Paper p="md" mb="xl" withBorder>
               <Stack gap="xs">
-                <Group position="apart">
+                <Group style={{ position: 'relative' }}>
                   <Text size="sm" fw={500}>Onboarding Progress</Text>
                   <Text size="sm" c="dimmed">{Math.round((onboardingStep / 3) * 100)}%</Text>
                 </Group>
@@ -552,7 +552,7 @@ export function OnboardingPage({
                       </Box>
                     ))}
                     {displayedLines.length === sampleDialog.length && (
-                      <Text fw={500} c="dimmed">Press 'End session' and let the magic happen</Text>
+                      <Text fw={500} c="dimmed">Press 'End session' and let your note be generated</Text>
                     )}
                   </Stack>
 
@@ -643,7 +643,14 @@ export function OnboardingPage({
                         isRecording={isRecording}
                         isPaused={isPaused}
                       />
-                      <Group align="center" spacing="xs" style={{ maxWidth: '100%', margin: '0 auto' }}>
+                      <Group 
+                        align="center"
+                        style={{ 
+                          maxWidth: '800px',
+                          margin: '0 auto',
+                          gap: '1rem'
+                        }}
+                      >
                         <Text size="sm" style={{ color: '#9e9e9e', fontSize: '14px' }}>Microphone</Text>
                         <Select
                           placeholder="Select a microphone"
@@ -652,7 +659,7 @@ export function OnboardingPage({
                             label: device.label || `Microphone ${device.deviceId}`
                           }))}
                           value={selectedDevice}
-                          onChange={setSelectedDevice}
+                          onChange={(value, option) => setSelectedDevice(value || '')}
                           styles={{
                             input: {
                               height: '45px',
@@ -668,21 +675,16 @@ export function OnboardingPage({
                               '&:focus': {
                                 borderColor: '#cfd8dc',
                                 boxShadow: '0 0 0 2px rgba(207, 216, 220, 0.3)',
-                              }
+                              },
+                              '&[data-selected]': {
+                                backgroundColor: '#cfd8dc',
+                                color: 'black',
+                              },
                             },
                             dropdown: {
                               borderRadius: '8px',
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
                             },
-                            item: {
-                              '&[data-selected]': {
-                                backgroundColor: '#cfd8dc',
-                                color: 'black',
-                              },
-                              '&[data-hovered]': {
-                                backgroundColor: '#f5f5f5',
-                              }
-                            }
                           }}
                         />
                       </Group>
@@ -690,13 +692,13 @@ export function OnboardingPage({
                   )}
 
                   {/* Transcription View */}
-                  {(transcript || psychNote) && (
+                  {/*{(transcript || psychNote) && (
                     <TranscriptionView
                       transcript={transcript}
                       psychNote={psychNote}
                       status={processingStatus}
                     />
-                  )}
+                  )}*/}
 
                   
                 </>

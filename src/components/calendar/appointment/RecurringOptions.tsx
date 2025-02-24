@@ -49,8 +49,8 @@ export function RecurringOptions({
 
   return (
     <Paper p="md" radius="md" withBorder>
-      <Stack spacing="lg">
-        <Group spacing="xs">
+      <Stack gap="lg">
+        <Group gap="xs">
           <Text size="sm" w={80}>Every</Text>
           <Select 
             data={FREQUENCY_OPTIONS}
@@ -70,9 +70,8 @@ export function RecurringOptions({
             size="sm"
           />
         </Group>
-
         
-        <Group spacing="xs">
+        <Group gap="xs">
           <Text size="sm" w={80}>End after</Text>
           <Select
             data={OCCURRENCE_OPTIONS}

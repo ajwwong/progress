@@ -2,7 +2,7 @@ import { Box, Paper, Text } from '@mantine/core';
 import { format, isToday, differenceInMinutes, parse } from 'date-fns';
 import { useDndContext, useDroppable } from '@dnd-kit/core';
 import { AppointmentItem } from './AppointmentItem';
-import type { Appointment } from '../types/calendar';
+import type { Appointment } from '../../types/calendar';
 
 interface DayCalendarProps {
   selectedDate: Date;

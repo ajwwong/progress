@@ -5,7 +5,7 @@ import { DateTimeSelector } from './appointment/DateTimeSelector';
 import { AppointmentTypeSelector } from './appointment/AppointmentTypeSelector';
 import { RecurringOptions } from './appointment/RecurringOptions';
 import { useAppointmentForm } from './appointment/useAppointmentForm';
-import type { Appointment } from '../types/calendar';
+import type { Appointment } from '../../types/calendar';
 
 interface AppointmentModalProps {
   opened: boolean;

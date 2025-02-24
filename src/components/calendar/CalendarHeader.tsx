@@ -78,7 +78,7 @@ export function CalendarHeader({
   return (
     <Group justify="space-between" align="center">
       <Group>
-        <Group spacing={8}>
+        <Group gap={8}>
           <TodayButton onClick={handleToday} />
           <Button.Group>
             <Button 

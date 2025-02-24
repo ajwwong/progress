@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ProfileResource } from '@medplum/fhirtypes';
+import { Practitioner } from '@medplum/fhirtypes';
 
 export function InvitePage(): JSX.Element {
   const medplum = useMedplum();
@@ -13,7 +13,7 @@ export function InvitePage(): JSX.Element {
   const location = useLocation();
   const [loading, setLoading] = useState(false);
   const defaultRole = location.state?.defaultRole || 'Practitioner';
-  const profile = medplum.getProfile() as ProfileResource;
+  const profile = medplum.getProfile() as Practitioner;
   
   // Get project ID from the profile's project membership
   const projectId = profile.meta?.project;

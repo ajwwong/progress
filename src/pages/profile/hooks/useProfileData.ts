@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { Resource } from '@medplum/fhirtypes';
+import { Practitioner, Extension } from '@medplum/fhirtypes';
 
 export function useProfileData() {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Resource;
+  const profile = useMedplumProfile() as Practitioner;
   const [profileLoading, setProfileLoading] = useState(true);
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -20,17 +20,17 @@ export function useProfileData() {
       setEmail(profile.telecom?.find(t => t.system === 'email')?.value || '');
       
       const referenceExt = profile.extension?.find(
-        e => e.url === 'https://progress.care/fhir/reference-preference'
+        (e: Extension) => e.url === 'https://progress.care/fhir/reference-preference'
       );
       setReferencePreference(referenceExt?.valueString || 'client');
       
       const quoteExt = profile.extension?.find(
-        e => e.url === 'https://progress.care/fhir/quote-preference'
+        (e: Extension) => e.url === 'https://progress.care/fhir/quote-preference'
       );
       setQuotePreference(quoteExt?.valueString || 'exclude');
 
       const interventionsExt = profile.extension?.find(
-        e => e.url === 'https://progress.care/fhir/interventions'
+        (e: Extension) => e.url === 'https://progress.care/fhir/interventions'
       );
       if (interventionsExt?.valueString) {
         setSelectedInterventions(JSON.parse(interventionsExt.valueString));

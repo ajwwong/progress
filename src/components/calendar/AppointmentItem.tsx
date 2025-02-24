@@ -1,7 +1,7 @@
 import { Box, Text, Group } from '@mantine/core';
 import { format } from 'date-fns';
 import { useDraggable } from '@dnd-kit/core';
-import type { Appointment } from '../types/calendar';
+import type { Appointment } from '../../types/calendar';
 import { appointmentTypes } from './constants';
 
 interface AppointmentItemProps {

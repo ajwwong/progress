@@ -19,7 +19,7 @@ export function SignInPage(): JSX.Element {
       //projectId="bd5c50fc-d625-49a8-8aea-17f7e8b59c76"
       onSuccess={handleSignInSuccess}
     >
-      <Stack align="center" spacing="xs">
+      <Stack ta="center" gap="xs">
         <Image
           src="/droplet.png"
           alt="Practice Harbor Logo"
@@ -30,15 +30,12 @@ export function SignInPage(): JSX.Element {
           style={{ width: 48, height: 48 }}
         />
         <Title
-          align="center"
-          sx={(theme) => ({
-            fontFamily: `Greycliff CF, ${theme.fontFamily}`,
-            fontWeight: 900
-          })}
+          ta="center"
+          fw={500}
         >
           Sign in to Progress Notes
         </Title>
-        <Text color="dimmed" size="sm" align="center" mt={5}>
+        <Text color="dimmed" size="sm" ta="center" mt={5}>
           Welcome back.  Glad you're here.
         </Text>
       </Stack>

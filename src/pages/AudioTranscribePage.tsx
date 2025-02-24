@@ -51,6 +51,14 @@ const sessionTypeData: SegmentedControlItem[] = [
   { value: 'telehealth', label: 'Headphones' }
 ];
 
+// Add this type guard function
+const ensureCompositionId = (composition?: { id?: string }): string => {
+  if (!composition?.id) {
+    throw new Error('No composition ID found');
+  }
+  return composition.id;
+};
+
 export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, onTranscriptionEnd, onGeneratingStart, onGeneratingEnd }: AudioTranscribePageProps): JSX.Element {
   const medplum = useMedplum();
   const { templates } = useTemplates();
@@ -94,7 +102,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
   const { usageData, incrementUsage, canUseSession } = useProfileUsage();
   const { audioDevices, selectedDevice, setSelectedDevice } = useAudioDevices();
-
+  
   // Set initial values from location state
   useEffect(() => {
     if (location.state?.selectedPatient) {
@@ -142,16 +150,6 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
       setSelectedTemplate(template);
     }
   }, [location.state, templates]);
-
-  useEffect(() => {
-    if (isRecording) {
-      const interval = setInterval(() => {
-        setIsBlinking((prev: boolean) => !prev);
-      }, 1000);
-      return () => clearInterval(interval);
-    }
-    return undefined;
-  }, [isRecording]);
 
   const handleStartRecording = async () => {
     if (!canUseSession) {
@@ -295,7 +293,12 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
     }
     try {
       console.log('Starting note generation...');
-      const transcriptText = await generateNote(transcript, selectedPatient, selectedTemplate, savedComposition.id);
+      const transcriptText = await generateNote(
+        transcript, 
+        selectedPatient, 
+        selectedTemplate, 
+        ensureCompositionId(savedComposition)
+      );
       console.log('Note generation completed successfully');
       
       await incrementUsage();
@@ -377,7 +380,12 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
         onGeneratingStart?.(savedComposition.id);
       }
       try {
-        await generateNote(transcriptText, selectedPatient, selectedTemplate, savedComposition!.id);
+        await generateNote(
+          transcriptText, 
+          selectedPatient, 
+          selectedTemplate, 
+          ensureCompositionId(savedComposition)
+        );
         console.log('Note generation complete');
         
         await incrementUsage();
@@ -409,12 +417,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   return (
     <Container size="sm" mt="xl">
       {!usageData.isPro && (
-        <Group 
-          position="right" 
-          mb="md"
-          spacing="xs"
-          style={{ opacity: 0.75 }}
-        >
+        <Group justify="right" mb="md" style={{ opacity: isRecording ? 0.5 : 1 }}>
           <Tooltip 
             label={`${usageData.sessionsUsed} of ${usageData.sessionsLimit} sessions used this month`}
             position="bottom"
@@ -495,12 +498,10 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
               <Select
                 label="Format"
                 placeholder="Select a template"
-                data={templates
-                  .filter(t => t.type === 'progress')
-                  .map(t => ({
-                    value: t.id!,
-                    label: t.name
-                  }))}
+                data={templates.map(t => ({
+                  value: t.id || '',
+                  label: t.name || 'Untitled Template'
+                }))}
                 value={selectedTemplate?.id}
                 onChange={(value) => {
                   const template = templates.find(t => t.id === value);
@@ -568,12 +569,11 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 </Button>
               ) : (
                 <Group 
-                  justify="center" 
+                  align="center" 
                   style={{ 
-                    width: '100%',
-                    gap: '20px',
-                    opacity: 1,
-                    transform: 'translateY(0)'
+                    maxWidth: '100%', 
+                    margin: '0 auto',
+                    gap: 'var(--mantine-spacing-md)'
                   }}
                 >
                   <Button
@@ -676,7 +676,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                   isRecording={isRecording}
                   isPaused={isPaused}
                 />
-                <Group align="center" spacing="xs" style={{ maxWidth: '100%', margin: '0 auto' }}>
+                <Group align="center" style={{ maxWidth: '100%', margin: '0 auto' }}>
                   <Text size="sm" style={{ color: '#9e9e9e', fontSize: '14px' }}>Microphone</Text>
                   <Select
                     placeholder="Select a microphone"
@@ -706,13 +706,11 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                       dropdown: {
                         borderRadius: '8px',
                         boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)',
-                      },
-                      item: {
-                        '&[data-selected]': {
+                        '[data-selected]': {
                           backgroundColor: '#cfd8dc',
                           color: 'black',
                         },
-                        '&[data-hovered]': {
+                        '[data-hovered]': {
                           backgroundColor: '#f5f5f5',
                         }
                       }

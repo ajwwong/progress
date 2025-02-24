@@ -1,5 +1,5 @@
 import { MedplumClient } from '@medplum/core';
-import { Bot } from '@medplum/fhirtypes';
+import { Bot, Practitioner, Extension } from '@medplum/fhirtypes';
 
 interface TranscriptionResponse {
   message: string;
@@ -82,9 +82,9 @@ export class BotService {
       this.checkBotAvailability();
 
       // Get user's reference preference, default to 'client' if not set
-      const profile = await this.medplum.getProfile();
+      const profile = await this.medplum.getProfile() as Practitioner;
       const referenceExt = profile.extension?.find(
-        e => e.url === 'https://progress.care/fhir/reference-preference'
+        (e: Extension) => e.url === 'https://progress.care/fhir/reference-preference'
       );
       const referencePreference = referenceExt?.valueString || 'client';
 

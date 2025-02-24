@@ -47,7 +47,7 @@ export function RegisterPage(): JSX.Element {
 
             <Divider my="xl" />
 
-            <SimpleGrid cols={2} gap={50}>
+            <SimpleGrid cols={2} spacing="xl">
               <Paper shadow="md" radius="md" p={35} withBorder>
                 <Stack gap="lg">
                   <ThemeIcon size={56} radius="md" variant="light" color="blue">

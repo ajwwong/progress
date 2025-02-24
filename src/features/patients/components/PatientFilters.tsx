@@ -23,7 +23,7 @@ export function PatientFilters({
   onSortByChange
 }: PatientFiltersProps) {
   return (
-    <Stack spacing="md">
+    <Stack gap="md">
       <TextInput
         placeholder="Search patients by name..."
         leftSection={<IconSearch size={16} />}
@@ -31,7 +31,7 @@ export function PatientFilters({
         onChange={(e) => onSearchChange(e.currentTarget.value)}
         size="md"
       />
-      <Group grow spacing="md">
+      <Group grow gap="md">
         <Select
           leftSection={<IconUsers size={16} />}
           placeholder="Status"

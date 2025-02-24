@@ -110,7 +110,7 @@ export function ProfileSettings(): JSX.Element {
                 'Marriage and Family Therapy'
               ]}
               value={specialty}
-              onChange={setSpecialty}
+              onChange={(value) => setSpecialty(value || '')}
             />
 
             <Button color="blue" onClick={handleProfileUpdate} loading={loading}>

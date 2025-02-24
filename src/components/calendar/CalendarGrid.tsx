@@ -1,7 +1,7 @@
 import { Grid, Paper } from '@mantine/core';
 import { format, isSameMonth } from 'date-fns';
 import { CalendarCell } from './CalendarCell';
-import type { Appointment } from '../types/calendar';
+import type { Appointment } from '../../types/calendar';
 
 interface CalendarGridProps {
   days: Date[];
