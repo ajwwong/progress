@@ -1,4 +1,4 @@
-import { MedplumClient } from '@medplum/core';
+/*import { MedplumClient } from '@medplum/core';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -49,4 +49,4 @@ export default async function handler(req, res) {
     console.error('Registration error:', err);
     res.status(500).json({ error: 'Registration failed' });
   }
-}
+}*/

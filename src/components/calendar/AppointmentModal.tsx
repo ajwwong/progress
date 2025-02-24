@@ -92,10 +92,8 @@ export function AppointmentModal({
           <RecurringOptions
             frequency={state.frequency}
             occurrences={state.occurrences}
-            selectedDays={state.selectedDays}
             onFrequencyChange={(frequency) => setState(prev => ({ ...prev, frequency }))}
             onOccurrencesChange={(occurrences) => setState(prev => ({ ...prev, occurrences }))}
-            onSelectedDaysChange={(selectedDays) => setState(prev => ({ ...prev, selectedDays }))}
           />
         )}
 

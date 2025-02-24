@@ -3,7 +3,13 @@ import { writeFileSync } from 'fs';
 import { Buffer } from 'node:buffer';
 import { createClient } from '@deepgram/sdk';
 
-export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
+// Define the expected input type
+interface AudioTranscribeInput {
+  type: string;
+  binaryId: string;
+}
+
+export async function handler(medplum: MedplumClient, event: BotEvent<AudioTranscribeInput>): Promise<any> {
   try {
     // Get the API key from secrets
     const deepgramApiKey = event.secrets['DEEPGRAM_API_KEY']?.valueString;
@@ -57,8 +63,8 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
   } catch (error) {
     return {
       error: 'Failed to process',
-      details: error.message,
-      stack: error.stack
+      details: (error as Error).message,
+      stack: (error as Error).stack
     };
   }
 }

@@ -19,7 +19,7 @@ export function AppointmentTypeSelector({
       <Select
         label="Appointment Type"
         value={type}
-        onChange={(value) => onTypeChange(value || appointmentTypes[1].value)}
+        onChange={(value) => onTypeChange(value as 'ROUTINE' | 'FOLLOWUP')}
         data={appointmentTypes}
         required
       />

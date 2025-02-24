@@ -1,18 +1,11 @@
-import { Stack, Group, Select, Text, SegmentedControl, Paper } from '@mantine/core';
+import { Stack, Group, Select, Text, Paper } from '@mantine/core';
 
 interface RecurringOptionsProps {
   frequency: string;
   occurrences: number;
-  selectedDays: string[];
   onFrequencyChange: (value: string) => void;
   onOccurrencesChange: (value: number) => void;
-  onSelectedDaysChange: (value: string[]) => void;
 }
-
-const WEEKDAYS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => ({
-  value: index.toString(),
-  label: day
-}));
 
 const FREQUENCY_OPTIONS = Array.from({ length: 8 }, (_, i) => ({
   value: (i + 1).toString(),
@@ -27,10 +20,8 @@ const OCCURRENCE_OPTIONS = Array.from({ length: 52 }, (_, i) => ({
 export function RecurringOptions({
   frequency,
   occurrences,
-  selectedDays,
   onFrequencyChange,
   onOccurrencesChange,
-  onSelectedDaysChange,
 }: RecurringOptionsProps) {
   const interval = frequency.startsWith('every') ? frequency.split('-')[1] : '1';
   const period = frequency.includes('month') ? 'month' : 'week';

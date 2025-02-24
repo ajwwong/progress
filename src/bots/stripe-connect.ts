@@ -1,10 +1,10 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+/*import { BotEvent, MedplumClient } from '@medplum/core';
 import Stripe from 'stripe';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
-  const { practitionerId } = event.input;
+  const { practitionerId } = event.input as { practitionerId: string };
 
   try {
     // Create Stripe Connect account link
@@ -44,4 +44,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       message: error instanceof Error ? error.message : 'Failed to create Stripe account'
     };
   }
-}
+}*/

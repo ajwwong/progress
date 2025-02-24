@@ -180,7 +180,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
                 <Text fw={500}>Status</Text>
                 <Select
                   value={editableAppointment.status}
-                  onChange={(value) => handleFieldChange({ status: value })}
+                  onChange={(value) => handleFieldChange({ status: value as 'booked' | 'cancelled' | 'noshow' })}
                   data={[
                     { value: 'booked', label: 'Show' },
                     { value: 'cancelled', label: 'Cancelled' },
@@ -293,7 +293,7 @@ export function AppointmentDetailsModal({ opened, onClose, appointment, onSave, 
             <Text>Are you sure you want to delete this appointment? It will be permanently removed.</Text>
             <Group justify="flex-end" mt="xl">
               <Button variant="light" onClick={() => setDeleteModalOpened(false)}>Cancel</Button>
-              <Button color="red" onClick={handleDelete}>Delete</Button>
+              <Button color="red" onClick={() => handleDelete()}>Delete</Button>
             </Group>
           </Stack>
         </Modal>

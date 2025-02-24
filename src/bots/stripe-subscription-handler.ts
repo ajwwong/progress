@@ -1,4 +1,4 @@
-import { BotEvent, MedplumClient } from '@medplum/core';
+/*import { BotEvent, MedplumClient } from '@medplum/core';
 import Stripe from 'stripe';
 
 const stripe = new Stripe('sk_test_51QbTYlIhrZKLmPheWQseDVQyhBpxkXm3XYi94NVM3VqRZA2Tto7YS4yvmaf6UpVfmvlczGtGEaYCzOAoFNTUYXdu006ORa4LmE', {
@@ -292,4 +292,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       }]
     };
   }
-}
+}*/

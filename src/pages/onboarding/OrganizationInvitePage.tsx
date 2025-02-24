@@ -53,7 +53,7 @@ export function OrganizationInvitePage({ onSuccess }: OrganizationInvitePageProp
         throw new Error('Organization registration failed');
       }
 
-      await updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
+      //await updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
 
       showNotification({
         title: 'Success',

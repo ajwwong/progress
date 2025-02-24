@@ -1,4 +1,4 @@
-import { Box, Container, Title } from '@mantine/core';
+/*import { Box, Container, Title } from '@mantine/core';
 import { AsyncAutocomplete, useMedplum } from '@medplum/react';
 import { Patient } from '@medplum/fhirtypes';
 import { getDisplayString } from '@medplum/core';
@@ -82,4 +82,4 @@ export function PatientAutocompletePage(): JSX.Element {
       </Box>
     </Container>
   );
-}
+}*/

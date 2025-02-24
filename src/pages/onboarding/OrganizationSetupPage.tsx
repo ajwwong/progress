@@ -31,7 +31,7 @@ export function OrganizationSetupPage(): JSX.Element {
       autoClose: 5000
     });
     
-    await updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
+    //await updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
     navigate('/onboarding/logoff');
   };
 

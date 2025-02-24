@@ -37,7 +37,7 @@ export function AppointmentItem({
     ? (isBookedPastAppointment ? 'booked-past' : 'booked-future')
     : appointment.status;
   
-  const [bgColor, textColor] = statusColors[effectiveStatus] || statusColors['booked-future'];
+  const [bgColor, textColor] = statusColors[effectiveStatus as keyof typeof statusColors] || statusColors['booked-future'];
   const isStrikethrough = appointment.status === 'cancelled' || appointment.status === 'noshow';
 
   const baseStyles: React.CSSProperties = {

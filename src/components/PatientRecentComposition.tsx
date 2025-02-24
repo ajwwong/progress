@@ -46,7 +46,7 @@ export function PatientRecentComposition(): JSX.Element {
             const contentDiv = document.createElement('div');
             contentDiv.innerHTML = results[0].section[0].text.div;
             const textContent = contentDiv.textContent || 'No content available';
-            results[0].section[0].text = { div: textContent };
+            results[0].section[0].text = { div: textContent, status: 'generated' };
           }
           setLatestNote(results[0]);
         })

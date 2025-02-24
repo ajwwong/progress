@@ -1,4 +1,5 @@
 import { BotEvent, MedplumClient } from '@medplum/core';
+import { Organization } from '@medplum/fhirtypes';
 
 interface RegistrationInput {
   firstName: string;
@@ -52,7 +53,7 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Registrati
 
     // Create organization
     log('Creating organization: ' + organization);
-    const newOrg = await registrationClient.createResource({
+    const newOrg = await registrationClient.createResource<Organization>({
       resourceType: 'Organization',
       name: organization,
       meta: {
@@ -62,6 +63,12 @@ export async function handler(medplum: MedplumClient, event: BotEvent<Registrati
         }]
       }
     });
+
+    // Verify organization was created successfully
+    if (!newOrg.id) {
+      throw new Error('Organization creation failed - no ID returned');
+    }
+
     log('Organization created: ' + newOrg.id);
 
     // Create practitioner invite

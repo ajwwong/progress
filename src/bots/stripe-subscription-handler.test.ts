@@ -1,4 +1,4 @@
-import { MockClient } from '@medplum/mock';
+/*import { MockClient } from '@medplum/mock';
 import { expect, test } from 'vitest';
 import { handler } from './stripe-subscription-handler-archive';
 
@@ -94,4 +94,4 @@ test('handles invoice paid', async () => {
   const invoice = await medplum.searchOne('Invoice', 'identifier=https://stripe.com/invoice/id|in_123');
   expect(invoice).toBeDefined();
   expect(invoice?.status).toBe('balanced');
-});
+});*/

@@ -65,16 +65,14 @@ export function AudioControls({
           <Group justify="space-between" align="center">
             {!isPaused && (
               <Box
-                styles={(theme) => ({
-                  root: {
-                    width: 8,
-                    height: 8,
-                    borderRadius: '50%',
-                    backgroundColor: theme.colors.red[6],
-                    opacity: isBlinking ? 1 : 0.3,
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  backgroundColor: 'red',
+                  opacity: isBlinking ? 1 : 0.3,
                     transition: 'opacity 0.3s ease'
-                  }
-                })}
+                }}
               />
             )}
             <Text size="sm" c="dimmed" style={{ flex: 1, textAlign: 'center' }}>

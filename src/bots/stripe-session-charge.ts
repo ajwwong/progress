@@ -2,7 +2,7 @@ import { BotEvent, MedplumClient } from '@medplum/core';
 import { Appointment, Invoice } from '@medplum/fhirtypes';
 import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
+/*const stripe = new Stripe(process.env.STRIPE_SECRET_KEY as string);
 const SESSION_FEE = 15000; // $150.00 in cents
 
 export async function handler(medplum: MedplumClient, event: BotEvent): Promise<any> {
@@ -118,4 +118,4 @@ export async function handler(medplum: MedplumClient, event: BotEvent): Promise<
       message: error instanceof Error ? error.message : 'Payment processing failed'
     };
   }
-}
+}*/

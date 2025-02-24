@@ -74,13 +74,15 @@ const DEFAULT_TEMPLATES: Questionnaire[] = [
 
 // Default template based on the provided example
 const defaultTemplate: NoteTemplate = {
+  resourceType: 'Questionnaire',
+  status: 'active',
   id: '1',
   name: 'Standard Progress Note',
   type: 'progress',
   sections: [
     {
       title: 'Subjective & History',
-      content: `Chief Complaint:
+      sampleContent: `Chief Complaint:
 [Patient] expresses concerns about [specific symptoms] over the past [timeframe], significantly impacting [areas of daily life].
 
 History of Present Illness:
@@ -91,11 +93,11 @@ Current Medications:
     },
     {
       title: 'Mental Status Exam',
-      content: `[Patient] appeared [appearance] and oriented to [orientation details]. Speech was [speech characteristics]. [Patient]'s affect was [affect description], and mood appeared [mood description]. There were [presence/absence] of psychomotor agitation or retardation. Eye contact was [quality]. Social behavior was [description]. Vital signs were [measurements]. [Additional observations]. [Patient] reported [substance use status]. Insight and judgment were [assessment].`
+      sampleContent: `[Patient] appeared [appearance] and oriented to [orientation details]. Speech was [speech characteristics]. [Patient]'s affect was [affect description], and mood appeared [mood description]. There were [presence/absence] of psychomotor agitation or retardation. Eye contact was [quality]. Social behavior was [description]. Vital signs were [measurements]. [Additional observations]. [Patient] reported [substance use status]. Insight and judgment were [assessment].`
     },
     {
       title: 'Assessment & Plan',
-      content: `Assessment:
+      sampleContent: `Assessment:
 [Patient] presents with [symptoms/conditions]. Current [treatment/intervention] appears to be [effectiveness assessment].
 
 Plan:
@@ -148,7 +150,7 @@ export function useTemplates() {
         })) || []
       }));
       
-      setTemplates(loadedTemplates);
+      setTemplates(loadedTemplates as NoteTemplate[]);
     } catch (error) {
       console.error('Error loading templates:', error);
       setError(error instanceof Error ? error.message : 'Failed to load templates');
@@ -179,7 +181,7 @@ export function useTemplates() {
           text: section.title,
           type: 'text',
           initial: [{
-            valueString: section.content
+            valueString: section.sampleContent
           }]
         }))
       };

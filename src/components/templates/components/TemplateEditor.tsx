@@ -15,13 +15,13 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
     const newSections = [...editingTemplate.sections];
     newSections[index] = {
       ...newSections[index],
-      content
+      sampleContent: content
     };
     setEditingTemplate({ ...editingTemplate, sections: newSections });
   };
 
   return (
-    <Stack spacing="md">
+    <Stack gap="md">
       <TextInput
         label="Template Name"
         value={editingTemplate.name}
@@ -33,7 +33,7 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
         <Box key={index}>
           <Text fw={500} mb="xs">{section.title}</Text>
           <Textarea
-            value={section.content}
+            value={section.sampleContent}
             onChange={(e) => handleSectionChange(index, e.target.value)}
             minRows={10}
             autosize
@@ -41,7 +41,7 @@ export function TemplateEditor({ template, onSave, onCancel }: TemplateEditorPro
         </Box>
       ))}
 
-      <Group position="right" mt="xl">
+      <Group justify="flex-end" mt="xl">
         <Button variant="light" onClick={onCancel}>
           Cancel
         </Button>

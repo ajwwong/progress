@@ -54,7 +54,7 @@ export function TemplateCard({ template, onEdit, onDelete }: TemplateCardProps) 
                   color: 'var(--mantine-color-gray-7)'
                 }}
               >
-                {section.content}
+                {section.sampleContent}
               </Text>
             </Box>
           ))}

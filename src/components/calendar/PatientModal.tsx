@@ -81,7 +81,7 @@ export function PatientModal({ opened, onClose, onSuccess }: PatientModalProps):
       overlayProps={{ opacity: 0.3, blur: 2 }}
     >
       <Box style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-        <Stack spacing="sm" p="md" style={{ flex: 1 }}>
+        <Stack gap="sm" p="md" style={{ flex: 1 }}>
           <Group grow>
             <TextInput
               label="First Name"

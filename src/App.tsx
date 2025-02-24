@@ -1,4 +1,4 @@
-import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile } from '@medplum/react';
+import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile, NavbarLink } from '@medplum/react';
 import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconSettings, IconAlertTriangle, IconMailOpened } from '@tabler/icons-react';
 import { Suspense, useState, useEffect } from 'react';
 import { Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
@@ -14,7 +14,6 @@ import { SignInPage } from './pages/SignInPage';
 import { AudioTranscribePage } from './pages/AudioTranscribePage';
 import { useCompositions } from './hooks/useCompositions';
 import { NoteView } from './pages/NoteView';
-import { PatientAutocompletePage } from './pages/PatientAutocomplete';
 import { RegisterPage } from './pages/RegisterPage';
 import { CalendarPage } from './pages/CalendarPage';
 import { createContext } from 'react';
@@ -25,7 +24,6 @@ import { TemplateRoutes } from './components/templates/TemplateRoutes';
 import { Box, Button, Text, Stack, Loader, Group } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import '@mantine/notifications/styles.css';
-import { OrganizationInvitePage } from './pages/onboarding/OrganizationInvitePage';
 import { InvitePage } from './pages/InvitePage';
 import { OnboardingPage } from './pages/onboarding/OnboardingTranscriptionPage';
 import { DashboardPage } from './pages/DashboardPage';
@@ -41,12 +39,6 @@ export const CalendarContext = createContext<{
   showNewAppointmentModal: false,
   setShowNewAppointmentModal: () => {},
 });
-
-interface NavbarLink {
-  icon: JSX.Element;
-  label: JSX.Element | string;
-  href: string;
-}
 
 export function App(): JSX.Element | null {
   const medplum = useMedplum();
@@ -301,18 +293,22 @@ export function App(): JSX.Element | null {
     const yesterday = new Date(today);
     yesterday.setDate(yesterday.getDate() - 1);
 
+    const formattedTime = date
+      .toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+      .replace(' ', '\u00A0'); // Replace the space between time and AM/PM with non-breaking space
+
     if (date.toDateString() === today.toDateString()) {
-      return `Today at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+      return `Today\u00A0at\u00A0${formattedTime}`;
     }
     if (date.toDateString() === yesterday.toDateString()) {
-      return `Yesterday at ${date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`;
+      return `Yesterday\u00A0at\u00A0${formattedTime}`;
     }
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       hour: 'numeric',
       minute: '2-digit'
-    });
+    }).replace(' ', '\u00A0'); // Also replace space in the full date format
   };
 
   const calendarContextValue = { showNewAppointmentModal, setShowNewAppointmentModal };
@@ -409,22 +405,9 @@ export function App(): JSX.Element | null {
                         )}
                       </div>
                     ),
-                    label: (
-                      <Group justify="space-between" wrap="nowrap" w="100%" pl={4}>
-                        <div style={{ lineHeight: 1.2, flex: 1 }}>
-                          <Text 
-                            fw={500} 
-                            truncate="end" 
-                            c={isViewed(comp) ? 'dimmed' : undefined}
-                          >
-                            {comp.subject?.display || 'Unknown Patient'}
-                          </Text>
-                          <Text size="xs" c="dimmed">{formatDate(comp.date)}</Text>
-                        </div>
-                      </Group>
-                    ),
+                    label: `${comp.subject?.display || 'Unknown Patient'} - ${formatDate(comp.date)}`,
                     href: `/composition/${comp.id}`
-                  }))
+                  })) as NavbarLink[]
                 },
               ]}
             >
@@ -451,7 +434,6 @@ export function App(): JSX.Element | null {
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/calendar" element={<CalendarPage />} />
                     <Route path="/patient" element={<PatientDirectoryPage />} />
-                    <Route path="/patient-search-test" element={<PatientAutocompletePage />} />
                     <Route 
                       path="/audio" 
                       element={
@@ -480,7 +462,6 @@ export function App(): JSX.Element | null {
                     <Route path="/templates/*" element={<TemplateRoutes />} />
                     <Route path="/settings" element={<ProfilePage />} />
                     <Route path="/Practitioner/:id" element={<ProfilePage />} />
-                    <Route path="/organization-invite" element={<OrganizationInvitePage />} />
                     <Route path="/invite" element={<InvitePage />} />
                     <Route 
                       path="/onboarding" 
