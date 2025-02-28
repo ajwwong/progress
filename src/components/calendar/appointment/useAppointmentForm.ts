@@ -188,20 +188,6 @@ export function useAppointmentForm({ initialDate, initialPatient }: UseAppointme
       status: 'booked',
       patientName: `${state.patient.name?.[0]?.given?.join(' ')} ${state.patient.name?.[0]?.family}`,
       patientId: state.patient.id || '',
-      participant: [{
-        actor: {
-          reference: `Patient/${state.patient.id}`,
-          display: `${state.patient.name?.[0]?.given?.join(' ')} ${state.patient.name?.[0]?.family}`,
-          type: 'Patient'
-        },
-        status: 'accepted',
-        type: [{
-          coding: [{
-            system: 'http://terminology.hl7.org/CodeSystem/v3-ParticipationType',
-            code: 'ATND'
-          }]
-        }]
-      }]
     };
   };
 
@@ -218,23 +204,26 @@ export function useAppointmentForm({ initialDate, initialPatient }: UseAppointme
     }));
   };
 
-  const setEndTime = (time: string) => {
-    if (state.startTime) {
+  const setEndTime = (time: string | null) => {
+    if (state.startTime && time) {
       setState(prev => ({
         ...prev,
         endTime: time,
-        defaultInterval: getTimeDifferenceInMinutes(state.startTime, time)
+        defaultInterval: getTimeDifferenceInMinutes(state.startTime as string, time)
       }));
     }
   };
 
   const setDefaultInterval = (minutes: number) => {
     if (state.startTime) {
-      setState(prev => ({
-        ...prev,
-        defaultInterval: minutes,
-        endTime: addMinutesToTime(state.startTime, minutes)
-      }));
+      const newEndTime = addMinutesToTime(state.startTime, minutes);
+      if (newEndTime) {
+        setState(prev => ({
+          ...prev,
+          defaultInterval: minutes,
+          endTime: newEndTime
+        }));
+      }
     }
   };
 

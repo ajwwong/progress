@@ -1,0 +1,355 @@
+{
+    "DistributionList": {
+        "Items": [
+            {
+                "Id": "E39KOU9RQHNOH8",
+                "ARN": "arn:aws:cloudfront::277707120168:distribution/E39KOU9RQHNOH8",
+                "Status": "Deployed",
+                "LastModifiedTime": "2025-02-19T04:29:38.854000+00:00",
+                "DomainName": "d2p56eio535i25.cloudfront.net",
+                "Aliases": {
+                    "Quantity": 1,
+                    "Items": [
+                        "storage.progressnotes.app"
+                    ]
+                },
+                "Origins": {
+                    "Quantity": 1,
+                    "Items": [
+                        {
+                            "Id": "MedplumProdStorageStorageDistributionOrigin13FE0C959",
+                            "DomainName": "storage.progressnotes.app.s3.us-east-1.amazonaws.com",
+                            "OriginPath": "",
+                            "CustomHeaders": {
+                                "Quantity": 0
+                            },
+                            "S3OriginConfig": {
+                                "OriginAccessIdentity": "origin-access-identity/cloudfront/E1TS6LTG0JAI04"
+                            },
+                            "ConnectionAttempts": 3,
+                            "ConnectionTimeout": 10,
+                            "OriginShield": {
+                                "Enabled": false
+                            },
+                            "OriginAccessControlId": ""
+                        }
+                    ]
+                },
+                "OriginGroups": {
+                    "Quantity": 0
+                },
+                "DefaultCacheBehavior": {
+                    "TargetOriginId": "MedplumProdStorageStorageDistributionOrigin13FE0C959",
+                    "TrustedSigners": {
+                        "Enabled": false,
+                        "Quantity": 0
+                    },
+                    "TrustedKeyGroups": {
+                        "Enabled": true,
+                        "Quantity": 1,
+                        "Items": [
+                            "f1152d52-f423-4d5e-9d69-f657d2ee17d2"
+                        ]
+                    },
+                    "ViewerProtocolPolicy": "redirect-to-https",
+                    "AllowedMethods": {
+                        "Quantity": 2,
+                        "Items": [
+                            "HEAD",
+                            "GET"
+                        ],
+                        "CachedMethods": {
+                            "Quantity": 2,
+                            "Items": [
+                                "HEAD",
+                                "GET"
+                            ]
+                        }
+                    },
+                    "SmoothStreaming": false,
+                    "Compress": true,
+                    "LambdaFunctionAssociations": {
+                        "Quantity": 0
+                    },
+                    "FunctionAssociations": {
+                        "Quantity": 0
+                    },
+                    "FieldLevelEncryptionId": "",
+                    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+                    "ResponseHeadersPolicyId": "dfe2da89-2c2f-4ace-87b2-839356477c2d",
+                    "GrpcConfig": {
+                        "Enabled": false
+                    }
+                },
+                "CacheBehaviors": {
+                    "Quantity": 0
+                },
+                "CustomErrorResponses": {
+                    "Quantity": 0
+                },
+                "Comment": "",
+                "PriceClass": "PriceClass_All",
+                "Enabled": true,
+                "ViewerCertificate": {
+                    "CloudFrontDefaultCertificate": false,
+                    "ACMCertificateArn": "arn:aws:acm:us-east-1:277707120168:certificate/dc4240bd-a5fd-40ee-a62c-6fc608f16cab",
+                    "SSLSupportMethod": "sni-only",
+                    "MinimumProtocolVersion": "TLSv1.2_2021",
+                    "Certificate": "arn:aws:acm:us-east-1:277707120168:certificate/dc4240bd-a5fd-40ee-a62c-6fc608f16cab",
+                    "CertificateSource": "acm"
+                },
+                "Restrictions": {
+                    "GeoRestriction": {
+                        "RestrictionType": "none",
+                        "Quantity": 0
+                    }
+                },
+                "WebACLId": "arn:aws:wafv2:us-east-1:277707120168:global/webacl/MedplumProd-StorageWAF/664de72c-f846-4b52-b8d3-c1c83cafc313",
+                "HttpVersion": "HTTP2",
+                "IsIPV6Enabled": true,
+                "AliasICPRecordals": [
+                    {
+                        "CNAME": "storage.progressnotes.app",
+                        "ICPRecordalStatus": "APPROVED"
+                    }
+                ],
+                "Staging": false
+            },
+            {
+                "Id": "EUYNQSHHAU7CS",
+                "ARN": "arn:aws:cloudfront::277707120168:distribution/EUYNQSHHAU7CS",
+                "Status": "Deployed",
+                "LastModifiedTime": "2025-02-19T04:29:39.673000+00:00",
+                "DomainName": "d3j5jad5ncymwt.cloudfront.net",
+                "Aliases": {
+                    "Quantity": 1,
+                    "Items": [
+                        "app.progressnotes.app"
+                    ]
+                },
+                "Origins": {
+                    "Quantity": 1,
+                    "Items": [
+                        {
+                            "Id": "MedplumProdFrontEndAppDistributionOrigin15AC19102",
+                            "DomainName": "app.progressnotes.app.s3.us-east-1.amazonaws.com",
+                            "OriginPath": "",
+                            "CustomHeaders": {
+                                "Quantity": 0
+                            },
+                            "S3OriginConfig": {
+                                "OriginAccessIdentity": "origin-access-identity/cloudfront/E18FOPAXO2KR0J"
+                            },
+                            "ConnectionAttempts": 3,
+                            "ConnectionTimeout": 10,
+                            "OriginShield": {
+                                "Enabled": false
+                            },
+                            "OriginAccessControlId": ""
+                        }
+                    ]
+                },
+                "OriginGroups": {
+                    "Quantity": 0
+                },
+                "DefaultCacheBehavior": {
+                    "TargetOriginId": "MedplumProdFrontEndAppDistributionOrigin15AC19102",
+                    "TrustedSigners": {
+                        "Enabled": false,
+                        "Quantity": 0
+                    },
+                    "TrustedKeyGroups": {
+                        "Enabled": false,
+                        "Quantity": 0
+                    },
+                    "ViewerProtocolPolicy": "redirect-to-https",
+                    "AllowedMethods": {
+                        "Quantity": 2,
+                        "Items": [
+                            "HEAD",
+                            "GET"
+                        ],
+                        "CachedMethods": {
+                            "Quantity": 2,
+                            "Items": [
+                                "HEAD",
+                                "GET"
+                            ]
+                        }
+                    },
+                    "SmoothStreaming": false,
+                    "Compress": true,
+                    "LambdaFunctionAssociations": {
+                        "Quantity": 0
+                    },
+                    "FunctionAssociations": {
+                        "Quantity": 0
+                    },
+                    "FieldLevelEncryptionId": "",
+                    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+                    "ResponseHeadersPolicyId": "98ec092a-6fdb-47b5-b5a6-ebb864d69e07",
+                    "GrpcConfig": {
+                        "Enabled": false
+                    }
+                },
+                "CacheBehaviors": {
+                    "Quantity": 0
+                },
+                "CustomErrorResponses": {
+                    "Quantity": 2,
+                    "Items": [
+                        {
+                            "ErrorCode": 403,
+                            "ResponsePagePath": "/index.html",
+                            "ResponseCode": "200",
+                            "ErrorCachingMinTTL": 300
+                        },
+                        {
+                            "ErrorCode": 404,
+                            "ResponsePagePath": "/index.html",
+                            "ResponseCode": "200",
+                            "ErrorCachingMinTTL": 300
+                        }
+                    ]
+                },
+                "Comment": "",
+                "PriceClass": "PriceClass_All",
+                "Enabled": true,
+                "ViewerCertificate": {
+                    "CloudFrontDefaultCertificate": false,
+                    "ACMCertificateArn": "arn:aws:acm:us-east-1:277707120168:certificate/bd410035-9d32-40a5-b0bf-fc6cca295325",
+                    "SSLSupportMethod": "sni-only",
+                    "MinimumProtocolVersion": "TLSv1.2_2021",
+                    "Certificate": "arn:aws:acm:us-east-1:277707120168:certificate/bd410035-9d32-40a5-b0bf-fc6cca295325",
+                    "CertificateSource": "acm"
+                },
+                "Restrictions": {
+                    "GeoRestriction": {
+                        "RestrictionType": "none",
+                        "Quantity": 0
+                    }
+                },
+                "WebACLId": "arn:aws:wafv2:us-east-1:277707120168:global/webacl/MedplumProd-FrontEndWAF/3f4267bd-3f22-462c-92a4-6ba08eac68d7",
+                "HttpVersion": "HTTP2",
+                "IsIPV6Enabled": true,
+                "AliasICPRecordals": [
+                    {
+                        "CNAME": "app.progressnotes.app",
+                        "ICPRecordalStatus": "APPROVED"
+                    }
+                ],
+                "Staging": false
+            },
+            {
+                "Id": "E2OF4SUBRRS3QH",
+                "ARN": "arn:aws:cloudfront::277707120168:distribution/E2OF4SUBRRS3QH",
+                "Status": "Deployed",
+                "LastModifiedTime": "2025-02-22T06:30:21.090000+00:00",
+                "DomainName": "d1iebbru6b3p79.cloudfront.net",
+                "Aliases": {
+                    "Quantity": 1,
+                    "Items": [
+                        "www.progressnotes.app"
+                    ]
+                },
+                "Origins": {
+                    "Quantity": 1,
+                    "Items": [
+                        {
+                            "Id": "www.progressnotes.app.s3.us-east-1.amazonaws.com",
+                            "DomainName": "www.progressnotes.app.s3.us-east-1.amazonaws.com",
+                            "OriginPath": "",
+                            "CustomHeaders": {
+                                "Quantity": 0
+                            },
+                            "S3OriginConfig": {
+                                "OriginAccessIdentity": "origin-access-identity/cloudfront/E1TS6LTG0JAI04"
+                            },
+                            "ConnectionAttempts": 3,
+                            "ConnectionTimeout": 10,
+                            "OriginShield": {
+                                "Enabled": false
+                            },
+                            "OriginAccessControlId": ""
+                        }
+                    ]
+                },
+                "OriginGroups": {
+                    "Quantity": 0
+                },
+                "DefaultCacheBehavior": {
+                    "TargetOriginId": "www.progressnotes.app.s3.us-east-1.amazonaws.com",
+                    "TrustedSigners": {
+                        "Enabled": false,
+                        "Quantity": 0
+                    },
+                    "TrustedKeyGroups": {
+                        "Enabled": false,
+                        "Quantity": 0
+                    },
+                    "ViewerProtocolPolicy": "redirect-to-https",
+                    "AllowedMethods": {
+                        "Quantity": 2,
+                        "Items": [
+                            "HEAD",
+                            "GET"
+                        ],
+                        "CachedMethods": {
+                            "Quantity": 2,
+                            "Items": [
+                                "HEAD",
+                                "GET"
+                            ]
+                        }
+                    },
+                    "SmoothStreaming": false,
+                    "Compress": true,
+                    "LambdaFunctionAssociations": {
+                        "Quantity": 0
+                    },
+                    "FunctionAssociations": {
+                        "Quantity": 0
+                    },
+                    "FieldLevelEncryptionId": "",
+                    "CachePolicyId": "658327ea-f89d-4fab-a63d-7e88639e58f6",
+                    "GrpcConfig": {
+                        "Enabled": false
+                    }
+                },
+                "CacheBehaviors": {
+                    "Quantity": 0
+                },
+                "CustomErrorResponses": {
+                    "Quantity": 0
+                },
+                "Comment": "",
+                "PriceClass": "PriceClass_All",
+                "Enabled": true,
+                "ViewerCertificate": {
+                    "CloudFrontDefaultCertificate": false,
+                    "ACMCertificateArn": "arn:aws:acm:us-east-1:277707120168:certificate/e2cfbbf5-3caf-486a-913d-ff050325868c",
+                    "SSLSupportMethod": "sni-only",
+                    "MinimumProtocolVersion": "TLSv1.2_2021",
+                    "Certificate": "arn:aws:acm:us-east-1:277707120168:certificate/e2cfbbf5-3caf-486a-913d-ff050325868c",
+                    "CertificateSource": "acm"
+                },
+                "Restrictions": {
+                    "GeoRestriction": {
+                        "RestrictionType": "none",
+                        "Quantity": 0
+                    }
+                },
+                "WebACLId": "arn:aws:wafv2:us-east-1:277707120168:global/webacl/CreatedByCloudFront-55f7a731-1105-493b-a9cf-cc5ad78a4bcb/f3bf50b6-75fd-4dcc-91aa-a73d39d37f11",
+                "HttpVersion": "HTTP2",
+                "IsIPV6Enabled": true,
+                "AliasICPRecordals": [
+                    {
+                        "CNAME": "www.progressnotes.app",
+                        "ICPRecordalStatus": "APPROVED"
+                    }
+                ],
+                "Staging": false
+            }
+        ]
+    }
+}

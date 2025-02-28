@@ -10,3 +10,5 @@ export interface Appointment {
   seriesId?: string;
   remainingSessions?: number;
 }
+
+export type CalendarView = 'month' | 'week' | 'day';

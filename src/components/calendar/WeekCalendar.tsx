@@ -7,7 +7,9 @@ import type { Appointment } from '../../types/calendar';
 interface WeekCalendarProps {
   selectedDate: Date;
   appointments: Appointment[];
-  onAppointmentClick: (appointment: Appointment) => void;
+  onAppointmentClick: (appointment: Appointment | null) => void;
+  onDateChange: (date: Date) => void;
+  onEmptyClick?: (date: Date, time: string) => void;
 }
 
 const SLOT_HEIGHT = 40;

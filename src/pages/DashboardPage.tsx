@@ -30,35 +30,46 @@ export function DashboardPage(): JSX.Element {
         return;
       }
 
-      const profile = await medplum.getProfile() as Practitioner;
-      const isPractitioner = profile?.resourceType === 'Practitioner';
+      const profile = await medplum.getProfile();
+      
+      if (!profile) {
+        navigate('/signin');
+        return;
+      }
+
+      const isPractitioner = profile.resourceType === 'Practitioner';
+      const isPatient = profile.resourceType === 'Patient';
 
       console.log('DashboardPage: Current onboarding step:', currentStep);
       
-      // Route based on current onboarding step
       switch (currentStep) {
         case OnboardingStep.NOT_STARTED:
         case OnboardingStep.REGISTERED:
           if (isPractitioner) {
-            // If practitioner, update step and go to onboarding
             await updateOnboardingStep(OnboardingStep.ORGANIZATION_CREATED);
             navigate('/onboarding');
           } else {
             navigate('/onboarding/organization');
           }
           break;
+
         case OnboardingStep.ORGANIZATION_SETUP:
           navigate('/onboarding/organization');
           break;
+
         case OnboardingStep.ORGANIZATION_CREATED:
-          navigate('/onboarding/logoff');
+          if (isPatient) {
+            navigate('/onboarding/logoff');
+          } else if (isPractitioner) {
+            navigate('/onboarding');
+          }
           break;
+
         case OnboardingStep.TRANSCRIPTION_TUTORIAL:
-          navigate('/calendar');
-          break;
         case OnboardingStep.COMPLETED:
           navigate('/calendar');
           break;
+
         default:
           console.error('Unknown onboarding step:', currentStep);
           if (isPractitioner) {

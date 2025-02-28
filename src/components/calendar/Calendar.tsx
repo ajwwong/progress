@@ -11,10 +11,10 @@ import { AppointmentItem } from './AppointmentItem';
 import { AppointmentModal } from './AppointmentModal';
 import { AppointmentDetailsModal } from './AppointmentDetailsModal';
 import { PatientModal } from './PatientModal';
-import type { Appointment } from '../types/calendar';
+import type { Appointment, CalendarView } from '../../types/calendar';
 import { RecurringUpdateModal } from './RecurringUpdateModal';
 import { useLocation } from 'react-router-dom';
-import { Patient } from '@medplum/fhirtypes';
+import { Patient, Appointment as FHIRAppointment, Reference, Identifier } from '@medplum/fhirtypes';
 
 export function Calendar() {
   const DEBUG_MODE = false;
@@ -29,7 +29,7 @@ export function Calendar() {
     selectedPatient?: Patient;
   } | null;
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [view, setView] = useState<string>('month');
+  const [view, setView] = useState<CalendarView>('month');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [activeAppointment, setActiveAppointment] = useState<Appointment | null>(null);
   const [isAppointmentModalOpen, setIsAppointmentModalOpen] = useState(false);
@@ -82,7 +82,7 @@ export function Calendar() {
   const loadAppointments = async () => {
     try {
       if (DEBUG_MODE) console.log('Fetching appointments...');
-      let allResults = [];
+      let allResults: any[] = [];
       let count = 0;
       
       while (true) {
@@ -146,17 +146,19 @@ export function Calendar() {
         })
         .map(fhirAppointment => {
           const patientParticipant = fhirAppointment.participant?.find(
-            p => p.actor?.reference?.startsWith('Patient/')
+            (p: { actor?: { reference?: string } }) => p.actor?.reference?.startsWith('Patient/')
           );
 
           const patientId = patientParticipant?.actor?.reference?.split('Patient/')[1];
           
           // Extract series ID and sequence number from identifiers
           const seriesIdentifier = fhirAppointment.identifier?.find(
-            id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-series'
+            (id: { system: string; value?: string }) => 
+              id.system === 'http://terminology.hl7.org/CodeSystem/appointment-series'
           );
           const sequenceIdentifier = fhirAppointment.identifier?.find(
-            id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+            (id: { system: string; value?: string }) => 
+              id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
           );
 
           // Ensure dates are properly converted from UTC to local time
@@ -278,9 +280,9 @@ export function Calendar() {
     console.log('Appointment data received:', appointmentData);
     try {
       for (const appointment of appointmentData) {
-        const resource = {
+        const resource: FHIRAppointment = {
           resourceType: 'Appointment',
-          status: 'booked',
+          status: appointment.status,
           appointmentType: {
             coding: [{
               system: 'http://terminology.hl7.org/CodeSystem/v2-0276',
@@ -295,7 +297,7 @@ export function Calendar() {
             actor: {
               display: appointment.patientName,
               reference: `Patient/${appointment.patientId}`
-            },
+            } as Reference<Patient>,
             status: 'accepted',
             type: [{
               coding: [{
@@ -312,18 +314,17 @@ export function Calendar() {
             {
               system: 'http://terminology.hl7.org/CodeSystem/appointment-series',
               value: appointment.seriesId
-            },
+            } as Identifier,
             {
               system: 'http://terminology.hl7.org/CodeSystem/appointment-sequence',
               value: appointment.remainingSessions?.toString()
-            }
+            } as Identifier
           ];
         }
 
         console.log('Creating appointment with resource:', resource);
         await medplum.createResource(resource);
       }
-
       await loadAppointments();
     } catch (error) {
       console.error('Error creating appointments:', error);
@@ -374,7 +375,34 @@ export function Calendar() {
       } else {
         // If it's a recurring appointment (not last), show the modal
         setPendingUpdate(updatedAppointment);
-        setOriginalAppointment(existingAppointment);
+        
+        // Convert FHIR appointment to our Calendar appointment type
+        const patientParticipant = existingAppointment.participant?.find(
+          (p: { actor?: { reference?: string } }) => p.actor?.reference?.startsWith('Patient/')
+        );
+
+        const patientId = patientParticipant?.actor?.reference?.split('Patient/')[1];
+        const seriesIdentifier = existingAppointment.identifier?.find(
+          id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-series'
+        );
+        const sequenceIdentifier = existingAppointment.identifier?.find(
+          id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+        );
+
+        const convertedAppointment: Appointment = {
+          id: existingAppointment.id as string,
+          title: existingAppointment.description || 'Untitled',
+          start: new Date(existingAppointment.start as string),
+          end: new Date(existingAppointment.end as string),
+          patientName: patientParticipant?.actor?.display || 'Unknown Patient',
+          patientId: patientId || '',
+          type: (existingAppointment.appointmentType?.coding?.[0]?.code as Appointment['type']) || 'FOLLOWUP',
+          status: (existingAppointment.status as Appointment['status']) || 'booked',
+          seriesId: seriesIdentifier?.value,
+          remainingSessions: sequenceIdentifier?.value ? parseInt(sequenceIdentifier.value) : undefined
+        };
+
+        setOriginalAppointment(convertedAppointment);
         setRecurringModalOpened(true);
         return;
       }
@@ -415,8 +443,8 @@ export function Calendar() {
         });
       } else {
         // Calculate time difference
-        const originalStart = new Date(existingAppointment.start);
-        const newStart = new Date(pendingUpdate.start);
+        const originalStart = new Date(existingAppointment.start as string);
+        const newStart = pendingUpdate.start;
         const timeGap = newStart.getTime() - originalStart.getTime();
         
         const newSeriesId = crypto.randomUUID();
@@ -434,7 +462,8 @@ export function Calendar() {
         if (allAppointments && allAppointments.length > 0) {
           for (const appointment of allAppointments) {
             const sequenceNumber = appointment.identifier?.find(
-              id => id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
+              (id: { system: string; value?: string }) => 
+                id.system === 'http://terminology.hl7.org/CodeSystem/appointment-sequence'
             )?.value;
 
             if (sequenceNumber && parseInt(sequenceNumber) <= parseInt(pendingUpdate.remainingSessions!.toString())) {
@@ -458,7 +487,8 @@ export function Calendar() {
                 description: pendingUpdate.title,
                 identifier: [
                   ...(appointment.identifier || []).filter(
-                    id => id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-series'
+                    (id: { system: string; value?: string }) => 
+                      id.system !== 'http://terminology.hl7.org/CodeSystem/appointment-series'
                   ),
                   {
                     system: 'http://terminology.hl7.org/CodeSystem/appointment-series',
@@ -554,7 +584,7 @@ export function Calendar() {
     <AppointmentItem 
       appointment={activeAppointment}
       onClick={() => {}}
-      variant={view} // Pass the current view
+      variant={view as 'month' | 'week'}
       style={{ zIndex: 10000 }}
     />
   ) : null}

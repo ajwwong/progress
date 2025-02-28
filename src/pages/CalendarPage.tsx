@@ -8,10 +8,9 @@ import { Calendar } from '../components/calendar/Calendar';
 export function CalendarPage(): JSX.Element {
   return (
     <Box 
-      sx={{
+      style={{
         height: 'calc(100vh - 60px)', // Account for header/navigation
-        width: '100%',
-        padding: '1rem',
+        width: '100%'
       }}
     >
       <Calendar />

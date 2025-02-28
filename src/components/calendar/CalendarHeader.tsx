@@ -2,11 +2,12 @@ import { Group, Button, Title, SegmentedControl } from '@mantine/core';
 import { IconPlus, IconChevronLeft, IconChevronRight, IconUser } from '@tabler/icons-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays, startOfWeek, endOfWeek } from 'date-fns';
 import { TodayButton } from './TodayButton';
+import type { CalendarView } from '../../types/calendar';
 
 interface CalendarHeaderProps {
   selectedDate: Date;
-  view: string;
-  onViewChange: (view: string) => void;
+  view: CalendarView;
+  onViewChange: (view: CalendarView) => void;
   onNewAppointment: () => void;
   onNewPatient: () => void;
   onDateChange: (date: Date) => void;
@@ -117,7 +118,7 @@ export function CalendarHeader({
       <Group>
         <SegmentedControl
           value={view}
-          onChange={onViewChange}
+          onChange={(value) => onViewChange(value as CalendarView)}
           data={[
             { label: 'Month', value: 'month' },
             { label: 'Week', value: 'week' },
