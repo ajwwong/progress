@@ -10,7 +10,7 @@
       "preview": "vite preview",
       "test": "vitest",
       "test:watch": "vitest watch",
-      "deploy": "npm run build && aws s3 sync dist/ s3://www.progressnotes.app && aws cloudfront create-invalidation --distribution-id E2OF4SUBRRS3QH --paths '/*'"
+      "deploy": "npm run build && aws s3 sync dist/ s3://$AWS_S3_BUCKET && aws cloudfront create-invalidation --distribution-id $AWS_CLOUDFRONT_ID --paths '/*'"
     },
     "prettier": {
       "printWidth": 120,
