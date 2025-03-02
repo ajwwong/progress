@@ -521,7 +521,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
             <Box 
               style={{ 
                 height: '56px',
-                width: '380px',
+                width: '100%',
                 margin: '0 auto'
               }}
             >

@@ -3,6 +3,7 @@ import { LoginAuthenticationResponse, normalizeOperationOutcome } from '@medplum
 import { OperationOutcome } from '@medplum/fhirtypes';
 import { useMedplum } from '@medplum/react';
 import { ReactNode, useEffect, useState } from 'react';
+import { IconArrowRight } from '@tabler/icons-react';
 
 // Helper function to initialize reCAPTCHA
 const initRecaptcha = (siteKey: string) => {
@@ -73,18 +74,21 @@ const generateRandomPassword = (): string => {
   return shuffled.join('');
 };
 
-interface CustomNewUserFormProps {
+export interface CustomNewUserFormProps {
   projectId: string;
   clientId?: string;
   googleClientId?: string;
   recaptchaSiteKey?: string;
   children?: ReactNode;
   handleAuthResponse: (response: LoginAuthenticationResponse) => void;
+  onLoading?: (loading: boolean) => void;
+  onSubmitComplete?: () => void;
 }
 
 export function CustomNewUserForm(props: CustomNewUserFormProps): JSX.Element {
   const medplum = useMedplum();
   const [outcome, setOutcome] = useState<OperationOutcome>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [defaultLastName] = useState(() => new Date().toISOString());
   const [defaultEmail] = useState(() => generateRandomEmail());
   const [defaultPassword] = useState(() => generateRandomPassword());
@@ -98,6 +102,7 @@ export function CustomNewUserForm(props: CustomNewUserFormProps): JSX.Element {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setIsSubmitting(true);
     const formData = new FormData(e.currentTarget);
     
     try {
@@ -121,6 +126,9 @@ export function CustomNewUserForm(props: CustomNewUserFormProps): JSX.Element {
       props.handleAuthResponse(response);
     } catch (err) {
       setOutcome(normalizeOperationOutcome(err));
+      props.onSubmitComplete?.();
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -180,8 +188,23 @@ export function CustomNewUserForm(props: CustomNewUserFormProps): JSX.Element {
           </div>
 
           <Group justify="flex-end">
-            <Button type="submit" loading={!!outcome} size="lg" radius="md" fullWidth>
-              Register
+            <Button 
+              type="submit" 
+              loading={isSubmitting}
+              size="xl" 
+              radius="md" 
+              fullWidth
+              rightSection={!isSubmitting && <IconArrowRight size={20} />}
+              styles={(theme) => ({
+                root: {
+                  backgroundColor: theme.colors.blue[6],
+                  '&:hover': {
+                    backgroundColor: theme.colors.blue[7],
+                  },
+                },
+              })}
+            >
+              {isSubmitting ? 'Setting up your account...' : 'Try Free for 30 Days'}
             </Button>
           </Group>
         </Stack>

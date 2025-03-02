@@ -13,13 +13,18 @@ export interface RegisterFormProps {
   googleClientId?: string;
   recaptchaSiteKey?: string;
   onSuccess: () => void;
+  onLoading?: (loading: boolean) => void;
 }
 
 export function CustomRegisterForm(props: RegisterFormProps): JSX.Element {
-  const { type, projectId, clientId, recaptchaSiteKey, onSuccess } = props;
+  const { type, projectId, clientId, recaptchaSiteKey, onSuccess, onLoading } = props;
   const medplum = useMedplum();
   const [login, setLogin] = useState<string>();
   const [outcome, setOutcome] = useState<OperationOutcome>();
+
+  useEffect(() => {
+    onLoading?.(!!outcome);
+  }, [outcome, onLoading]);
 
   useEffect(() => {
     if (type === 'patient' && login) {

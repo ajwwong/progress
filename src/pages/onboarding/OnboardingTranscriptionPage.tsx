@@ -560,7 +560,7 @@ export function OnboardingPage({
                   <Box 
                     style={{ 
                       height: '52px',
-                      width: '340px',
+                      width: '100%',
                       margin: '0 auto'
                     }}
                   >
@@ -575,16 +575,32 @@ export function OnboardingPage({
                     >
                       <Button
                         variant="outline"
-                        color="blue"
-                        radius="xl"
-                        size="lg"
-                        leftSection={<IconMicrophone size={20} />}
+                        color="blue.6"
+                        radius="lg"
+                        size="xl"
+                        leftSection={<IconMicrophone size={22} />}
                         onClick={handleFullWorkflow}
-                        style={{ 
-                          flex: 1,
-                          '&:hover': {
-                            transform: 'translateY(-1px)',
-                            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                        styles={{
+                          root: {
+                            flex: 1,
+                            minWidth: '200px', // Added minimum width
+                            width: '300px',    // Added fixed width
+                          height: '56px',
+                            border: '1px solid rgba(37, 99, 235, 0.3)',
+                            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            backdropFilter: 'blur(8px)',
+                            boxShadow: '0 8px 16px rgba(37, 99, 235, 0.15), 0 4px 8px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                            '&:hover': {
+                              transform: 'translateY(-2px)',
+                              backgroundColor: 'rgba(37, 99, 235, 0.12)',
+                              boxShadow: '0 20px 40px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                            }
+                          },
+                          inner: {
+                            fontSize: '17px',
+                            fontWeight: 500,
+                            letterSpacing: '0.3px'
                           }
                         }}
                       >
@@ -592,46 +608,58 @@ export function OnboardingPage({
                       </Button>
                       <Box
                         style={{
-                          width: '12px',
-                          height: '12px',
+                          width: '10px',
+                          height: '10px',
                           borderRadius: '50%',
                           backgroundColor: '#fa5252',
-                          opacity: isBlinking && !isPaused ? 1 : 0.3
+                          opacity: isBlinking && !isPaused ? 0.7 : 0.2,
+                          transition: 'opacity 1.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                          boxShadow: '0 0 10px rgba(250, 82, 82, 0.15)'
                         }}
                       />
                       <ActionIcon 
-                        variant="light" 
+                        variant="subtle"
                         color="gray" 
-                        size="xl" 
-                        radius="xl"
+                        size={56}
+                        radius="lg"
                         onClick={isPaused ? resumeRecording : pauseRecording}
-                        styles={(theme) => ({
+                        styles={{
                           root: {
+                            border: '1px solid rgba(0, 0, 0, 0.12)',
+                            backgroundColor: 'white',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.05)',
                             '&:hover': {
-                              transform: 'translateY(-1px)',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                              transform: 'translateY(-2px)',
+                              backgroundColor: 'white',
+                              border: '1px solid rgba(0, 0, 0, 0.18)',
+                              boxShadow: '0 8px 20px rgba(0, 0, 0, 0.08)'
                             }
                           }
-                        })}
+                        }}
                       >
-                        {isPaused ? <IconPlayerPlay size={20} /> : <IconPlayerPause size={20} />}
+                        {isPaused ? <IconPlayerPlay size={22} /> : <IconPlayerPause size={22} />}
                       </ActionIcon>
                       <ActionIcon 
-                        variant="light" 
-                        color="red" 
-                        size="xl" 
-                        radius="xl"
+                        variant="subtle"
+                        color="red.6" 
+                        size={56}
+                        radius="lg"
                         onClick={cancelRecording}
-                        styles={(theme) => ({
+                        styles={{
                           root: {
+                            border: '1px solid rgba(241, 79, 79, 0.15)',
+                            backgroundColor: 'rgba(241, 79, 79, 0.03)',
+                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                             '&:hover': {
-                              transform: 'translateY(-1px)',
-                              boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)'
+                              transform: 'translateY(-2px)',
+                              backgroundColor: 'rgba(241, 79, 79, 0.05)',
+                              boxShadow: '0 8px 20px rgba(241, 79, 79, 0.15)'
                             }
                           }
-                        })}
+                        }}
                       >
-                        <IconX size={20} />
+                        <IconX size={22} />
                       </ActionIcon>
                     </Group>
                   </Box>

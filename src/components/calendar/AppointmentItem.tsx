@@ -12,9 +12,9 @@ interface AppointmentItemProps {
 }
 
 const statusColors = {
-  'booked-future': ['var(--mantine-color-blue-0)', 'var(--mantine-color-blue-9)'],
-  'booked-past': ['var(--mantine-color-green-0)', 'var(--mantine-color-green-9)'],
-  'cancelled': ['var(--mantine-color-yellow-0)', 'var(--mantine-color-yellow-9)'],
+  'booked-future': ['var(--mantine-color-indigo-0)', 'var(--mantine-color-indigo-9)'],
+  'booked-past': ['var(--mantine-color-teal-0)', 'var(--mantine-color-teal-9)'],
+  'cancelled': ['var(--mantine-color-orange-0)', 'var(--mantine-color-orange-9)'],
   'noshow': ['var(--mantine-color-red-0)', 'var(--mantine-color-red-9)'],
 } as const;
 
