@@ -17,6 +17,7 @@ import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
 import { useProfileUsage } from '../hooks/useProfileUsage';
 import { useAudioDevices } from '../hooks/useAudioDevices';
+import { useBeforeUnload } from '../hooks/useBeforeUnload';
 
 interface AudioTranscribePageProps {
   onTranscriptionStart?: (compositionId: string) => void;
@@ -102,6 +103,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
   const { usageData, incrementUsage, canUseSession } = useProfileUsage();
   const { audioDevices, selectedDevice, setSelectedDevice } = useAudioDevices();
+  const [isCompleted, setIsCompleted] = useState(false);
   
   // Set initial values from location state
   useEffect(() => {
@@ -303,6 +305,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
       
       await incrementUsage();
       
+      setIsCompleted(true);
+      
       showNotification({
         title: 'Success',
         message: 'Note generated and saved successfully',
@@ -390,6 +394,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
         
         await incrementUsage();
         
+        setIsCompleted(true);
+        
         showNotification({
           title: 'Success',
           message: 'Session ended and note generated successfully',
@@ -413,6 +419,21 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
 
   // Combine recording status and processing status
   const displayStatus = isRecording ? recordingStatus : processingStatus;
+
+  const isProcessing = processingStatus === 'Transcribing...' || isGeneratingNote;
+  useBeforeUnload(isProcessing, 'Audio is still being processed. Are you sure you want to leave?');
+
+  const openNewSession = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('new', 'true');
+    window.open(url.toString(), '_blank');
+  };
+
+  useEffect(() => {
+    if (onGeneratingEnd) {
+      onGeneratingEnd(savedComposition?.id || '');
+    }
+  }, [onGeneratingEnd]);
 
   return (
     <Container size="sm" mt="xl">
@@ -525,7 +546,39 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 margin: '0 auto'
               }}
             >
-              {!isRecording ? (
+              {isCompleted ? (
+                <Button
+                  variant="outline"
+                  color="green.6"
+                  size="xl"
+                  radius="lg"
+                  leftSection={<IconCheck size={22} />}
+                  onClick={openNewSession}
+                  styles={{
+                    root: {
+                      width: '100%',
+                      height: '56px',
+                      border: '1px solid rgba(34, 197, 94, 0.3)',
+                      background: 'linear-gradient(165deg, rgba(34, 197, 94, 0.08) 0%, rgba(34, 197, 94, 0.12) 100%)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backdropFilter: 'blur(8px)',
+                      boxShadow: '0 8px 16px rgba(34, 197, 94, 0.15), 0 4px 8px rgba(34, 197, 94, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        background: 'linear-gradient(165deg, rgba(34, 197, 94, 0.12) 0%, rgba(34, 197, 94, 0.16) 100%)',
+                        boxShadow: '0 20px 40px rgba(34, 197, 94, 0.25), 0 8px 16px rgba(34, 197, 94, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                      }
+                    },
+                    inner: {
+                      fontSize: '17px',
+                      fontWeight: 500,
+                      letterSpacing: '0.3px'
+                    }
+                  }}
+                >
+                  Note Generated - Start New Session
+                </Button>
+              ) : (!isRecording && !isTranscribing && !isGeneratingNote) ? (
                 <Button
                   size="xl"
                   radius="lg"
@@ -567,7 +620,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 >
                   Start session
                 </Button>
-              ) : (
+              ) : isRecording ? (
                 <Group 
                   align="center" 
                   style={{ 
@@ -666,7 +719,39 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                     <IconX size={22} />
                   </ActionIcon>
                 </Group>
-              )}
+              ) : (isTranscribing || isGeneratingNote) ? (
+                <Button
+                  variant="outline"
+                  color="blue.6"
+                  size="xl"
+                  radius="lg"
+                  leftSection={<IconPlus size={22} />}
+                  onClick={openNewSession}
+                  styles={{
+                    root: {
+                      width: '100%',
+                      height: '56px',
+                      border: '1px solid rgba(37, 99, 235, 0.3)',
+                      background: 'linear-gradient(165deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backdropFilter: 'blur(8px)',
+                      boxShadow: '0 8px 16px rgba(37, 99, 235, 0.15), 0 4px 8px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                      '&:hover': {
+                        transform: 'translateY(-2px)',
+                        background: 'linear-gradient(165deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.16) 100%)',
+                        boxShadow: '0 20px 40px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                      }
+                    },
+                    inner: {
+                      fontSize: '17px',
+                      fontWeight: 500,
+                      letterSpacing: '0.3px'
+                    }
+                  }}
+                >
+                  Start New Recording
+                </Button>
+              ) : null}
             </Box>
 
             {isRecording && (
@@ -742,28 +827,82 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
           </Stack>
 
           {(isTranscribing || isGeneratingNote) && (
-            <Paper withBorder styles={(theme) => ({
-              root: {
-                padding: theme.spacing.md,
-                backgroundColor: theme.colors.gray[0]
-              }
-            })}>
-              <Stack gap="xs">
-                <Group>
-                  <Loader size="sm" />
-                  <Text size="sm">
-                    {isTranscribing ? 'Transcribing audio...' : 'Generating note...'}
+            <Box
+              style={{
+                position: 'fixed',
+                bottom: 20,
+                right: 20,
+                zIndex: 1000,
+                maxWidth: '360px'
+              }}
+            >
+              <Paper 
+                withBorder 
+                p="lg"
+                radius="md"
+                style={{
+                  borderTop: '3px solid var(--mantine-color-blue-4)',
+                  backgroundColor: 'var(--mantine-color-gray-0)'
+                }}
+              >
+                <Stack gap="md">
+                  <Group>
+                    <Loader size="sm" color="blue" />
+                    <Text 
+                      fw={500}
+                      style={{
+                        color: 'var(--mantine-color-blue-8)',
+                        letterSpacing: '-0.3px'
+                      }}
+                    >
+                      {isTranscribing ? 'Transcribing audio...' : 'Generating note...'}
+                    </Text>
+                  </Group>
+                  {isTranscribing && uploadProgress > 0 && (
+                    <Progress 
+                      value={uploadProgress} 
+                      size="sm" 
+                      color={uploadProgress === 100 ? 'green' : 'blue'}
+                      radius="xl"
+                    />
+                  )}
+                  <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
+                    You can start a new recording while waiting
                   </Text>
-                </Group>
-                {isTranscribing && uploadProgress > 0 && (
-                  <Progress 
-                    value={uploadProgress} 
-                    size="sm" 
-                    color={uploadProgress === 100 ? 'green' : 'blue'}
-                  />
-                )}
-              </Stack>
-            </Paper>
+                  {/*<Button
+                    variant="outline"
+                    color="blue.6"
+                    size="xl"
+                    radius="lg"
+                    leftSection={<IconPlus size={22} />}
+                    onClick={openNewSession}
+                    styles={{
+                      root: {
+                        width: '100%',
+                        height: '56px',
+                        border: '1px solid rgba(37, 99, 235, 0.3)',
+                        background: 'linear-gradient(165deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                        backdropFilter: 'blur(8px)',
+                        boxShadow: '0 8px 16px rgba(37, 99, 235, 0.15), 0 4px 8px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
+                        '&:hover': {
+                          transform: 'translateY(-2px)',
+                          background: 'linear-gradient(165deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.16) 100%)',
+                          boxShadow: '0 20px 40px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                        }
+                      },
+                      inner: {
+                        fontSize: '17px',
+                        fontWeight: 500,
+                        letterSpacing: '0.3px'
+                      }
+                    }}
+                  >
+                    Start New Recording
+                  </Button>*/}
+                </Stack>
+              </Paper>
+            </Box>
           )}
 
           {/*<TranscriptionView 
@@ -813,6 +952,27 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 </Box>
               </Stack>
             </Paper>
+          )}*/}
+
+          {/*isProcessing && (
+            <Box
+              sx={{
+                position: 'fixed',
+                bottom: 20,
+                right: 20,
+                zIndex: 1000,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 'sm',
+                bg: 'var(--mantine-color-blue-0)',
+                p: 'md',
+                borderRadius: 'md',
+                border: '1px solid var(--mantine-color-blue-2)'
+              }}
+            >
+              <Loader size="xs" color="blue" />
+              <Text size="sm" c="dimmed">Processing audio...</Text>
+            </Box>
           )}*/}
         </Stack>
       </Paper>

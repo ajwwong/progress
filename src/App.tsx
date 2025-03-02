@@ -1,5 +1,5 @@
 import { AppShell, ErrorBoundary, Loading, Logo, useMedplum, useMedplumProfile, NavbarLink } from '@medplum/react';
-import { IconUser, IconMicrophone, IconCalendar, IconFileText, IconTemplate, IconSettings, IconAlertTriangle, IconMailOpened } from '@tabler/icons-react';
+import { IconUser, IconMicrophone, IconCalendar, IconReload, IconFileText, IconTemplate, IconSettings, IconAlertTriangle, IconMailOpened } from '@tabler/icons-react';
 import { Suspense, useState, useEffect } from 'react';
 import { Route, Routes, Link, useLocation, Navigate } from 'react-router-dom';
 import { PatientHistory } from './components/PatientHistory';
@@ -392,7 +392,7 @@ export function App(): JSX.Element | null {
                           />
                         )}
                         {wasInterrupted(comp) && (
-                          <IconAlertTriangle
+                          <IconReload
                             size={16}
                             style={{ 
                               position: 'absolute',
