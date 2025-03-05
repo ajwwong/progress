@@ -1,11 +1,12 @@
 import { Container, Tabs } from '@mantine/core';
-import { IconSettings, IconAlertCircle, IconCreditCard } from '@tabler/icons-react';
+import { IconSettings, IconAlertCircle, IconCreditCard, IconBuilding } from '@tabler/icons-react';
 import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ProfileSettings } from './components/ProfileSettings';
 import { NotePreferences } from './components/NotePreferences';
 import { BillingSection } from './components/BillingSection';
 import { PasswordChange } from './components/PasswordChange';
+import { OrganizationSettings } from './components/OrganizationSettings';
 
 export function ProfilePage(): JSX.Element {
   const location = useLocation();
@@ -34,6 +35,9 @@ export function ProfilePage(): JSX.Element {
           <Tabs.Tab value="change-password" leftSection={<IconAlertCircle size={14} />}>
             Change Password
           </Tabs.Tab>
+          <Tabs.Tab value="organization" leftSection={<IconBuilding size={14} />}>
+            Organization
+          </Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="profile" pt="xl">
@@ -50,6 +54,10 @@ export function ProfilePage(): JSX.Element {
 
         <Tabs.Panel value="change-password" pt="xl">
           <PasswordChange />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="organization" pt="xl">
+          <OrganizationSettings />
         </Tabs.Panel>
       </Tabs>
     </Container>
