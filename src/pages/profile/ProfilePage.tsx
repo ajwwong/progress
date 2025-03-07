@@ -4,9 +4,10 @@ import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { ProfileSettings } from './components/ProfileSettings';
 import { NotePreferences } from './components/NotePreferences';
-import { BillingSection } from './components/BillingSection';
+//import { BillingSection } from './components/BillingSection';
 import { PasswordChange } from './components/PasswordChange';
 import { OrganizationSettings } from './components/OrganizationSettings';
+import { SubscriptionSettings } from './components/SubscriptionSettings';
 
 export function ProfilePage(): JSX.Element {
   const location = useLocation();
@@ -29,14 +30,17 @@ export function ProfilePage(): JSX.Element {
           <Tabs.Tab value="note-preferences" leftSection={<IconAlertCircle size={14} />}>
             Note Preferences
           </Tabs.Tab>
-          <Tabs.Tab value="billing" leftSection={<IconCreditCard size={14} />}>
+         {/*<Tabs.Tab value="billing" leftSection={<IconCreditCard size={14} />}>
             Billing
-          </Tabs.Tab>
+          </Tabs.Tab>*/}
           <Tabs.Tab value="change-password" leftSection={<IconAlertCircle size={14} />}>
             Change Password
           </Tabs.Tab>
           <Tabs.Tab value="organization" leftSection={<IconBuilding size={14} />}>
             Organization
+          </Tabs.Tab>
+          <Tabs.Tab value="subscription" leftSection={<IconAlertCircle size={14} />}>
+            Subscription
           </Tabs.Tab>
         </Tabs.List>
 
@@ -48,9 +52,9 @@ export function ProfilePage(): JSX.Element {
           <NotePreferences />
         </Tabs.Panel>
 
-        <Tabs.Panel value="billing" pt="xl">
+        {/*<Tabs.Panel value="billing" pt="xl">
           <BillingSection />
-        </Tabs.Panel>
+        </Tabs.Panel>*/}
 
         <Tabs.Panel value="change-password" pt="xl">
           <PasswordChange />
@@ -58,6 +62,10 @@ export function ProfilePage(): JSX.Element {
 
         <Tabs.Panel value="organization" pt="xl">
           <OrganizationSettings />
+        </Tabs.Panel>
+
+        <Tabs.Panel value="subscription" pt="xl">
+          <SubscriptionSettings />
         </Tabs.Panel>
       </Tabs>
     </Container>
