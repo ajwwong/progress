@@ -121,7 +121,7 @@ export function NotePreferences(): JSX.Element {
           Save Note Preferences
         </Button>
 
-        <Group justify="apart" mt="md">
+        {/*<Group justify="apart" mt="md">
           <Text fw={500}>Include date & time for 'Copy note'</Text>
           <Switch 
             label="When enabled, 'Copy Note' will include the date and time."
@@ -137,7 +137,7 @@ export function NotePreferences(): JSX.Element {
             checked={deleteAfter30Days}
             onChange={(event) => setDeleteAfter30Days(event.currentTarget.checked)}
           />
-        </Group>
+        </Group>*/}
       </Stack>
     </Stack>
   );

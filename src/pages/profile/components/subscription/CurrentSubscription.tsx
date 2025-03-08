@@ -25,7 +25,7 @@ export function CurrentSubscription({ subscriptionInfo, onCancel }: CurrentSubsc
     <>
       <Card withBorder>
         <Stack>
-          <Group position="apart">
+          <Group justify="apart">
             <Text size="xl" fw={700}>Current Subscription</Text>
             <Badge 
               color={subscriptionInfo.status === 'active' ? 'green' : 'yellow'}

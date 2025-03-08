@@ -24,8 +24,12 @@ export function OrganizationSettings(): JSX.Element {
 
         if (!orgReference) {
           const membership = await medplum.getProfile();
-          const membershipOrgRef = membership.access?.[0]?.parameter?.find(
-            p => p.name === 'current_organization'
+          if (!membership) {
+            throw new Error('No membership found');
+          }
+          
+          const membershipOrgRef = membership.extension?.find(
+            (p: { url: string }) => p.url === 'http://example.com/fhir/StructureDefinition/current-organization'
           )?.valueReference?.reference;
 
           if (!membershipOrgRef) {

@@ -20,7 +20,8 @@ export function ProfilePage(): JSX.Element {
   const location = useLocation();
   const currentTab = tabRoutes[location.pathname as keyof typeof tabRoutes] || 'profile';
 
-  const handleTabChange = (value: string) => {
+  const handleTabChange = (value: string | null) => {
+    if (!value) return;
     const route = Object.entries(tabRoutes).find(([_, tab]) => tab === value)?.[0] || '/settings/profile';
     navigate(route);
   };
