@@ -1,25 +1,24 @@
-import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { Practitioner, Extension } from '@medplum/fhirtypes';
+import { useMedplum } from '@medplum/react';
+import { Organization, Extension } from '@medplum/fhirtypes';
 import { useState, useEffect } from 'react';
 
 const FREE_SESSIONS_PER_MONTH = 10;
 const USAGE_EXTENSION_URL = 'http://example.com/fhir/StructureDefinition/session-usage';
-const PRO_SUBSCRIPTION_EXTENSION_URL = 'http://example.com/fhir/StructureDefinition/pro-subscription';
 
 interface UsageExtension extends Extension {
   extension?: Extension[];
 }
 
-export interface UsageData {
+interface UsageData {
   sessionsUsed: number;
   sessionsLimit: number;
   isPro: boolean;
   lastResetDate: string;
 }
 
-export function useProfileUsage() {
+export function useOrganizationUsage(organizationId: string) {
   const medplum = useMedplum();
-  const profile = useMedplumProfile() as Practitioner;
+  const [organization, setOrganization] = useState<Organization>();
   const [usageData, setUsageData] = useState<UsageData>({
     sessionsUsed: 0,
     sessionsLimit: FREE_SESSIONS_PER_MONTH,
@@ -28,11 +27,16 @@ export function useProfileUsage() {
   });
 
   const loadUsageData = async () => {
-    if (!profile) return;
+    if (!organizationId) return;
 
-    const usage = profile.extension?.find((e: Extension) => e.url === USAGE_EXTENSION_URL) as UsageExtension;
-    const proSubscription = profile.extension?.find((e: Extension) => e.url === PRO_SUBSCRIPTION_EXTENSION_URL);
-    const isPro = proSubscription?.valueBoolean || false;
+    const org = await medplum.readResource('Organization', organizationId);
+    setOrganization(org);
+
+    const usage = org.extension?.find((e: Extension) => e.url === USAGE_EXTENSION_URL) as UsageExtension;
+    const isPro = !!org.extension?.find(e => 
+      e.url === 'http://example.com/fhir/StructureDefinition/subscription-status' && 
+      e.valueString === 'active'
+    );
 
     if (usage) {
       const lastResetDate = new Date(usage.extension?.find((e: Extension) => e.url === 'lastResetDate')?.valueDateTime || '');
@@ -46,7 +50,7 @@ export function useProfileUsage() {
           isPro,
           lastResetDate: currentDate.toISOString()
         });
-        await updateUsage(0, currentDate.toISOString(), isPro);
+        await updateUsage(0, currentDate.toISOString());
       } else {
         setUsageData({
           sessionsUsed: usage.extension?.find((e: Extension) => e.url === 'sessionsUsed')?.valueInteger || 0,
@@ -58,14 +62,14 @@ export function useProfileUsage() {
     }
   };
 
-  const updateUsage = async (newCount: number, resetDate: string, isPro: boolean) => {
-    if (!profile) return;
+  const updateUsage = async (newCount: number, resetDate: string) => {
+    if (!organization) return;
 
-    const updatedProfile: Practitioner = {
-      ...profile,
+    const updatedOrg = {
+      ...organization,
       extension: [
-        ...(profile.extension || []).filter((e: Extension) => 
-          e.url !== USAGE_EXTENSION_URL && e.url !== PRO_SUBSCRIPTION_EXTENSION_URL
+        ...(organization.extension || []).filter((e: Extension) => 
+          e.url !== USAGE_EXTENSION_URL
         ),
         {
           url: USAGE_EXTENSION_URL,
@@ -79,37 +83,27 @@ export function useProfileUsage() {
               valueDateTime: resetDate
             }
           ]
-        } as UsageExtension,
-        {
-          url: PRO_SUBSCRIPTION_EXTENSION_URL,
-          valueBoolean: isPro
-        }
+        } as UsageExtension
       ]
     };
 
-    await medplum.updateResource(updatedProfile);
+    await medplum.updateResource(updatedOrg);
+    setOrganization(updatedOrg);
     await loadUsageData();
   };
 
   const incrementUsage = async () => {
     const newCount = usageData.sessionsUsed + 1;
-    await updateUsage(newCount, usageData.lastResetDate, usageData.isPro);
-  };
-
-  const upgradeToPro = async () => {
-    await updateUsage(usageData.sessionsUsed, usageData.lastResetDate, true);
+    await updateUsage(newCount, usageData.lastResetDate);
   };
 
   useEffect(() => {
-    if (profile) {
-      loadUsageData();
-    }
-  }, [profile]);
+    loadUsageData();
+  }, [organizationId]);
 
   return {
     usageData,
     incrementUsage,
-    upgradeToPro,
     canUseSession: usageData.isPro || usageData.sessionsUsed < usageData.sessionsLimit
   };
 } 

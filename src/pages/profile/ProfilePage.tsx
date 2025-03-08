@@ -1,28 +1,33 @@
 import { Container, Tabs } from '@mantine/core';
 import { IconSettings, IconAlertCircle, IconCreditCard, IconBuilding } from '@tabler/icons-react';
-import { useLocation } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import { ProfileSettings } from './components/ProfileSettings';
 import { NotePreferences } from './components/NotePreferences';
-//import { BillingSection } from './components/BillingSection';
 import { PasswordChange } from './components/PasswordChange';
 import { OrganizationSettings } from './components/OrganizationSettings';
 import { SubscriptionSettings } from './components/SubscriptionSettings';
 
-export function ProfilePage(): JSX.Element {
-  const location = useLocation();
-  const defaultTab = location.state?.defaultTab || 'profile';
-  const [activeTab, setActiveTab] = useState(defaultTab);
+const tabRoutes = {
+  '/settings/profile': 'profile',
+  '/settings/note-preferences': 'note-preferences',
+  '/settings/change-password': 'change-password',
+  '/settings/organization': 'organization',
+  '/settings/subscription': 'subscription'
+};
 
-  useEffect(() => {
-    if (location.state?.defaultTab) {
-      setActiveTab(location.state.defaultTab);
-    }
-  }, [location.state]);
+export function ProfilePage(): JSX.Element {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const currentTab = tabRoutes[location.pathname as keyof typeof tabRoutes] || 'profile';
+
+  const handleTabChange = (value: string) => {
+    const route = Object.entries(tabRoutes).find(([_, tab]) => tab === value)?.[0] || '/settings/profile';
+    navigate(route);
+  };
 
   return (
     <Container size="md" py="xl">
-      <Tabs value={activeTab} onChange={setActiveTab}>
+      <Tabs value={currentTab} onChange={handleTabChange}>
         <Tabs.List>
           <Tabs.Tab value="profile" leftSection={<IconSettings size={14} />}>
             Profile
@@ -30,43 +35,25 @@ export function ProfilePage(): JSX.Element {
           <Tabs.Tab value="note-preferences" leftSection={<IconAlertCircle size={14} />}>
             Note Preferences
           </Tabs.Tab>
-         {/*<Tabs.Tab value="billing" leftSection={<IconCreditCard size={14} />}>
-            Billing
-          </Tabs.Tab>*/}
           <Tabs.Tab value="change-password" leftSection={<IconAlertCircle size={14} />}>
             Change Password
           </Tabs.Tab>
           <Tabs.Tab value="organization" leftSection={<IconBuilding size={14} />}>
             Organization
           </Tabs.Tab>
-          <Tabs.Tab value="subscription" leftSection={<IconAlertCircle size={14} />}>
+          <Tabs.Tab value="subscription" leftSection={<IconCreditCard size={14} />}>
             Subscription
           </Tabs.Tab>
         </Tabs.List>
 
-        <Tabs.Panel value="profile" pt="xl">
-          <ProfileSettings />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="note-preferences" pt="xl">
-          <NotePreferences />
-        </Tabs.Panel>
-
-        {/*<Tabs.Panel value="billing" pt="xl">
-          <BillingSection />
-        </Tabs.Panel>*/}
-
-        <Tabs.Panel value="change-password" pt="xl">
-          <PasswordChange />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="organization" pt="xl">
-          <OrganizationSettings />
-        </Tabs.Panel>
-
-        <Tabs.Panel value="subscription" pt="xl">
-          <SubscriptionSettings />
-        </Tabs.Panel>
+        <Routes>
+          <Route path="profile" element={<ProfileSettings />} />
+          <Route path="note-preferences" element={<NotePreferences />} />
+          <Route path="change-password" element={<PasswordChange />} />
+          <Route path="organization" element={<OrganizationSettings />} />
+          <Route path="subscription" element={<SubscriptionSettings />} />
+          <Route path="*" element={<Navigate to="/settings/profile" replace />} />
+        </Routes>
       </Tabs>
     </Container>
   );

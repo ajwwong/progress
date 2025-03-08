@@ -460,7 +460,7 @@ export function App(): JSX.Element | null {
                     <Route path="/:resourceType/:id/_history/:versionId" element={<ResourcePage />} />
                     <Route path="/composition/:id" element={<NoteView />} />
                     <Route path="/templates/*" element={<TemplateRoutes />} />
-                    <Route path="/settings" element={<ProfilePage />} />
+                    <Route path="/settings/*" element={<ProfilePage />} />
                     <Route path="/Practitioner/:id" element={<ProfilePage />} />
                     <Route path="/invite" element={<InvitePage />} />
                     <Route 
