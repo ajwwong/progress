@@ -5,7 +5,7 @@ import { showNotification } from '@mantine/notifications';
 import { IconDownload, IconHistory, IconCheck, IconCreditCard } from '@tabler/icons-react';
 import { Invoice, Practitioner, Communication, Parameters } from '@medplum/fhirtypes';
 import { useStripeSetup } from '../hooks/useStripeSetup';
-import { useProfileUsage } from '../../../hooks/useProfileUsage';
+import { useOrganizationUsage } from '../../../hooks/useOrganizationUsage';
 import { StripeCardElement } from './StripeCardElement';
 import { Elements } from '@stripe/react-stripe-js';
 import { loadStripe } from '@stripe/stripe-js';
@@ -25,7 +25,7 @@ export function BillingSection(): JSX.Element {
   const [subscriptionLogs, setSubscriptionLogs] = useState<Communication[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const { stripe, elements, error: stripeError, isReady } = useStripeSetup();
-  const { usageData, upgradeToPro } = useProfileUsage();
+  const { usageData, upgradeToPro } = useOrganizationUsage();
   const [cardElement, setCardElement] = useState<any>(null);
 
   useEffect(() => {

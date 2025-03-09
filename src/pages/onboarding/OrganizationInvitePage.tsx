@@ -1,4 +1,4 @@
-import { Container, Stack, Title, TextInput, Button, Group, Paper, Text, PasswordInput } from '@mantine/core';
+import { Container, Stack, Title, TextInput, Button, Group, Paper, Text, PasswordInput, Anchor } from '@mantine/core';
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { MedplumClient } from '@medplum/core';
@@ -8,9 +8,13 @@ import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingStep } from '../../hooks/onboardingSteps';
 import { useMedplum } from '@medplum/react';
+import { Link } from 'react-router-dom';
 
-//const ORGANIZATION_REGISTRATION_BOT_ID = '2d870407-8e34-4ff9-b1f1-a499819bfe5e';
-const ORGANIZATION_REGISTRATION_BOT_ID = '01952512-3a8f-7567-93d0-0db6c29bb5f3';
+const ORGANIZATION_REGISTRATION_BOT_ID = {
+  system: 'https://progressnotes.app',
+  value: 'organization-registration-bot'
+};
+//const ORGANIZATION_REGISTRATION_BOT_ID = '01952512-3a8f-7567-93d0-0db6c29bb5f3';
 
 interface OrganizationInvitePageProps {
   onSuccess: () => Promise<void>;
@@ -139,6 +143,18 @@ export function OrganizationInvitePage({ onSuccess }: OrganizationInvitePageProp
               required
               error={passwordError}
             />
+
+            <Text size="sm" c="dimmed">
+              By clicking Register, you agree to our{' '}
+              <Anchor component={Link} to="/terms-of-service" target="_blank">
+                Terms of Service
+              </Anchor>{' '}
+              and{' '}
+              <Anchor component={Link} to="/privacy-policy" target="_blank">
+                Privacy Policy
+              </Anchor>
+              .
+            </Text>
 
             <Group justify="flex-end">
               <Button 

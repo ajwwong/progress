@@ -4,7 +4,7 @@ import { Composition, CompositionSection, Patient, Practitioner } from '@medplum
 import { NoteTemplate } from '../components/templates/types';
 import { useNoteTemplate } from './useNoteTemplate';
 import { BotService } from '../services/BotService';
-import { useProfileUsage } from './useProfileUsage';
+import { useOrganizationUsage } from './useOrganizationUsage';
 import { useMedplumProfile } from '@medplum/react';
 
 interface UseTranscriptionReturn {
@@ -39,7 +39,7 @@ export function useTranscription(): UseTranscriptionReturn {
   const profile = useMedplumProfile();
   const botService = new BotService(medplum);
   const { generatePrompt } = useNoteTemplate();
-  const { incrementUsage } = useProfileUsage();
+  const { incrementUsage } = useOrganizationUsage();
   const [transcript, setTranscript] = useState<string>('');
   const [psychNote, setPsychNote] = useState<{ content: string; prompt?: string; rawResponse?: string }>({ content: '' });
   const [status, setStatus] = useState('Ready');

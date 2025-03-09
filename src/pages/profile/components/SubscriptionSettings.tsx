@@ -1,4 +1,4 @@
-import { Button, Group, Paper, Stack, Text, List, ThemeIcon, Alert, Card, Badge, Title, TextInput, Select, Grid } from '@mantine/core';
+import { Button, Group, Paper, Stack, Text, List, ThemeIcon, Alert, Card, Badge, Title, TextInput, Select, Grid, Progress, Divider, Modal } from '@mantine/core';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import type { StripeElementsOptions } from '@stripe/stripe-js';
@@ -17,7 +17,9 @@ import { getSubscriptionInfo } from './subscription/utils';
 import { SubscriptionInfo } from './subscription/types';
 import { PlanCard } from './subscription/PlanCard';
 import { CurrentSubscription } from './subscription/CurrentSubscription';
+import { SessionUsageCard } from './subscription/SessionUsageCard';
 import { showNotification } from '@mantine/notifications';
+import { SubscriptionStatus } from './subscription/types';
 
 // Initialize Stripe outside of component
 const stripePromise = loadStripe('pk_test_jIqc6QAfldl6cJQ2zemJUGlv');
@@ -29,6 +31,30 @@ function isValidClientSecret(secret: string): boolean {
   return validPattern.test(secret);
 }
 
+// Define subscription tiers with simpler structure
+const SUBSCRIPTION_TIERS = [
+  {
+    name: 'Standard',
+    description: 'No contracts, pay as you go',
+    options: Object.entries(STRIPE_CONFIG.TEST.STANDARD.plans).map(([key, plan]) => ({
+      value: String(plan.sessions),
+      label: `${plan.sessions} sessions/mo`
+    })),
+    features: [
+      'Automated progress notes',
+      'Ai-powered magic edits',
+      'Calendar scheduler'
+    ]
+  }
+];
+
+interface PlanDetails {
+  status: SubscriptionStatus;
+  sessionsUsed: number;
+  sessionsLimit: number;
+  plan: string;
+}
+
 // Main subscription component
 export function SubscriptionSettings(): JSX.Element {
   const [clientSecret, setClientSecret] = useState('');
@@ -36,13 +62,14 @@ export function SubscriptionSettings(): JSX.Element {
   const [error, setError] = useState<string>();
   const [loading, setLoading] = useState(false);
   const [paymentStatus, setPaymentStatus] = useState<'success' | 'failed' | undefined>();
+  const [selectedSessions, setSelectedSessions] = useState('30');
   const medplum = useMedplum();
   const profile = useMedplumProfile();
   const [stripeReady, setStripeReady] = useState(false);
   const [elementsReady, setElementsReady] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const [selectedPlan, setSelectedPlan] = useState<typeof SUBSCRIPTION_PLANS[0] | null>(null);
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   // Handle redirect result
   useEffect(() => {
@@ -102,19 +129,31 @@ export function SubscriptionSettings(): JSX.Element {
     }
   }, [profile, paymentStatus]);
 
+  // Get price based on selected sessions
+  const getPrice = (sessions: string) => {
+    const plan = Object.values(STRIPE_CONFIG.TEST.STANDARD.plans).find(
+      p => p.sessions === Number(sessions)
+    );
+    return plan ? plan.amount / 100 : 29; // Default to lowest tier if not found
+  };
+
+  // Get price ID based on selected sessions
+  const getPriceId = (sessions: string) => {
+    const plan = Object.values(STRIPE_CONFIG.TEST.STANDARD.plans).find(
+      p => p.sessions === Number(sessions)
+    );
+    return plan ? plan.priceId : STRIPE_CONFIG.TEST.STANDARD.plans.SESSIONS_30.priceId;
+  };
+
   const createSubscription = async () => {
     try {
-      console.log('🚀 Starting subscription creation...');
       setLoading(true);
       setError(undefined);
 
       if (!organization?.id) {
-        console.error('❌ No organization ID found');
         throw new Error('Organization ID not found');
       }
-      console.log('👥 Organization ID:', organization.id);
 
-      console.log('🤖 Executing bot to create payment intent...');
       const response = await medplum.executeBot(
         '01956d13-409d-76c9-8656-597e92d6dd9f',
         {
@@ -123,33 +162,26 @@ export function SubscriptionSettings(): JSX.Element {
             {
               name: 'organizationId',
               valueString: organization.id
+            },
+            {
+              name: 'priceId',
+              valueString: getPriceId(selectedSessions)
             }
           ]
         }
       );
-      console.log('🤖 Full Bot response:', JSON.stringify(response, null, 2));
 
       if (response.resourceType === 'OperationOutcome') {
-        console.error('❌ Bot returned error:', response);
         throw new Error(response.issue?.[0]?.details?.text || 'Failed to create subscription');
       }
 
       if (!response.parameter?.[0]?.valueString) {
-        console.error('❌ Missing client secret in response');
         throw new Error('Invalid response from server');
       }
 
-      const secret = response.parameter[0].valueString;
-      console.log('🔑 Client secret details:', {
-        length: secret.length,
-        prefix: secret.substring(0, 5),
-        isValidFormat: secret.startsWith('pi_')
-      });
-
-      console.log('✅ Setting client secret and initializing Stripe...');
-      setClientSecret(secret);
+      setClientSecret(response.parameter[0].valueString);
+      setStripeReady(true);
     } catch (err) {
-      console.error('❌ Subscription creation failed:', err);
       setError(err instanceof Error ? err.message : 'Failed to create subscription');
     } finally {
       setLoading(false);
@@ -193,34 +225,11 @@ export function SubscriptionSettings(): JSX.Element {
     }
   };
 
-  const SUBSCRIPTION_PLANS = [
-    {
-      name: 'Basic',
-      price: 6.90,
-      interval: 'month',
-      features: [
-        { text: 'Up to 5 users', included: true },
-        { text: 'Basic analytics', included: true },
-        { text: 'Standard support', included: true },
-        { text: 'Advanced features', included: false },
-      ],
-      isActive: true
-    },
-    {
-      name: 'Premium',
-      price: 99,
-      interval: 'month',
-      features: [
-        { text: 'Unlimited users', included: true },
-        { text: 'Advanced analytics', included: true },
-        { text: 'Priority support', included: true },
-        { text: 'Advanced features', included: true },
-      ],
-      isActive: false
-    }
-  ];
+  const handleCancelClick = () => {
+    setShowCancelModal(true);
+  };
 
-  const handleCancelSubscription = async () => {
+  const handleConfirmCancel = async () => {
     try {
       setLoading(true);
       setError(undefined);
@@ -229,9 +238,8 @@ export function SubscriptionSettings(): JSX.Element {
         throw new Error('Organization ID not found');
       }
 
-      // Execute bot to cancel subscription
       const response = await medplum.executeBot(
-        '01956d13-409d-76c9-8656-597e92d6dd9f', // Use the same bot ID as subscription creation
+        '01956d13-409d-76c9-8656-597e92d6dd9f',
         {
           resourceType: 'Parameters',
           parameter: [
@@ -251,13 +259,12 @@ export function SubscriptionSettings(): JSX.Element {
         throw new Error(response.issue?.[0]?.details?.text || 'Failed to cancel subscription');
       }
 
-      // Update organization data to reflect cancellation
       await fetchOrganization();
+      setShowCancelModal(false);
 
-      // Show success message
       showNotification({
         title: 'Subscription Cancelled',
-        message: 'Your subscription has been cancelled successfully.',
+        message: 'Your subscription has been cancelled successfully. You will retain access until the end of your billing period.',
         color: 'blue'
       });
 
@@ -269,58 +276,206 @@ export function SubscriptionSettings(): JSX.Element {
     }
   };
 
+  const canEdit = organization && !loading;
+
+  // Get current subscription details
+  const getCurrentPlanDetails = (org: Organization): PlanDetails => {
+    const status = (org.extension?.find(
+      e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-status'
+    )?.valueString as SubscriptionStatus) || 'free';
+
+    const sessionsUsed = org.extension?.find(
+      e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-sessions-used'
+    )?.valueInteger || 0;
+
+    const sessionsLimit = org.extension?.find(
+      e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-sessions-allowed'
+    )?.valueInteger || 10;
+
+    const plan = org.extension?.find(
+      e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-plan'
+    )?.valueString || 'free';
+
+    return {
+      status,
+      sessionsUsed,
+      sessionsLimit,
+      plan
+    };
+  };
+
   return (
-    <Paper p="xl">
+    <Paper p="xl" radius="md">
       <Stack gap="xl">
-        <Title order={2}>Subscription Settings</Title>
-        
-        <PaymentStatusAlert 
-          status={paymentStatus}
-          error={error}
-        />
+        <Title order={2}>Subscription & Usage</Title>
+        <Text c="dimmed">Manage your subscription and monitor usage</Text>
 
-        {subscriptionInfo ? (
-          <CurrentSubscription 
-            subscriptionInfo={subscriptionInfo}
-            onCancel={handleCancelSubscription}
-          />
-        ) : (
-          <>
-            <Grid>
-              {SUBSCRIPTION_PLANS.map((plan) => (
-                <Grid.Col span={6} key={plan.name}>
-                  <PlanCard
-                    {...plan}
-                    loading={loading}
-                    onSelect={() => {
-                      if (plan.isActive) {
-                        setSelectedPlan(plan);
-                        createSubscription();
-                      }
-                    }}
-                    disabled={!plan.isActive}
-                  />
-                </Grid.Col>
-              ))}
-            </Grid>
+        {error && (
+          <Alert color="red" title="Error">
+            {error}
+          </Alert>
+        )}
 
-            {clientSecret && selectedPlan && (
-              <Card withBorder>
-                <Stack>
-                  <Text size="lg" fw={700}>Complete Your Subscription</Text>
-                  <Text>You selected the {selectedPlan.name} plan at ${selectedPlan.price}/{selectedPlan.interval}</Text>
-                  <Elements stripe={stripePromise} options={options}>
-                    <CheckoutForm 
-                      clientSecret={clientSecret}
-                      onReady={() => setElementsReady(true)}
-                    />
-                  </Elements>
+        {paymentStatus && (
+          <PaymentStatusAlert status={paymentStatus} />
+        )}
+
+        {organization && (
+          <Stack gap="xl">
+            {/* Current Subscription Section */}
+            {(() => {
+              const currentPlan = getCurrentPlanDetails(organization);
+              return (
+                <Stack gap="md">
+                  <Group justify="space-between">
+                    <div>
+                      <Group gap="xs">
+                        <Title order={3}>Current Plan</Title>
+                        <Badge 
+                          color={currentPlan.status === 'active' ? 'green' : 'blue'}
+                          size="lg"
+                          variant="light"
+                        >
+                          {currentPlan.status === 'active' ? 'Active' : 'Free Tier'}
+                        </Badge>
+                      </Group>
+                      <Text c="dimmed" size="sm">
+                        {currentPlan.status === 'active' 
+                          ? `${currentPlan.sessionsLimit} sessions per month` 
+                          : 'Limited to 10 sessions per month'}
+                      </Text>
+                    </div>
+                  </Group>
+
+                  <Paper withBorder p="md" radius="md">
+                    <Stack gap="md">
+                      <Group justify="space-between">
+                        <Text>Sessions Used</Text>
+                        <Group gap="xs">
+                          <Text fw={500}>{currentPlan.sessionsUsed}</Text>
+                          <Text c="dimmed">/ {currentPlan.sessionsLimit}</Text>
+                        </Group>
+                      </Group>
+                      <Progress 
+                        value={(currentPlan.sessionsUsed / currentPlan.sessionsLimit) * 100}
+                        size="xl"
+                        radius="xl"
+                        color={currentPlan.sessionsUsed >= currentPlan.sessionsLimit ? "red" : "blue"}
+                      />
+                      {currentPlan.status === 'active' && (
+                        <Button 
+                          variant="light" 
+                          color="red" 
+                          onClick={handleCancelClick}
+                          loading={loading}
+                          fullWidth
+                        >
+                          Cancel Subscription
+                        </Button>
+                      )}
+                    </Stack>
+                  </Paper>
                 </Stack>
-              </Card>
+              );
+            })()}
+
+            <Divider my="md" />
+
+            {/* Standard Plan Section */}
+            <Stack gap="md">
+              <Title order={3}>Standard</Title>
+              <Text c="dimmed" size="sm">No contracts, pay as you go</Text>
+              
+              <Group align="flex-end" gap="xs">
+                <Text size="xl" fw={700}>${getPrice(selectedSessions)}</Text>
+                <Text size="sm" c="dimmed" mb={4}>/month</Text>
+              </Group>
+
+              <Select
+                data={SUBSCRIPTION_TIERS[0].options}
+                value={selectedSessions}
+                onChange={(value) => setSelectedSessions(value || '30')}
+                size="md"
+                radius="md"
+              />
+
+              <Stack gap="xs" mt="md">
+                <Text fw={500}>Standard plan includes:</Text>
+                <List
+                  spacing="xs"
+                  size="sm"
+                  center
+                  icon={
+                    <ThemeIcon color="blue" size={20} radius="xl">
+                      <IconCheck size={12} />
+                    </ThemeIcon>
+                  }
+                >
+                  {SUBSCRIPTION_TIERS[0].features.map((feature, index) => (
+                    <List.Item key={index}>{feature}</List.Item>
+                  ))}
+                </List>
+              </Stack>
+
+              <Button
+                size="md"
+                onClick={createSubscription}
+                loading={loading}
+                disabled={!organization || loading}
+                mt="md"
+              >
+                {getCurrentPlanDetails(organization).status === 'active' ? 'Change Plan' : 'Subscribe Now'}
+              </Button>
+            </Stack>
+
+            {/* Payment Section */}
+            {clientSecret && stripeReady && (
+              <Stack gap="md">
+                <Text fw={500} size="lg">Payment Details</Text>
+                <Elements stripe={stripePromise} options={options}>
+                  <CheckoutForm 
+                    clientSecret={clientSecret}
+                    onReady={() => setElementsReady(true)}
+                  />
+                </Elements>
+              </Stack>
             )}
-          </>
+          </Stack>
         )}
       </Stack>
+
+      {/* Cancellation Confirmation Modal */}
+      <Modal
+        opened={showCancelModal}
+        onClose={() => setShowCancelModal(false)}
+        title="Cancel Subscription"
+        size="md"
+      >
+        <Stack gap="md">
+          <Text>Are you sure you want to cancel your subscription?</Text>
+          <Text size="sm" c="dimmed">
+            You will still have access to your current plan until the end of your billing period. 
+            After that, you'll be moved to the free tier with a limit of 10 sessions per month.
+          </Text>
+          
+          <Group justify="flex-end" mt="xl">
+            <Button 
+              variant="light" 
+              onClick={() => setShowCancelModal(false)}
+              disabled={loading}
+            >
+              Keep Subscription
+            </Button>
+            <Button 
+              color="red" 
+              onClick={handleConfirmCancel}
+              loading={loading}
+            >
+              Yes, Cancel Subscription
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
     </Paper>
   );
 }

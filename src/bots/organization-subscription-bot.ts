@@ -79,6 +79,34 @@ async function handlePaymentIntentSucceeded(medplum: MedplumClient, stripe: Stri
   }
 }
 
+// Add session limits configuration
+const SESSION_LIMITS = {
+  'price_1R0UlJIfLgrjtRiqrBl5AVE8': 30,  // 30 sessions
+  'price_1R0UlJIfLgrjtRiqKDpSb8Mz': 45,  // 45 sessions
+  'price_1R0UlJIfLgrjtRiqTfKFUGuG': 60,  // 60 sessions
+  'price_1R0UlJIfLgrjtRiqXYZ80ABC': 80,  // 80 sessions
+  'price_1R0UlJIfLgrjtRiqDEF100GHI': 100, // 100 sessions
+  'price_1R0UlJIfLgrjtRiqJKL120MNO': 120, // 120 sessions
+  'price_1R0UlJIfLgrjtRiqPQR150STU': 150, // 150 sessions
+  'price_1R0UlJIfLgrjtRiqVWX200YZA': 200, // 200 sessions
+  'price_1R0UlJIfLgrjtRiqBCD300EFG': 300, // 300 sessions
+  'price_1R0UlJIfLgrjtRiqHIJ400KLM': 400, // 400 sessions
+  'price_1R0UlJIfLgrjtRiqNOP500QRS': 500, // 500 sessions
+  'free': 10
+};
+
+// Helper function to get session limit based on price ID
+function getSessionLimitForPlan(priceId: string): number {
+  // Direct lookup first
+  if (priceId in SESSION_LIMITS) {
+    return SESSION_LIMITS[priceId as keyof typeof SESSION_LIMITS];
+  }
+
+  // If not found, log the issue and return free tier limit
+  console.log(`Price ID ${priceId} not found in SESSION_LIMITS, defaulting to free tier`);
+  return SESSION_LIMITS.free;
+}
+
 async function handleSubscriptionUpdated(medplum: MedplumClient, subscription: Stripe.Subscription) {
   await createLog(medplum, 'subscription-update', {
     subscriptionId: subscription.id,
@@ -101,6 +129,25 @@ async function handleSubscriptionUpdated(medplum: MedplumClient, subscription: S
     e => !e.url.startsWith('http://example.com/fhir/StructureDefinition/subscription-')
   );
 
+  // Get current session usage if it exists
+  const currentSessionsUsed = organization.extension?.find(
+    e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-sessions-used'
+  )?.valueInteger || 0;
+
+  // Get the price ID from the subscription
+  const priceId = subscription.items.data[0]?.price?.id;
+  await createLog(medplum, 'price-lookup', { 
+    priceId,
+    subscriptionItems: subscription.items.data
+  });
+
+  const sessionLimit = getSessionLimitForPlan(priceId || 'free');
+  await createLog(medplum, 'session-limit', { 
+    priceId,
+    sessionLimit,
+    availableLimits: SESSION_LIMITS
+  });
+
   // Add subscription details as extensions
   const newExtensions = [
     {
@@ -109,7 +156,7 @@ async function handleSubscriptionUpdated(medplum: MedplumClient, subscription: S
     },
     {
       url: 'http://example.com/fhir/StructureDefinition/subscription-plan',
-      valueString: subscription.items.data[0]?.price?.id
+      valueString: priceId
     },
     {
       url: 'http://example.com/fhir/StructureDefinition/subscription-id',
@@ -118,20 +165,42 @@ async function handleSubscriptionUpdated(medplum: MedplumClient, subscription: S
     {
       url: 'http://example.com/fhir/StructureDefinition/subscription-period-end',
       valueDateTime: new Date(subscription.current_period_end * 1000).toISOString()
+    },
+    {
+      url: 'http://example.com/fhir/StructureDefinition/subscription-sessions-used',
+      valueInteger: currentSessionsUsed
+    },
+    {
+      url: 'http://example.com/fhir/StructureDefinition/subscription-sessions-allowed',
+      valueInteger: sessionLimit
+    },
+    {
+      url: 'http://example.com/fhir/StructureDefinition/session-last-reset',
+      valueDateTime: new Date().toISOString()
     }
   ];
 
   await createLog(medplum, 'org-update', {
     organizationId,
-    extensions: newExtensions
+    extensions: newExtensions,
+    sessionLimit,
+    priceId,
+    currentSessionsUsed,
+    subscriptionStatus: subscription.status
   });
   
-  await medplum.updateResource({
+  const updatedOrg = await medplum.updateResource({
     ...organization,
     extension: [...extensions, ...newExtensions]
   });
 
-  await createLog(medplum, 'success', 'Organization updated successfully');
+  await createLog(medplum, 'success', {
+    message: 'Organization updated successfully',
+    organizationId: updatedOrg.id,
+    newSessionLimit: sessionLimit,
+    currentUsage: currentSessionsUsed,
+    status: subscription.status
+  });
 }
 
 async function handleSubscriptionCancelled(medplum: MedplumClient, subscription: Stripe.Subscription) {
@@ -148,7 +217,12 @@ async function handleSubscriptionCancelled(medplum: MedplumClient, subscription:
     e => !e.url.startsWith('http://example.com/fhir/StructureDefinition/subscription-')
   );
 
-  // Add cancelled status and end date
+  // Get current session usage if it exists
+  const currentSessionsUsed = organization.extension?.find(
+    e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-sessions-used'
+  )?.valueInteger || 0;
+
+  // Add cancelled status, end date, and reset session limits to free tier
   const cancelledAt = subscription.canceled_at || Date.now() / 1000;
   const newExtensions = [
     {
@@ -158,6 +232,18 @@ async function handleSubscriptionCancelled(medplum: MedplumClient, subscription:
     {
       url: 'http://example.com/fhir/StructureDefinition/subscription-period-end',
       valueDateTime: new Date(cancelledAt * 1000).toISOString()
+    },
+    {
+      url: 'http://example.com/fhir/StructureDefinition/subscription-sessions-used',
+      valueInteger: currentSessionsUsed
+    },
+    {
+      url: 'http://example.com/fhir/StructureDefinition/subscription-sessions-allowed',
+      valueInteger: SESSION_LIMITS.free
+    },
+    {
+      url: 'http://example.com/fhir/StructureDefinition/session-last-reset',
+      valueDateTime: new Date().toISOString()
     }
   ];
 

@@ -15,7 +15,7 @@ import { useActiveComposition } from '../hooks/useActiveComposition';
 import { useTemplates } from '../components/templates/hooks/useTemplates';
 import { NoteTemplate } from '../components/templates/types';
 import { AudioMeter } from '../components/audio/AudioMeter';
-import { useProfileUsage } from '../hooks/useProfileUsage';
+import { useOrganizationUsage } from '../hooks/useOrganizationUsage';
 import { useAudioDevices } from '../hooks/useAudioDevices';
 import { useBeforeUnload } from '../hooks/useBeforeUnload';
 
@@ -101,7 +101,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
   const [uploadProgress, setUploadProgress] = useState(0);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [isStartButtonHovered, setIsStartButtonHovered] = useState(false);
-  const { usageData, incrementUsage, canUseSession } = useProfileUsage();
+  const { usageData, incrementUsage, canUseSession } = useOrganizationUsage();
   const { audioDevices, selectedDevice, setSelectedDevice } = useAudioDevices();
   const [isCompleted, setIsCompleted] = useState(false);
   
@@ -436,23 +436,33 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
 
   return (
     <Container size="sm" mt="xl">
-      {!usageData.isPro && (
-        <Group justify="right" mb="md" style={{ opacity: isRecording ? 0.5 : 1 }}>
-          <Tooltip 
-            label={`${usageData.sessionsUsed} of ${usageData.sessionsLimit} sessions used this month`}
-            position="bottom"
-            withArrow
+      <Group justify="right" mb="md" style={{ opacity: isRecording ? 0.5 : 1 }}>
+        <Tooltip 
+          label={`${usageData.sessionsUsed} of ${usageData.sessionsLimit} sessions used this month`}
+          position="bottom"
+          withArrow
+        >
+          <Text 
+            size="sm" 
+            c={usageData.sessionsUsed >= usageData.sessionsLimit ? (usageData.isPro ? 'yellow' : 'red') : 'dimmed'} 
+            style={{ fontSize: '13px' }}
           >
-            <Text size="sm" c="dimmed" style={{ fontSize: '13px' }}>
-              {usageData.sessionsLimit - usageData.sessionsUsed} sessions remaining
-            </Text>
-          </Tooltip>
+            {usageData.sessionsUsed >= usageData.sessionsLimit ? (
+              usageData.isPro ? 
+                'Over plan limit - Additional sessions will be billed' :
+                'No sessions remaining this month'
+            ) : (
+              `${usageData.sessionsLimit - usageData.sessionsUsed} sessions remaining`
+            )}
+          </Text>
+        </Tooltip>
+        {!usageData.isPro && (
           <Button
             variant="subtle"
             size="xs"
             color="blue"
-            onClick={() => navigate('/settings', { 
-              state: { defaultTab: 'billing' }  // Matches exactly with the tab value in ProfilePage
+            onClick={() => navigate('/settings/subscription', { 
+              state: { defaultTab: 'billing' }
             })}
             px={8}
             style={{ 
@@ -463,8 +473,8 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
           >
             Upgrade
           </Button>
-        </Group>
-      )}
+        )}
+      </Group>
 
       <Modal 
         opened={showCancelModal} 
@@ -581,8 +591,9 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                 <Button
                   size="xl"
                   radius="lg"
-                  color={isTelehealth ? 'teal' : 'blue.9'}
-                  leftSection={isTelehealth ? <IconHeadphones size={22} /> : <IconMicrophone size={22} />}
+                  variant={isTelehealth ? 'outline' : 'outline'}
+                  color={isTelehealth ? 'teal.6' : 'blue.6'}
+                  leftSection={isTelehealth ? <IconHeadphones size={22} /> : <IconPlus size={22} />}
                   onClick={handleStartRecording}
                   onMouseEnter={() => setIsStartButtonHovered(true)}
                   onMouseLeave={() => setIsStartButtonHovered(false)}
@@ -592,27 +603,30 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
                       fontWeight: 500,
                       height: '56px',
                       letterSpacing: '0.3px',
-                      padding: '0 28px'
+                      padding: '0 28px',
+                      color: isTelehealth ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-blue-6)'
                     },
                     root: {
                       width: '100%',
                       background: isTelehealth 
-                        ? 'linear-gradient(165deg, rgba(15, 118, 110, 0.85) 0%, rgba(20, 184, 166, 0.8) 100%)' 
-                        : 'linear-gradient(165deg, #2C5282 0%, #3B82B6 100%)',
-                      border: `1px solid ${isTelehealth ? 'rgba(15, 118, 110, 0.08)' : 'rgba(44, 82, 130, 0.1)'}`,
-                      backdropFilter: 'blur(10px)',
+                        ? 'linear-gradient(165deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.12) 100%)' 
+                        : 'linear-gradient(165deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)',
+                      border: isTelehealth 
+                        ? '1px solid rgba(20, 184, 166, 0.3)'
+                        : '1px solid rgba(37, 99, 235, 0.3)',
+                      backdropFilter: 'blur(8px)',
                       transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                       boxShadow: isTelehealth
-                        ? '0 8px 25px rgba(15, 118, 110, 0.2), 0 4px 10px rgba(15, 118, 110, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                        : '0 8px 25px rgba(44, 82, 130, 0.2), 0 4px 10px rgba(44, 82, 130, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                        ? '0 8px 16px rgba(20, 184, 166, 0.15), 0 4px 8px rgba(20, 184, 166, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                        : '0 8px 16px rgba(37, 99, 235, 0.15), 0 4px 8px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
                       '&:hover': {
                         transform: 'translateY(-2px)',
                         background: isTelehealth
-                          ? 'linear-gradient(165deg, rgba(13, 109, 107, 0.9) 0%, rgba(15, 155, 142, 0.85) 100%)'
-                          : 'linear-gradient(165deg, #234876 0%, #2D6899 100%)',
+                          ? 'linear-gradient(165deg, rgba(20, 184, 166, 0.12) 0%, rgba(20, 184, 166, 0.16) 100%)'
+                          : 'linear-gradient(165deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.16) 100%)',
                         boxShadow: isTelehealth
-                          ? '0 12px 30px rgba(15, 118, 110, 0.25), 0 6px 15px rgba(15, 118, 110, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
-                          : '0 12px 30px rgba(44, 82, 130, 0.25), 0 6px 15px rgba(44, 82, 130, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.12)'
+                          ? '0 20px 40px rgba(20, 184, 166, 0.25), 0 8px 16px rgba(20, 184, 166, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                          : '0 20px 40px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
                       }
                     }
                   }}

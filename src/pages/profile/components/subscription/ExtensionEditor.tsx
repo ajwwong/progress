@@ -13,11 +13,25 @@ const SUBSCRIPTION_EXTENSIONS = [
   {
     name: 'Status',
     url: 'http://example.com/fhir/StructureDefinition/subscription-status',
-    options: ['active', 'pending', 'cancelled', 'trialing']
+    options: ['active', 'pending', 'cancelled', 'trialing', 'free']
   },
   {
     name: 'Plan',
     url: 'http://example.com/fhir/StructureDefinition/subscription-plan',
+    options: [
+      'free',
+      'standard-30',
+      'standard-45',
+      'standard-60',
+      'standard-80',
+      'standard-100',
+      'standard-120',
+      'standard-150',
+      'standard-200',
+      'standard-300',
+      'standard-400',
+      'standard-500'
+    ]
   },
   {
     name: 'Subscription ID',
@@ -27,6 +41,31 @@ const SUBSCRIPTION_EXTENSIONS = [
     name: 'Period End',
     url: 'http://example.com/fhir/StructureDefinition/subscription-period-end',
     type: 'datetime'
+  },
+  {
+    name: 'Sessions Used',
+    url: 'http://example.com/fhir/StructureDefinition/subscription-sessions-used',
+    type: 'integer'
+  },
+  {
+    name: 'Sessions Limit',
+    url: 'http://example.com/fhir/StructureDefinition/subscription-sessions-allowed',
+    type: 'integer'
+  },
+  {
+    name: 'Last Reset Date',
+    url: 'http://example.com/fhir/StructureDefinition/session-last-reset',
+    type: 'datetime'
+  },
+  {
+    name: 'Price',
+    url: 'http://example.com/fhir/StructureDefinition/subscription-price',
+    type: 'money'
+  },
+  {
+    name: 'Billing Cycle',
+    url: 'http://example.com/fhir/StructureDefinition/subscription-billing-cycle',
+    options: ['monthly']
   }
 ];
 
@@ -41,7 +80,11 @@ export function ExtensionEditor({ organization, onSave }: ExtensionEditorProps):
     const values: Record<string, string> = {};
     SUBSCRIPTION_EXTENSIONS.forEach(ext => {
       const extension = organization.extension?.find(e => e.url === ext.url);
-      values[ext.url] = extension?.valueString || extension?.valueDateTime || '';
+      values[ext.url] = extension?.valueString || 
+                       extension?.valueDateTime || 
+                       extension?.valueInteger?.toString() || 
+                       extension?.valueMoney?.value?.toString() || 
+                       '';
     });
     setEditValues(values);
   }, [organization, isEditing]);
@@ -57,10 +100,21 @@ export function ExtensionEditor({ organization, onSave }: ExtensionEditorProps):
       );
 
       // Create new subscription extensions
-      const subscriptionExtensions = SUBSCRIPTION_EXTENSIONS.map(ext => ({
-        url: ext.url,
-        [ext.type === 'datetime' ? 'valueDateTime' : 'valueString']: editValues[ext.url]
-      })).filter(ext => ext.valueString || ext.valueDateTime);
+      const subscriptionExtensions = SUBSCRIPTION_EXTENSIONS.map(ext => {
+        const value = editValues[ext.url];
+        if (!value) return null;
+
+        switch (ext.type) {
+          case 'datetime':
+            return { url: ext.url, valueDateTime: value };
+          case 'integer':
+            return { url: ext.url, valueInteger: parseInt(value) };
+          case 'money':
+            return { url: ext.url, valueMoney: { value: parseFloat(value), currency: 'USD' } };
+          default:
+            return { url: ext.url, valueString: value };
+        }
+      }).filter(Boolean);
 
       // Update organization
       const updatedOrg = {
@@ -68,7 +122,7 @@ export function ExtensionEditor({ organization, onSave }: ExtensionEditorProps):
         extension: [...otherExtensions, ...subscriptionExtensions]
       };
 
-      await onSave(updatedOrg);
+      await onSave(updatedOrg as Organization);
       setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes');
@@ -95,8 +149,11 @@ export function ExtensionEditor({ organization, onSave }: ExtensionEditorProps):
             </Button>
           </Group>
           {SUBSCRIPTION_EXTENSIONS.map((ext) => {
-            const value = organization.extension?.find(e => e.url === ext.url)?.valueString ||
-                         organization.extension?.find(e => e.url === ext.url)?.valueDateTime;
+            const extension = organization.extension?.find(e => e.url === ext.url);
+            let value = extension?.valueString || 
+                       extension?.valueDateTime || 
+                       extension?.valueInteger?.toString() || 
+                       (extension?.valueMoney?.value && `$${extension.valueMoney.value}`);
             
             if (!value) return null;
 

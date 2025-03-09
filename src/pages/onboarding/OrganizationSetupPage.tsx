@@ -112,7 +112,7 @@ export function OrganizationSetupPage(): JSX.Element {
 
           <Text c="dimmed" size="sm" ta="center">
             By signing up, you agree to our Terms of Service and Privacy Policy.
-            Need help? <a href="mailto:support@practiceharbor.com">Contact our team</a>
+            Need help? <a href="mailto:support@progressnotes.app">Contact our team</a>
           </Text>
         </Stack>
       </Container>

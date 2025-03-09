@@ -15,7 +15,7 @@ import { useActiveComposition } from '../../hooks/useActiveComposition';
 import { useTemplates } from '../../components/templates/hooks/useTemplates';
 import { NoteTemplate } from '../../components/templates/types';
 import { AudioMeter } from '../../components/audio/AudioMeter';
-import { useProfileUsage } from '../../hooks/useProfileUsage';
+import { useOrganizationUsage } from '../../hooks/useOrganizationUsage';
 import { useAudioDevices } from '../../hooks/useAudioDevices';
 import { useOnboarding } from '../../hooks/useOnboarding';
 import { OnboardingStep } from '../../hooks/onboardingSteps';
@@ -84,7 +84,7 @@ export function OnboardingPage({
   const navigate = useNavigate();
   const medplum = useMedplum();
   const { templates } = useTemplates();
-  const { incrementUsage } = useProfileUsage();
+  const { incrementUsage } = useOrganizationUsage();
   const [selectedPatient, setSelectedPatient] = useState<Patient>();
   const [selectedTemplate, setSelectedTemplate] = useState<NoteTemplate>();
   const [isSessionStarted, setIsSessionStarted] = useState(false);
@@ -441,9 +441,7 @@ export function OnboardingPage({
               <Stack gap="xs">
                 <Title order={2}>Welcome to Progress Notes!</Title>
                 <Text c="dimmed">
-                  Try out Progress Notes with a practice session. Click 'Start session', allow microphone access when prompted in the upper left window, 
-                  and we'll guide you through the rest.
-                </Text>
+                  Let's show you how Progress Notes works with a mini-practice session. Click 'See Example Dialog' to begin.                </Text>
               </Stack>
             </Group>
 
@@ -503,34 +501,43 @@ export function OnboardingPage({
                   {/* Start Session button - hidden during transcription/generation */}
                   <Button
                     size="xl"
-                    radius="xl"
-                    color={isTelehealth ? 'teal' : 'blue.9'}
-                    leftSection={hasCompletedOnboarding ? <IconArrowLeft size={20} /> : (isTelehealth ? <IconHeadphones size={20} /> : <IconMicrophone size={20} />)}
+                    radius="lg"
+                    variant={isTelehealth ? 'outline' : 'outline'}
+                    color={isTelehealth ? 'teal.6' : 'blue.6'}
+                    leftSection={hasCompletedOnboarding ? <IconArrowLeft size={20} /> : (isTelehealth ? <IconHeadphones size={20} /> : <IconPlus size={20} />)}
                     onClick={handleStartSession}
                     disabled={!showDialog || isTranscribing || isGeneratingNote || hasCompletedOnboarding}
                     styles={{
                       inner: {
-                        fontSize: '18px',
+                        fontSize: '17px',
                         fontWeight: 500,
-                        height: '52px'
+                        height: '56px',
+                        letterSpacing: '0.3px',
+                        padding: '0 28px',
+                        color: isTelehealth ? 'var(--mantine-color-teal-6)' : 'var(--mantine-color-blue-6)'
                       },
                       root: {
                         width: '100%',
                         opacity: (!showDialog || isTranscribing || isGeneratingNote) ? 0.5 : 1,
                         background: isTelehealth 
-                          ? 'linear-gradient(135deg, #0F766E 0%, #14B8A6 100%)' 
-                          : 'linear-gradient(135deg, #2C5282 0%, #3B82B6 100%)',
+                          ? 'linear-gradient(165deg, rgba(20, 184, 166, 0.08) 0%, rgba(20, 184, 166, 0.12) 100%)' 
+                          : 'linear-gradient(165deg, rgba(37, 99, 235, 0.08) 0%, rgba(37, 99, 235, 0.12) 100%)',
+                        border: isTelehealth 
+                          ? '1px solid rgba(20, 184, 166, 0.3)'
+                          : '1px solid rgba(37, 99, 235, 0.3)',
+                        backdropFilter: 'blur(8px)',
+                        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                         boxShadow: isTelehealth
-                          ? '0 4px 15px rgba(15, 118, 110, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-                          : '0 4px 15px rgba(44, 82, 130, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1)',
+                          ? '0 8px 16px rgba(20, 184, 166, 0.15), 0 4px 8px rgba(20, 184, 166, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                          : '0 8px 16px rgba(37, 99, 235, 0.15), 0 4px 8px rgba(37, 99, 235, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15)',
                         '&:hover': {
-                          transform: 'translateY(-1px)',
+                          transform: 'translateY(-2px)',
                           background: isTelehealth
-                            ? 'linear-gradient(135deg, #0D6D6B 0%, #0F9B8E 100%)'
-                            : 'linear-gradient(135deg, #234876 0%, #2D6899 100%)',
+                            ? 'linear-gradient(165deg, rgba(20, 184, 166, 0.12) 0%, rgba(20, 184, 166, 0.16) 100%)'
+                            : 'linear-gradient(165deg, rgba(37, 99, 235, 0.12) 0%, rgba(37, 99, 235, 0.16) 100%)',
                           boxShadow: isTelehealth
-                            ? '0 6px 20px rgba(15, 118, 110, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
-                            : '0 6px 20px rgba(44, 82, 130, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.15)'
+                            ? '0 20px 40px rgba(20, 184, 166, 0.25), 0 8px 16px rgba(20, 184, 166, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
+                            : '0 20px 40px rgba(37, 99, 235, 0.25), 0 8px 16px rgba(37, 99, 235, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.2)'
                         }
                       }
                     }}
@@ -552,7 +559,7 @@ export function OnboardingPage({
                       </Box>
                     ))}
                     {displayedLines.length === sampleDialog.length && (
-                      <Text fw={500} c="dimmed">Press 'End session' and let your note be generated</Text>
+                      <Text fw={500} c="dimmed">Press 'End session' and your note will be generated</Text>
                     )}
                   </Stack>
 

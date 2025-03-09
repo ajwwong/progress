@@ -31,6 +31,8 @@ import { PreRegisterPage } from './pages/PreRegisterPage';
 import { OrganizationSetupPage } from './pages/onboarding/OrganizationSetupPage';
 import { MedplumProvider } from '@medplum/react';
 import { OnboardingLogoff } from './pages/onboarding/OnboardingLogoff';
+import TermsOfService from './pages/TermsOfService';
+import PrivacyPolicy from './pages/PrivacyPolicy';
 
 export const CalendarContext = createContext<{
   showNewAppointmentModal: boolean;
@@ -55,7 +57,9 @@ export function App(): JSX.Element | null {
   const hideAppShellPaths = [
     '/onboarding/organization',
     '/onboarding/logoff',
-    '/register'
+    '/register',
+    '/terms-of-service',
+    '/privacy-policy'
   ];
   
   // Evaluate hideAppShell immediately based on current path
@@ -432,6 +436,8 @@ export function App(): JSX.Element | null {
                     />
                     <Route path="/signin" element={<SignInPage />} />
                     <Route path="/register" element={<RegisterPage />} />
+                    <Route path="/terms-of-service" element={<TermsOfService />} />
+                    <Route path="/privacy-policy" element={<PrivacyPolicy />} />
                     <Route path="/calendar" element={<CalendarPage />} />
                     <Route path="/patient" element={<PatientDirectoryPage />} />
                     <Route 
@@ -491,6 +497,8 @@ export function App(): JSX.Element | null {
               <Route path="/onboarding/organization" element={<OrganizationSetupPage />} />
               <Route path="/onboarding/logoff" element={<OnboardingLogoff />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             </Routes>
           )}
         </CalendarContext.Provider>

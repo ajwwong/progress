@@ -1,13 +1,13 @@
 import { Organization } from '@medplum/fhirtypes';
 import { STRIPE_CONFIG } from '../../../../config/stripe-config';
-import { SubscriptionInfo } from './types';
+import { SubscriptionInfo, SubscriptionStatus } from './types';
 
 export function getSubscriptionInfo(organization: Organization): SubscriptionInfo | undefined {
   if (!organization.extension) return undefined;
 
   const status = organization.extension.find(
     e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-status'
-  )?.valueString;
+  )?.valueString as SubscriptionStatus || 'free';
 
   const planId = organization.extension.find(
     e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-plan'
@@ -17,9 +17,14 @@ export function getSubscriptionInfo(organization: Organization): SubscriptionInf
     e => e.url === 'http://example.com/fhir/StructureDefinition/subscription-period-end'
   )?.valueDateTime;
 
-  if (!status || !planId || !periodEnd) return undefined;
+  if (!planId || !periodEnd) return undefined;
 
-  const planConfig = STRIPE_CONFIG.TEST.PREMIUM;
+  // Find the plan configuration that matches the planId
+  const planConfig = Object.values(STRIPE_CONFIG.TEST.STANDARD.plans).find(
+    plan => plan.priceId === planId
+  );
+
+  if (!planConfig) return undefined;
   
   return {
     status,
@@ -28,4 +33,18 @@ export function getSubscriptionInfo(organization: Organization): SubscriptionInf
     price: planConfig.amount / 100,
     interval: planConfig.interval
   };
+}
+
+export function getBadgeColor(status: SubscriptionStatus): string {
+  switch (status) {
+    case 'active':
+      return 'green';
+    case 'pending':
+      return 'yellow';
+    case 'cancelled':
+      return 'red';
+    case 'free':
+    default:
+      return 'blue';
+  }
 }
