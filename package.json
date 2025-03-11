@@ -10,7 +10,8 @@
         "preview": "vite preview",
         "test": "vitest",
         "test:watch": "vitest watch",
-        "deploy": "npm run build && aws s3 sync dist/ s3://$AWS_S3_BUCKET && aws cloudfront create-invalidation --distribution-id $AWS_CLOUDFRONT_ID --paths '/*'"
+        "deploy": "npm run build && aws s3 sync dist/ s3://www.progressnotes.app && aws cloudfront create-invalidation --distribution-id E2OF4SUBRRS3QH --paths '/*'",
+        "build:bots": "node esbuild-script.mjs"
     },
     "prettier": {
         "printWidth": 120,
@@ -50,10 +51,13 @@
         "wavefile": "^11.0.0"
     },
     "devDependencies": {
+        "@medplum/bot-layer": "^4.0.3",
         "@types/node": "^20.0.0",
         "@types/react": "^18.3.12",
         "@types/react-dom": "18.3.1",
         "@vitejs/plugin-react": "4.3.3",
+        "esbuild": "^0.25.1",
+        "fast-glob": "^3.3.3",
         "postcss": "8.4.47",
         "postcss-preset-mantine": "1.17.0",
         "typescript": "^5.0.0",

@@ -135,6 +135,7 @@ export function useOrganizationUsage() {
     organization,
     usageData,
     updateUsage,
-    canUseSession: usageData.subscriptionStatus === 'active' || usageData.sessionsUsed < usageData.sessionsLimit
+    canUseSession: usageData.subscriptionStatus === 'active' || usageData.sessionsUsed < usageData.sessionsLimit,
+    incrementUsage
   };
 } 

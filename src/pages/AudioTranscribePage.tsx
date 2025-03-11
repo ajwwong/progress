@@ -1,4 +1,4 @@
-import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider, Switch, Select, Loader, Progress, SegmentedControl, SegmentedControlItem, Tooltip } from '@mantine/core';
+import { Box, Button, Container, Group, Text, Title, Modal, TextInput, Stack, ActionIcon, Paper, Divider, Switch, Select, Loader, Progress, SegmentedControl, SegmentedControlItem, Tooltip, Alert } from '@mantine/core';
 import { IconPlayerRecord, IconPlayerStop, IconPlayerPlay, IconFileText, IconNotes, IconPlayerPause, IconPlus, IconCheck, IconX, IconLoader, IconMicrophone, IconHeadphones } from '@tabler/icons-react';
 import { useState, useRef, useEffect } from 'react';
 import { useMedplum, AsyncAutocomplete, ResourceAvatar } from '@medplum/react';
@@ -157,7 +157,7 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
     if (!canUseSession) {
       showNotification({
         title: 'Session Limit Reached',
-        message: 'You have used all your free sessions this month. Upgrade to Pro for unlimited sessions.',
+        message: 'You have used all your free sessions this month. Upgrade your account to continue.',
         color: 'yellow',
         icon: <IconX size={16} />,
       });
@@ -444,19 +444,26 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
         >
           <Text 
             size="sm" 
-            c={usageData.sessionsUsed >= usageData.sessionsLimit ? (usageData.isPro ? 'yellow' : 'red') : 'dimmed'} 
+            c={usageData.sessionsUsed >= usageData.sessionsLimit ? (usageData.subscriptionStatus === 'active' ? 'yellow' : 'red') : 'dimmed'} 
             style={{ fontSize: '13px' }}
           >
             {usageData.sessionsUsed >= usageData.sessionsLimit ? (
-              usageData.isPro ? 
-                'Over plan limit - Additional sessions will be billed' :
-                'No sessions remaining this month'
+              usageData.subscriptionStatus === 'active' ? (
+                <Alert color="yellow" mb="md">
+                  You've used all your sessions for this month. Since you're on an active subscription, 
+                  you can continue using the service and will be billed for additional sessions.
+                </Alert>
+              ) : (
+                <Alert color="red" mb="md">
+                  You've reached your session limit. Please upgrade your plan to continue.
+                </Alert>
+              )
             ) : (
               `${usageData.sessionsLimit - usageData.sessionsUsed} sessions remaining`
             )}
           </Text>
         </Tooltip>
-        {!usageData.isPro && (
+        {usageData.subscriptionStatus !== 'active' && (
           <Button
             variant="subtle"
             size="xs"

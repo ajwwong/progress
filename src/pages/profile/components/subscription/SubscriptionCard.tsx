@@ -10,6 +10,7 @@ interface SubscriptionCardProps {
   disabled: boolean;
   onSubscribe: () => void;
   onElementsReady: () => void;
+  onPaymentSuccess: () => void;
   stripePromise: Promise<any>;
   options: any;
 }
@@ -21,6 +22,7 @@ export function SubscriptionCard({
   disabled,
   onSubscribe,
   onElementsReady,
+  onPaymentSuccess,
   stripePromise,
   options
 }: SubscriptionCardProps): JSX.Element {
@@ -64,7 +66,8 @@ export function SubscriptionCard({
           <Elements stripe={stripePromise} options={options}>
             <CheckoutForm 
               clientSecret={clientSecret}
-              onReady={onElementsReady} 
+              onReady={onElementsReady}
+              onPaymentSuccess={onPaymentSuccess}
             />
           </Elements>
         )}

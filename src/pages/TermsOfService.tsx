@@ -255,7 +255,7 @@ const TermsOfService: React.FC = () => {
               <Text mt="md">
                 You have the right to opt-out and not be bound by the arbitration and class action waiver provisions by sending written notice of your decision to opt-out to our address or email within 30 days of your first use of the Services. If you do not opt out within this period, you will be bound by these provisions. This opt-out option ensures that you have a meaningful choice regarding how potential disputes will be resolved.
               </Text>
-            </Box>
+        </Box>
 
             <Box>
               <Title order={2}>12. GENERAL PROVISIONS</Title>
@@ -320,18 +320,18 @@ const TermsOfService: React.FC = () => {
               <Text mt="md">
                 We welcome your feedback and are committed to addressing any questions or concerns about our Terms or Services.
               </Text>
-            </Box>
+        </Box>
 
             <Box>
               <Title order={2}>13. ACKNOWLEDGMENT</Title>
               <Text mt="md">
-                By using the Services, you acknowledge that you have read these Terms, understand them, and agree to be bound by them. We appreciate your trust in Progress Notes and look forward to supporting your clinical documentation needs.
+            By using the Services, you acknowledge that you have read these Terms, understand them, and agree to be bound by them. We appreciate your trust in Progress Notes and look forward to supporting your clinical documentation needs.
               </Text>
-            </Box>
+        </Box>
 
             <Box ta="center">
               <Text size="lg">Effective Date: {currentDate}</Text>
-            </Box>
+        </Box>
           </Stack>
         </Stack>
       </Paper>

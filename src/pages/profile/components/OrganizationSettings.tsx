@@ -1,27 +1,32 @@
 import { Stack, TextInput, Title, Text, Button, Group, Alert, Divider, Card, Badge, Progress } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff, IconAlertCircle, IconChartBar } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
 import { Organization, Practitioner } from '@medplum/fhirtypes';
 import { ExtensionEditor } from './subscription/ExtensionEditor';
 import { SessionUsageCard } from './subscription/SessionUsageCard';
+import { STRIPE_CONFIG } from '../../../config/stripe-config';
 
-// Add plan configuration
-const SUBSCRIPTION_TIERS = {
-  'price_1R0UlJIfLgrjtRiqrBl5AVE8': { name: '30 Sessions', price: 29 },
-  'price_1R0UlJIfLgrjtRiqKDpSb8Mz': { name: '45 Sessions', price: 45 },
-  'price_1R0UlJIfLgrjtRiqTfKFUGuG': { name: '60 Sessions', price: 59 },
-  'price_1R0UlJIfLgrjtRiqXYZ80ABC': { name: '80 Sessions', price: 79 },
-  'price_1R0UlJIfLgrjtRiqDEF100GHI': { name: '100 Sessions', price: 99 },
-  'price_1R0UlJIfLgrjtRiqJKL120MNO': { name: '120 Sessions', price: 119 },
-  'price_1R0UlJIfLgrjtRiqPQR150STU': { name: '150 Sessions', price: 149 },
-  'price_1R0UlJIfLgrjtRiqVWX200YZA': { name: '200 Sessions', price: 198 },
-  'price_1R0UlJIfLgrjtRiqBCD300EFG': { name: '300 Sessions', price: 297 },
-  'price_1R0UlJIfLgrjtRiqHIJ400KLM': { name: '400 Sessions', price: 396 },
-  'price_1R0UlJIfLgrjtRiqNOP500QRS': { name: '500 Sessions', price: 496 },
-  'free': { name: 'Free Tier', price: 0 }
+// Replace the hardcoded SUBSCRIPTION_TIERS with a function
+const getSubscriptionTiers = () => {
+  const mode = import.meta.env.VITE_STRIPE_MODE as 'TEST' | 'PROD';
+  const plans = STRIPE_CONFIG[mode].STANDARD.plans;
+  
+  const tiers: Record<string, { name: string; price: number }> = {
+    'free': { name: 'Free Tier', price: 0 }
+  };
+
+  // Add all plans from stripe config
+  Object.entries(plans).forEach(([_, plan]) => {
+    tiers[plan.priceId] = {
+      name: `${plan.sessions} Sessions`,
+      price: plan.amount / 100 // Convert cents to dollars
+    };
+  });
+
+  return tiers;
 };
 
 export function OrganizationSettings(): JSX.Element {
@@ -31,6 +36,7 @@ export function OrganizationSettings(): JSX.Element {
   const [organization, setOrganization] = useState<Organization | undefined>();
   const [organizationName, setOrganizationName] = useState('');
   const [canEdit, setCanEdit] = useState(false);
+  const subscriptionTiers = useMemo(() => getSubscriptionTiers(), []);
 
   useEffect(() => {
     const checkPermissionsAndFetchOrg = async () => {
@@ -173,7 +179,7 @@ export function OrganizationSettings(): JSX.Element {
     )?.valueDateTime;
 
     return {
-      plan: SUBSCRIPTION_TIERS[planId as keyof typeof SUBSCRIPTION_TIERS] || SUBSCRIPTION_TIERS.free,
+      plan: subscriptionTiers[planId as keyof typeof subscriptionTiers] || subscriptionTiers.free,
       status,
       sessionsUsed,
       sessionsLimit,

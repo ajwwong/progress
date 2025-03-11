@@ -84,22 +84,29 @@ const SESSION_LIMITS = {
   'price_1R0UlJIfLgrjtRiqrBl5AVE8': 30,  // 30 sessions
   'price_1R0UlJIfLgrjtRiqKDpSb8Mz': 45,  // 45 sessions
   'price_1R0UlJIfLgrjtRiqTfKFUGuG': 60,  // 60 sessions
-  'price_1R0UlJIfLgrjtRiqXYZ80ABC': 80,  // 80 sessions
-  'price_1R0UlJIfLgrjtRiqDEF100GHI': 100, // 100 sessions
-  'price_1R0UlJIfLgrjtRiqJKL120MNO': 120, // 120 sessions
-  'price_1R0UlJIfLgrjtRiqPQR150STU': 150, // 150 sessions
-  'price_1R0UlJIfLgrjtRiqVWX200YZA': 200, // 200 sessions
-  'price_1R0UlJIfLgrjtRiqBCD300EFG': 300, // 300 sessions
-  'price_1R0UlJIfLgrjtRiqHIJ400KLM': 400, // 400 sessions
-  'price_1R0UlJIfLgrjtRiqNOP500QRS': 500, // 500 sessions
+  'price_1R0UlJIfLgrjtRiqED7TsKjN': 80,   // 80 sessions
+  'price_1R0UlJIfLgrjtRiqWGMnViYR': 100,  // 100 sessions
+  'price_1R0UlJIfLgrjtRiqTf1tMIzR': 120,  // 120 sessions
+  'price_1R0UlJIfLgrjtRiqqNCMiYbb': 150,  // 150 sessions
+  'price_1R0UlJIfLgrjtRiq0Z4XpUpJ': 200,  // 200 sessions
+  'price_1R0UlJIfLgrjtRiqHIbpQrL7': 300,  // 300 sessions
+  'price_1R0UlJIfLgrjtRiqM8JrLJrw': 400,  // 400 sessions
+  'price_1R0UlJIfLgrjtRiqBkoTkbum': 500,  // 500 sessions
   'free': 10
-};
+  };
 
 // Helper function to get session limit based on price ID
 function getSessionLimitForPlan(priceId: string): number {
-  // Direct lookup first
-  if (priceId in SESSION_LIMITS) {
-    return SESSION_LIMITS[priceId as keyof typeof SESSION_LIMITS];
+  // Handle undefined or null price ID
+  if (!priceId) {
+    console.log('No price ID provided, defaulting to free tier');
+    return SESSION_LIMITS.free;
+  }
+
+  // Check if the price ID exists in our mapping
+  const limit = SESSION_LIMITS[priceId as keyof typeof SESSION_LIMITS];
+  if (limit !== undefined) {
+    return limit;
   }
 
   // If not found, log the issue and return free tier limit

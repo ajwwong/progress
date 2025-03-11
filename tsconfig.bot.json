@@ -1,0 +1,17 @@
+{
+    "compilerOptions": {
+      "target": "ES2020",
+      "module": "CommonJS",
+      "outDir": "dist/bots",
+      "rootDir": "src/bots",
+      "lib": ["ES2020"],
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "strict": true,
+      "forceConsistentCasingInFileNames": true,
+      "moduleResolution": "Node",
+      "resolveJsonModule": true
+    },
+    "include": ["src/bots/**/*"],
+    "exclude": ["node_modules"]
+  }
