@@ -81,6 +81,7 @@ async function handlePaymentIntentSucceeded(medplum: MedplumClient, stripe: Stri
 
 // Add session limits configuration
 const SESSION_LIMITS = {
+  // TEST mode price IDs
   'price_1R0UlJIfLgrjtRiqrBl5AVE8': 30,  // 30 sessions
   'price_1R0UlJIfLgrjtRiqKDpSb8Mz': 45,  // 45 sessions
   'price_1R0UlJIfLgrjtRiqTfKFUGuG': 60,  // 60 sessions
@@ -92,8 +93,22 @@ const SESSION_LIMITS = {
   'price_1R0UlJIfLgrjtRiqHIbpQrL7': 300,  // 300 sessions
   'price_1R0UlJIfLgrjtRiqM8JrLJrw': 400,  // 400 sessions
   'price_1R0UlJIfLgrjtRiqBkoTkbum': 500,  // 500 sessions
+  
+  // PROD mode price IDs
+  'price_1R116uIfLgrjtRiqwRBCuwLe': 1,    // 1 session
+  'price_1R0rWeIfLgrjtRiqslYBfEcJ': 20,   // 20 sessions
+  'price_1R0rOJIfLgrjtRiqEkey827c': 40,   // 40 sessions
+  'price_1R0rQMIfLgrjtRiquFCsq1Du': 60,   // 60 sessions
+  'price_1R0rWeIfLgrjtRiqM8RQXfmt': 80,   // 80 sessions
+  'price_1R0rQMIfLgrjtRiqsxZtyiQX': 100,  // 100 sessions
+  'price_1R0rOJIfLgrjtRiqNuH3bTD8': 120,  // 120 sessions
+  'price_1R0rWeIfLgrjtRiqBR4L8kMI': 140,  // 140 sessions
+  'price_1R0rWeIfLgrjtRiqPzF583G6': 160,  // 160 sessions
+  'price_1R0rYBIfLgrjtRiq1WmmBbkL': 200,  // 200 sessions
+  'price_1R0s0jIfLgrjtRiqPQt4x4je': 300,  // 300 sessions
+  'price_1R0s2IIfLgrjtRiq8RLFLpqM': 400,  // 400 sessions
   'free': 10
-  };
+};
 
 // Helper function to get session limit based on price ID
 function getSessionLimitForPlan(priceId: string): number {
