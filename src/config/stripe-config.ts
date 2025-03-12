@@ -79,18 +79,18 @@ export const STRIPE_CONFIG = {
     STANDARD: {
       productId: 'prod_RuglFA4O4PJLnV', // Production product ID
       plans: {
-        SESSIONS_1: {
+        /*SESSIONS_1: {
           priceId: 'price_1R116uIfLgrjtRiqwRBCuwLe',
           amount: 100, // $1.00
           sessions: 1,
           interval: 'month'
-        },
-        SESSIONS_20: {
+        },*/
+        /*SESSIONS_20: {
           priceId: 'price_1R0rWeIfLgrjtRiqslYBfEcJ',
           amount: 900, // $9.00
           sessions: 20,
           interval: 'month'
-        },
+        },*/
         SESSIONS_40: {
           priceId: 'price_1R0rOJIfLgrjtRiqEkey827c',
           amount: 1900, // $19.00
