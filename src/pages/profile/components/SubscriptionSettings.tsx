@@ -451,7 +451,7 @@ export function SubscriptionSettings(): JSX.Element {
 
       showNotification({
         title: 'Subscription Cancelled',
-        message: 'Your subscription has been cancelled successfully. You will retain access until the end of your billing period.',
+        message: 'Your subscription has been cancelled successfully. You will be moved to the free tier with a limit of 10 sessions per month.',
         color: 'blue'
       });
 

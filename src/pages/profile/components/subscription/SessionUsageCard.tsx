@@ -55,7 +55,7 @@ export function SessionUsageCard({ organization }: SessionUsageCardProps): JSX.E
           <Text size="sm" c={isOverLimit ? (subscriptionStatus === 'active' ? 'yellow' : 'red') : 'dimmed'}>
             {isOverLimit ? (
               subscriptionStatus === 'active' ? (
-                `Over plan limit - additional sessions will be billed at standard rate`
+                `Over plan limit - please upgrade to continue`
               ) : (
                 `No sessions remaining this month`
               )
