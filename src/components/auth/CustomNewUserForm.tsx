@@ -204,7 +204,7 @@ export function CustomNewUserForm(props: CustomNewUserFormProps): JSX.Element {
                 },
               })}
             >
-              {isSubmitting ? 'Setting up your account...' : 'Try Free for 30 Days'}
+              {isSubmitting ? 'Setting up your account...' : 'Sign Up for Free'}
             </Button>
           </Group>
         </Stack>

@@ -85,10 +85,12 @@ export function NotePreferences(): JSX.Element {
         <Text fw={500}>Default Note Template</Text>
         <Select
           placeholder="Select a default template"
-          data={templates.map(template => ({
-            value: template.id,
-            label: template.name
-          }))}
+          data={templates
+            .filter(template => template.name && template.id)
+            .map(template => ({
+              value: template.id as string,
+              label: template.name as string
+            }))}
           value={defaultTemplate}
           onChange={(value) => setDefaultTemplate(value || '')}
           clearable

@@ -70,12 +70,13 @@ export function PreRegisterPage(): JSX.Element {
                 if (form) form.requestSubmit();
               }}
             >
-              {buttonClicked ? 'Setting up your account...' : 'Try Free for 30 Days'}
+              {buttonClicked ? 'Setting up your account...' : 'Sign Up for Free'}
             </Button>
             <Button 
               variant="light"
               size="xl"
               radius="md"
+              onClick={() => window.open('https://calendly.com/somatopia/coffee-chat-45', '_blank')}
             >
               Schedule Demo
             </Button>
