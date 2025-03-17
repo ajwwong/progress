@@ -112,46 +112,50 @@ export function AudioTranscribePage({ onTranscriptionStart, onCompositionSaved, 
     }
   }, [location.state]);
 
-  // Load patient's default template when patient is selected or changes
+  // Load default template when templates are available
   useEffect(() => {
     const loadDefaultTemplate = async () => {
-      console.log('Loading default template. Patient:', selectedPatient?.id);
-      console.log('Templates available:', templates.length);
+      console.log('Loading default template. Templates available:', templates.length);
       
-      if (selectedPatient && selectedPatient.id && templates.length > 0) {
-        try {
-          // Get patient's documentation preferences
-          const patientResource = await medplum.readResource('Patient', selectedPatient.id);
-          console.log('Patient resource loaded:', patientResource);
-          
-          const defaultTemplateId = patientResource.extension?.find(
-            ext => ext.url === 'http://example.com/fhir/StructureDefinition/default-template'
-          )?.valueString;
-          
-          console.log('Found default template ID:', defaultTemplateId);
-
-          if (defaultTemplateId) {
-            const template = templates.find(t => t.id === defaultTemplateId);
-            console.log('Matching template found:', template?.name);
-            setSelectedTemplate(template);
-          }
-        } catch (err) {
-          console.error('Error loading patient default template:', err);
+      // First check if we have a template from navigation state
+      const defaultTemplateId = location.state?.defaultTemplate;
+      if (defaultTemplateId && templates.length > 0) {
+        const template = templates.find(t => t.id === defaultTemplateId);
+        if (template) {
+          console.log('Using template from navigation:', template.name);
+          setSelectedTemplate(template);
+          return;
         }
+      }
+      
+      // Next, check if practitioner has a default template preference
+      try {
+        const practitioner = await medplum.getProfile() as Practitioner;
+        const practitionerDefaultTemplateId = practitioner?.extension?.find(
+          ext => ext.url === 'https://progress.care/fhir/default-template'
+        )?.valueString;
+        
+        if (practitionerDefaultTemplateId && templates.length > 0) {
+          const template = templates.find(t => t.id === practitionerDefaultTemplateId);
+          if (template) {
+            console.log('Using practitioner default template:', template.name);
+            setSelectedTemplate(template);
+            return;
+          }
+        }
+      } catch (err) {
+        console.error('Error loading practitioner default template:', err);
+      }
+      
+      // If no template was selected and we have templates available, use the first one
+      if (!selectedTemplate && templates.length > 0) {
+        console.log('Using first available template as default:', templates[0].name);
+        setSelectedTemplate(templates[0]);
       }
     };
 
     loadDefaultTemplate();
-  }, [selectedPatient, templates, medplum]);
-
-  // Update selectedTemplate when templates load and we have a default template from navigation
-  useEffect(() => {
-    const defaultTemplateId = location.state?.defaultTemplate;
-    if (defaultTemplateId && templates.length > 0) {
-      const template = templates.find(t => t.id === defaultTemplateId);
-      setSelectedTemplate(template);
-    }
-  }, [location.state, templates]);
+  }, [templates, location.state, selectedTemplate, medplum]);
 
   const handleStartRecording = async () => {
     if (!canUseSession) {

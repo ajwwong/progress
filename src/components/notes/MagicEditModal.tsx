@@ -46,12 +46,12 @@ Important Guidelines:
 Your task is to modify the text according to these instructions:
 ${magicInstructions}
 
-Current "${sectionTitle}" section content:
+Current "${sectionTitle}" section content - please use this as a reference:
 ${cleanedContent}`;
 
       // Add transcript context if available
       if (transcriptContent) {
-        prompt += `\n\nFor reference, here is the original session transcript. Use this to ensure accuracy and to add relevant details:
+        prompt += `\n\nFor additional reference, here is the original session transcript. Use this to ensure accuracy and to add relevant details:
 ${transcriptContent}`;
       }
 
@@ -63,7 +63,10 @@ ${transcriptContent}`;
 5. Preserve any specific dates, times, or factual details from the original`;
 
       const response = await medplum.executeBot(
-        '5731008c-42a6-4fdc-8969-2560667b4f1d',
+        {
+          system: 'https://progressnotes.app',
+          value: 'ask-claude',
+        },
         { text: prompt },
         'application/json'
       );

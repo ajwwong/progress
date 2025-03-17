@@ -221,6 +221,7 @@ export function TemplateEditorPage(): JSX.Element {
                 value={template.title || ''}
                 onChange={(e) => updateField('title', e.currentTarget.value)}
                 placeholder="Enter template name"
+                required
               />
             </Grid.Col>
             <Grid.Col span={4}>
@@ -229,10 +230,8 @@ export function TemplateEditorPage(): JSX.Element {
                 value={getTemplateType()}
                 onChange={(value) => value && updateTemplateType(value)}
                 data={[
-                  { value: 'progress', label: 'Progress Note' },
-                  { value: 'intake', label: 'Intake Assessment' },
-                  { value: 'discharge', label: 'Discharge Summary' },
-                  { value: 'treatment', label: 'Treatment Plan' }
+                  { value: 'live-session', label: 'Live Session with Client' },
+                  { value: 'dictation', label: 'Dictation (Client Not Present)' }
                 ]}
               />
             </Grid.Col>

@@ -139,24 +139,8 @@ CRITICAL - JSON FORMAT REQUIREMENTS:
 3. DO NOT include ANY explanatory text or comments
 4. The response must start with "{" and end with "}"
 5. Never use a double slash like \\n\\n or \\n in your response but only \n\n or \n.   
-6. Use this exact format:
 
-{
-  "sections": [
-    {
-      "title": "Subjective & History",
-      "content": "[Your content here]"
-    },
-    {
-      "title": "Mental Status Exam",
-      "content": "[Your content here]"
-    },
-    {
-      "title": "Assessment & Plan",
-      "content": "[Your content here]"
-    }
-  ]
-}
+${templateInstructions}
 
 As an experienced clinical psychologist or psychotherapist ${therapeuticApproach}, create a comprehensive and clinically precise psychotherapy progress note based on the following therapy session transcript. Your note should reflect deep clinical expertise, demonstrate thorough assessment and therapeutic insight, and adhere to professional documentation standards.
 
@@ -177,8 +161,6 @@ Style and Format:
 - Begin sections with relevant clinical content
 - Return ONLY a raw JSON object with no text before or after
 - Do not use any wrapper objects like {text: ''}
-
-${templateInstructions}
 
 FINAL REMINDER: 
 1. Your response must be ONLY the JSON object. No other text allowed.

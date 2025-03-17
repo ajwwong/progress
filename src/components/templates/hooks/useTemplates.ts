@@ -17,7 +17,7 @@ const DEFAULT_TEMPLATES: Questionnaire[] = [
     item: [
       {
         linkId: "subjectiveHistory",
-        text: "Subjective & History",
+        text: "Subjective",
         type: "text",
         initial: [{
           valueString: ''
@@ -53,19 +53,35 @@ const DEFAULT_TEMPLATES: Questionnaire[] = [
     }],
     item: [
       {
-        linkId: "presentingProblem",
-        text: "Presenting Problem",
+        linkId: "clinicalAssessment",
+        text: "Clinical Assessment",
         type: "text",
         initial: [{
-          valueString: ''
+          valueString: 'Chief complaint/presenting problem:\n\nHistory of present condition:\n\nRelevant psychiatric, medical, and substance use history:\n\nRisk assessment (suicidal/homicidal ideation, safety concerns):\n\nMental status observations:'
         }]
       },
       {
-        linkId: "historyAndBackground",
-        text: "History & Background",
+        linkId: "biopsychosocialHistory",
+        text: "Biopsychosocial History",
         type: "text",
         initial: [{
-          valueString: ''
+          valueString: 'Key developmental/family history:\n\nSocial support and relationships:\n\nCultural considerations:\n\nTrauma history:\n\nPrevious treatment experiences:\n\nStrengths and resources:'
+        }]
+      },
+      {
+        linkId: "diagnosisFormulation",
+        text: "Diagnosis & Formulation",
+        type: "text",
+        initial: [{
+          valueString: 'DSM-5/ICD-10 diagnosis:\n\nCase conceptualization:\n\nContributing factors:\n\nAssessment results (screening tools, tests):\n\nClinical impressions:'
+        }]
+      },
+      {
+        linkId: "treatmentPlan",
+        text: "Treatment Plan",
+        type: "text",
+        initial: [{
+          valueString: 'Treatment goals and objectives:\n\nProposed therapeutic approach:\n\nFrequency and estimated duration:\n\nRecommendations:\n\nCoordination of care needs:'
         }]
       }
     ]

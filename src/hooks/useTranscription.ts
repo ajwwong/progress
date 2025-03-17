@@ -166,55 +166,79 @@ export function useTranscription(): UseTranscriptionReturn {
     
     setStatus('Initiating note generation...');
     
-    try {
-      const composition = await medplum.readResource('Composition', compositionId);
-      console.log('Retrieved composition for update:', composition);
-      
-      if (!profile || !isPractitioner(profile)) {
-        throw new Error('Invalid profile type');
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount <= maxRetries) {
+      try {
+        // These operations are outside the retry loop since they don't need to be repeated
+        const composition = await medplum.readResource('Composition', compositionId);
+        console.log('Retrieved composition for update:', composition);
+        
+        if (!profile || !isPractitioner(profile)) {
+          throw new Error('Invalid profile type');
+        }
+        
+        // Generate a new prompt on each attempt
+        const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, profile);
+        console.log(`Generated prompt (attempt ${retryCount + 1}):`, prompt);
+        
+        // Make a new API call on each retry attempt
+        setStatus(`Generating note (attempt ${retryCount + 1})...`);
+        const response = await botService.generateNote(prompt);
+        console.log(`Raw bot response (attempt ${retryCount + 1}):`, response);
+        
+        // Process the response
+        const noteContent = processResponse(response);
+        console.log('Processed note content:', noteContent);
+        
+        const sections = convertToFHIR(noteContent, selectedTemplate);
+        console.log('Converted FHIR sections:', sections);
+
+        const updatedComposition: Composition = {
+          ...composition,
+          section: [
+            ...sections,
+            ...(composition.section || []).filter(s => s.title === 'Transcript')
+          ]
+        };
+        console.log('About to update composition with:', updatedComposition);
+
+        const savedComposition = await medplum.updateResource(updatedComposition);
+        console.log('Composition updated successfully:', savedComposition);
+        
+        // Format for display
+        const formattedContent = noteContent.sections
+          .map(section => `${section.title}:\n${section.content.replace(/\\n/g, '\n')}`)
+          .join('\n\n');
+
+        setPsychNote({
+          content: formattedContent,
+          prompt,
+          rawResponse: typeof response === 'string' ? response : JSON.stringify(response, null, 2)
+        });
+
+        await incrementUsage();
+        
+        setStatus('Note generated and saved');
+        return; // Success! Exit the function
+        
+      } catch (err) {
+        console.error(`Error in generateNote (attempt ${retryCount + 1}/${maxRetries + 1}):`, err);
+        
+        // If we've exhausted all retries, throw the error
+        if (retryCount === maxRetries) {
+          setStatus('Failed to generate note after multiple attempts');
+          throw err;
+        }
+        
+        // Increment retry counter and continue
+        retryCount++;
+        setStatus(`Retrying note generation (attempt ${retryCount}/${maxRetries})...`);
+        
+        // Optional: Add a small delay before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-      
-      const prompt = generatePrompt(transcript, selectedPatient, selectedTemplate, profile);
-      console.log('Generated prompt:', prompt);
-      
-      const response = await botService.generateNote(prompt);
-      console.log('Raw bot response:', response);
-      
-      const noteContent = processResponse(response);
-      console.log('Processed note content:', noteContent);
-      
-      const sections = convertToFHIR(noteContent, selectedTemplate);
-      console.log('Converted FHIR sections:', sections);
-
-      const updatedComposition: Composition = {
-        ...composition,
-        section: [
-          ...sections,
-          ...(composition.section || []).filter(s => s.title === 'Transcript')
-        ]
-      };
-      console.log('About to update composition with:', updatedComposition);
-
-      const savedComposition = await medplum.updateResource(updatedComposition);
-      console.log('Composition updated successfully:', savedComposition);
-      
-      // Format for display
-      const formattedContent = noteContent.sections
-        .map(section => `${section.title}:\n${section.content.replace(/\\n/g, '\n')}`)
-        .join('\n\n');
-
-      setPsychNote({
-        content: formattedContent,
-        prompt,
-        rawResponse: typeof response === 'string' ? response : JSON.stringify(response, null, 2)
-      });
-
-      await incrementUsage();
-      
-      setStatus('Note generated and saved');
-    } catch (err) {
-      console.error('Detailed error in generateNote:', err);
-      throw err;
     }
   };
 

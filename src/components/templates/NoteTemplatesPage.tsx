@@ -40,7 +40,8 @@ export function NoteTemplatesPage(): JSX.Element {
     loadTemplates();
   }, [medplum]);
 
-  const categories = ['all', 'progress', 'intake', 'discharge', 'treatment'];
+  // Update categories to match TemplateEditorPage
+  const categories = ['all', 'live-session', 'dictation'];
 
   const handleNewTemplate = () => {
     navigate('/templates/new');
@@ -79,7 +80,7 @@ export function NoteTemplatesPage(): JSX.Element {
   const getTemplateType = (template: Questionnaire): string => {
     return template.extension?.find(e => 
       e.url === 'http://progress.care/fhir/template-type'
-    )?.valueCode || 'progress';
+    )?.valueCode || 'live-session'; // Default to live-session instead of progress
   };
 
   const filteredTemplates = templates
@@ -102,22 +103,22 @@ export function NoteTemplatesPage(): JSX.Element {
               <Text size="sm" c="dimmed">Manage and customize your documentation templates</Text>
             </Stack>
             <Group>
-              <Button.Group>
+              {/*<Button.Group>
                 <Button 
                   variant="light"
                   leftSection={<IconUpload size={16} />}
-                  onClick={() => {/* TODO: Implement import */}}
+                  onClick={() => 
                 >
                   Import
                 </Button>
                 <Button 
                   variant="light"
                   leftSection={<IconDownload size={16} />}
-                  onClick={() => {/* TODO: Implement export */}}
+                  onClick={() => 
                 >
                   Export
                 </Button>
-              </Button.Group>
+              </Button.Group>*/}
               <Button 
                 onClick={handleNewTemplate}
                 leftSection={<IconPlus size={16} />}
@@ -140,7 +141,9 @@ export function NoteTemplatesPage(): JSX.Element {
               onChange={(value) => setSelectedCategory(value || 'all')}
               data={categories.map(cat => ({
                 value: cat,
-                label: cat.charAt(0).toUpperCase() + cat.slice(1)
+                label: cat === 'all' ? 'All Types' : 
+                       cat === 'live-session' ? 'Live Session with Client' : 
+                       'Dictation (Client Not Present)'
               }))}
               leftSection={<IconFilter size={16} />}
             />
@@ -180,9 +183,8 @@ export function NoteTemplatesPage(): JSX.Element {
                               size="sm" 
                               variant="light"
                               color={
-                                templateType === 'progress' ? 'blue' :
-                                templateType === 'intake' ? 'green' :
-                                templateType === 'discharge' ? 'orange' :
+                                templateType === 'live-session' ? 'blue' :
+                                templateType === 'dictation' ? 'green' :
                                 'violet'
                               }
                             >

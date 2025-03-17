@@ -1,17 +1,22 @@
-import { Stack, Title, Text, Paper, Radio, Group, Button, MultiSelect, Switch } from '@mantine/core';
+import { Stack, Title, Text, Paper, Radio, Group, Button, MultiSelect, Switch, Select } from '@mantine/core';
 import { useMedplum, useMedplumProfile } from '@medplum/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { showNotification } from '@mantine/notifications';
 import { IconCircleCheck, IconCircleOff } from '@tabler/icons-react';
 import { normalizeErrorString } from '@medplum/core';
 import { Practitioner, Extension } from '@medplum/fhirtypes';
+import { useTemplates } from '../../../components/templates/hooks/useTemplates';
 
 export function NotePreferences(): JSX.Element {
   const medplum = useMedplum();
   const profile = useMedplumProfile() as Practitioner;
+  const { templates } = useTemplates();
   const [loading, setLoading] = useState(false);
   const [includeDatetime, setIncludeDatetime] = useState(false);
   const [deleteAfter30Days, setDeleteAfter30Days] = useState(false);
+  const [defaultTemplate, setDefaultTemplate] = useState<string>(
+    profile?.extension?.find((e: Extension) => e.url === 'https://progress.care/fhir/default-template')?.valueString || ''
+  );
   const [referencePreference, setReferencePreference] = useState(
     profile?.extension?.find((e: Extension) => e.url === 'https://progress.care/fhir/reference-preference')?.valueString || 'client'
   );
@@ -33,7 +38,8 @@ export function NotePreferences(): JSX.Element {
           ...(profile.extension?.filter(e => 
             e.url !== 'https://progress.care/fhir/reference-preference' && 
             e.url !== 'https://progress.care/fhir/quote-preference' &&
-            e.url !== 'https://progress.care/fhir/interventions'
+            e.url !== 'https://progress.care/fhir/interventions' &&
+            e.url !== 'https://progress.care/fhir/default-template'
           ) || []),
           {
             url: 'https://progress.care/fhir/reference-preference',
@@ -46,6 +52,10 @@ export function NotePreferences(): JSX.Element {
           {
             url: 'https://progress.care/fhir/interventions',
             valueString: JSON.stringify(selectedInterventions)
+          },
+          {
+            url: 'https://progress.care/fhir/default-template',
+            valueString: defaultTemplate
           }
         ]
       });
@@ -72,6 +82,19 @@ export function NotePreferences(): JSX.Element {
       <Text c="dimmed">These settings will be applied to all future notes.</Text>
 
       <Stack gap="md">
+        <Text fw={500}>Default Note Template</Text>
+        <Select
+          placeholder="Select a default template"
+          data={templates.map(template => ({
+            value: template.id,
+            label: template.name
+          }))}
+          value={defaultTemplate}
+          onChange={(value) => setDefaultTemplate(value || '')}
+          clearable
+          searchable
+        />
+
         <Text fw={500}>How do you refer to the person you are supporting?</Text>
         <Radio.Group value={referencePreference} onChange={setReferencePreference}>
           <Group>
